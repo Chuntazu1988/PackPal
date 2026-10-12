@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PackPal – רשימת אריזה לטיול</title>
+<style>
+  /* ===== צבעים ===== */
+  :root {
+    --bg: #f4f7fb;
+    --card: #ffffff;
+    --text: #1f2a37;
+    --muted: #6b7785;
+    --accent: #2f80ed;
+    --accent-dark: #1c5fc0;
+    --ok: #27ae60;
+    --danger: #e5484d;
+    --border: #dde4ec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 16px; }
+  h1 { margin: 8px 0 4px; font-size: 1.8rem; }
+  h1 small { display: block; font-size: 0.95rem; color: var(--muted); font-weight: normal; }
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 16px;
+    margin: 14px 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,.06);
+  }
+  label { display: block; font-weight: 600; margin: 10px 0 4px; }
+  input[type=text], input[type=date] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+  }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+
+  /* ===== כפתורי פעילויות ===== */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .chip input { display: none; }
+  .chip span {
+    display: inline-block;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    cursor: pointer;
+    user-select: none;
+    transition: all .15s;
+  }
+  .chip input:checked + span {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    transform: scale(1.05);
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 16px;
+  }
+  .primary { background: var(--accent); color: #fff; width: 100%; margin-top: 16px; font-weight: 600; }
+  .primary:hover { background: var(--accent-dark); }
+  .primary:disabled { opacity: .6; cursor: wait; }
+  .secondary { background: #eaf1fb; color: var(--accent-dark); }
+  .whatsapp { background: #25d366; color: #fff; }
+
+  #error { color: var(--danger); margin-top: 10px; min-height: 1.2em; }
+
+  /* ===== מזג אוויר ===== */
+  #weather .stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .stat { background: #eef4fc; border-radius: 10px; padding: 6px 12px; font-size: .95rem; }
+  .note { color: var(--muted); font-size: .85rem; margin-top: 8px; }
+
+  /* ===== התקדמות ===== */
+  .bar { height: 14px; background: #e6ecf3; border-radius: 999px; overflow: hidden; margin: 8px 0; }
+  .bar > div { height: 100%; width: 0; background: var(--ok); transition: width .4s ease; }
+
+  /* ===== הרשימה ===== */
+  .cat-title { margin: 18px 0 6px; font-size: 1.05rem; color: var(--accent-dark); }
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--border);
+    animation: pop .25s ease;
+  }
+  .item input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--ok); cursor: pointer; }
+  .item .text { flex: 1; transition: all .2s; }
+  .item.done .text { text-decoration: line-through; color: var(--muted); }
+  .item .del { background: none; color: var(--danger); padding: 4px 8px; font-size: 1.1rem; }
+  @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .add-row { display: flex; gap: 8px; margin-top: 14px; }
+  .add-row input { flex: 1; }
+  .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .actions button { flex: 1; }
+
+  .hidden { display: none; }
+  canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🧳 PackPal <small>רשימת אריזה חכמה לפי מזג האוויר והפעילויות שלך</small></h1>
+
+  <!-- ===== טופס הטיול ===== -->
+  <form id="tripForm" class="card" autocomplete="off">
+    <label for="destination">לאן נוסעים?</label>
+    <input type="text" id="destination" placeholder="לדוגמה: פריז" required>
+
+    <div class="row">
+      <div>
+        <label for="startDate">מתאריך</label>
+        <input type="date" id="startDate" required>
+      </div>
+      <div>
+        <label for="endDate">עד תאריך</label>
+        <input type="date" id="endDate" required>
+      </div>
+    </div>
+
+    <label>מה מתכננים לעשות?</label>
+    <div class="chips" id="activities"></div>
+
+    <button type="submit" class="primary" id="goBtn">בנה לי רשימה</button>
+    <div id="error" role="alert"></div>
+  </form>
+
+  <!-- ===== מזג אוויר ===== -->
+  <section id="weather" class="card hidden"></section>
+
+  <!-- ===== הרשימה ===== -->
+  <section id="listSection" class="card hidden">
+    <strong id="progressText"></strong>
+    <div class="bar"><div id="barFill"></div></div>
+    <div id="list"></div>
+
+    <form class="add-row" id="addForm" autocomplete="off">
+      <input type="text" id="newItem" placeholder="הוסף פריט משלך...">
+      <button type="submit" class="secondary">הוסף</button>
+    </form>
+
+    <div class="actions">
+      <button type="button" class="whatsapp" id="shareBtn">שתף בוואטסאפ</button>
+      <button type="button" class="secondary" id="resetBtn">טיול חדש</button>
+    </div>
+  </section>
+</main>
+
+<canvas id="confetti"></canvas>
+
+<script>
+/* =========================================================
+   1. נתונים קבועים
+   ========================================================= */
+
+// הפעילויות שאפשר לבחור (המפתח הוא שם פנימי, ה-label מוצג למשתמש)
+const ACTIVITIES = {
+  beach:    '🏖️ חוף וים',
+  hiking:   '🥾 טיולי הליכה',
+  ski:      '⛷️ סקי',
+  city:     '🏙️ סיורים בעיר',
+  business: '💼 עבודה / פגישות',
+  camping:  '⛺ קמפינג',
+  fancy:    '🍷 מסעדות וערבים'
+};
+
+const STORAGE_KEY = 'packpal-v1';
+
+/* =========================================================
+   2. שמירה בטלפון (localStorage)
+   ========================================================= */
+
+// state = כל מה שהאפליקציה זוכרת: פרטי הטיול, מזג האוויר והפריטים
+let state = null;
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* אם אין אחסון – ממשיכים בלי */ }
+}
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) { return null; }
+}
+
+/* =========================================================
+   3. מזג אוויר – Open-Meteo (חינמי, בלי מפתח)
+   ========================================================= */
+
+// תאריך כמחרוזת YYYY-MM-DD (לפי שעון מקומי)
+function toISO(d) {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + m + '-' + day;
+}
+function parseISO(s) { return new Date(s + 'T12:00:00'); }
+
+// מוצא קואורדינטות של היעד
+async function geocode(name) {
+  const url = 'https://geocoding-api.open-meteo.com/v1/search?count=1&language=he&name=' + encodeURIComponent(name);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('שגיאה בחיפוש היעד');
+  const data = await res.json();
+  if (!data.results || !data.results.length) throw new Error('לא מצאתי את היעד "' + name + '". נסי שם אחר או באנגלית.');
+  const p = data.results[0];
+  return { lat: p.latitude, lon: p.longitude, label: p.name + (p.country ? ', ' + p.country : '') };
+}
+
+// מקבל תחזית (עד 16 יום קדימה) או ממוצע משנה שעברה
+async function getWeather(place, startISO, endISO) {
+  const today = new Date();
+  const limit = new Date(today);
+  limit.setDate(limit.getDate() + 15);
+
+  let daily, source;
+  if (parseISO(endISO) <= limit) {
+    // הטיול קרוב – תחזית אמיתית
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + place.lat + '&longitude=' + place.lon +
+      '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max' +
+      '&timezone=auto&start_date=' + startISO + '&end_date=' + endISO;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('שגיאה בקבלת התחזית');
+    daily = (await res.json()).daily;
+    source = 'forecast';
+  } else {
+    // הטיול רחוק – אותם תאריכים בשנה שעברה
+    const s = parseISO(startISO); s.setFullYear(s.getFullYear() - 1);
+    const e = parseISO(endISO);   e.setFullYear(e.getFullYear() - 1);
+    const url = 'https://archive-api.open-meteo.com/v1/archive?latitude=' + place.lat + '&longitude=' + place.lon +
+      '&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max' +
+      '&timezone=auto&start_date=' + toISO(s) + '&end_date=' + toISO(e);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('שגיאה בקבלת נתוני מזג אוויר היסטוריים');
+    daily = (await res.json()).daily;
+    source = 'history';
+  }
+  return summarize(daily, source);
+}
+
+// הופך רשימת ימים לסיכום קצר: הכי קר, הכי חם, ימי גשם, רוח חזקה
+function summarize(daily, source) {
+  const clean = arr => (arr || []).filter(v => v !== null && v !== undefined);
+  const mins = clean(daily.temperature_2m_min);
+  const maxs = clean(daily.temperature_2m_max);
+  const winds = clean(daily.wind_speed_10m_max);
+  if (!mins.length || !maxs.length) throw new Error('אין נתוני מזג אוויר לתאריכים האלה');
+
+  let rainyDays = 0;
+  if (source === 'forecast') {
+    rainyDays = clean(daily.precipitation_probability_max).filter(p => p >= 50).length;
+  } else {
+    rainyDays = clean(daily.precipitation_sum).filter(mm => mm >= 1).length;
+  }
+  return {
+    source: source,
+    minTemp: Math.round(Math.min(...mins)),
+    maxTemp: Math.round(Math.max(...maxs)),
+    rainyDays: rainyDays,
+    maxWind: winds.length ? Math.round(Math.max(...winds)) : 0
+  };
+}
+
+/* =========================================================
+   4. בניית רשימת האריזה
+   ========================================================= */
+
+let nextId = 1;
+function makeItem(text, cat) {
+  return { id: nextId++, text: text, cat: cat, checked: false };
+}
+
+function buildList(trip, w) {
+  const items = [];
+  const add = (cat, text) => items.push(makeItem(text, cat));
+
+  const days = Math.round((parseISO(trip.end) - parseISO(trip.start)) / 86400000) + 1;
+  const acts = trip.activities;
+
+  // --- מסמכים ---
+  add('📄 מסמכים וכסף', 'דרכון / תעודת זהות');
+  add('📄 מסמכים וכסף', 'כרטיסי טיסה והזמנות');
+  add('📄 מסמכים וכסף', 'כרטיס אשראי ומזומן');
+  add('📄 מסמכים וכסף', 'ביטוח נסיעות');
+
+  // --- אלקטרוניקה ---
+  add('🔌 אלקטרוניקה', 'טלפון + מטען');
+  add('🔌 אלקטרוניקה', 'מטען נייד');
+  add('🔌 אלקטרוניקה', 'מתאם לחשמל');
+  add('🔌 אלקטרוניקה', 'אוזניות');
+
+  // --- היגיינה ---
+  add('🧴 היגיינה ובריאות', 'מברשת ומשחת שיניים');
+  add('🧴 היגיינה ובריאות', 'דאודורנט ושמפו');
+  add('🧴 היגיינה ובריאות', 'תרופות אישיות');
+  add('🧴 היגיינה ובריאות', 'תרופות בסיסיות (משככי כאבים, פלסטרים)');
+
+  // --- בגדים בסיסיים (הכמות לפי מספר הימים) ---
+  const pairs = Math.min(days + 1, 10);
+  add('👕 בגדים', pairs + ' זוגות תחתונים');
+  add('👕 בגדים', pairs + ' זוגות גרביים');
+  add('👕 בגדים', Math.min(days, 8) + ' חולצות');
+  add('👕 בגדים', 'מכנסיים ארוכים (2-3)');
+  add('👕 בגדים', 'פיג\'מה');
+  add('👕 בגדים', 'נעליים נוחות');
+
+  // --- לפי טמפרטורה ---
+  if (w.minTemp < 0) {
+    add('🧥 קור', 'מעיל חם מאוד');
+    add('🧥 קור', 'תחתוניות תרמיות');
+    add('🧥 קור', 'כפפות, כובע צמר וצעיף');
+  } else if (w.minTemp < 10) {
+    add('🧥 קור', 'מעיל חם');
+    add('🧥 קור', 'כובע צמר וצעיף');
+    add('🧥 קור', 'סוודר / פליז');
+  } else if (w.minTemp < 18) {
+    add('🧥 קור', 'ג\'קט קל');
+    add('🧥 קור', 'סוודר דק');
+  }
+  if (w.maxTemp >= 28) {
+    add('☀️ חום', 'מכנסיים קצרים');
+    add('☀️ חום', 'בגדים קלים ונושמים');
+    add('☀️ חום', 'כובע מצחייה');
+    add('☀️ חום', 'משקפי שמש');
+    add('☀️ חום', 'קרם הגנה');
+    add('☀️ חום', 'בקבוק מים');
+  } else if (w.maxTemp >= 22) {
+    add('☀️ חום', 'משקפי שמש');
+    add('☀️ חום', 'קרם הגנה');
+  }
+
+  // --- גשם ורוח ---
+  if (w.rainyDays > 0) {
+    add('🌧️ גשם ורוח', 'מטרייה מתקפלת');
+    add('🌧️ גשם ורוח', 'מעיל גשם');
+    if (w.rainyDays >= 3) add('🌧️ גשם ורוח', 'נעליים עמידות למים');
+  }
+  if (w.maxWind >= 30) add('🌧️ גשם ורוח', 'מעיל רוח');
+
+  // --- פעילויות ---
+  if (acts.includes('beach')) {
+    add('🎯 לפעילויות', 'בגד ים');
+    add('🎯 לפעילויות', 'מגבת חוף');
+    add('🎯 לפעילויות', 'כפכפים');
+  }
+  if (acts.includes('hiking')) {
+    add('🎯 לפעילויות', 'נעלי הליכה');
+    add('🎯 לפעילויות', 'תרמיל יום');
+    add('🎯 לפעילויות', 'גרביים לטיולים');
+  }
+  if (acts.includes('ski')) {
+    add('🎯 לפעילויות', 'ציוד סקי / שכירת ציוד');
+    add('🎯 לפעילויות', 'מכנסי סקי ומעיל סקי');
+    add('🎯 לפעילויות', 'משקפי סקי וכפפות');
+  }
+  if (acts.includes('city')) {
+    add('🎯 לפעילויות', 'תיק צד קטן');
+    add('🎯 לפעילויות', 'נעלי הליכה נוחות');
+  }
+  if (acts.includes('business')) {
+    add('🎯 לפעילויות', 'בגדים מכובדים');
+    add('🎯 לפעילויות', 'מחשב נייד + מטען');
+    add('🎯 לפעילויות', 'כרטיסי ביקור');
+  }
+  if (acts.includes('camping')) {
+    add('🎯 לפעילויות', 'אוהל ושק שינה');
+    add('🎯 לפעילויות', 'פנס ראש');
+    add('🎯 לפעילויות', 'ספריי נגד יתושים');
+  }
+  if (acts.includes('fancy')) {
+    add('🎯 לפעילויות', 'בגדים לערב');
+    add('🎯 לפעילויות', 'נעליים אלגנטיות');
+  }
+
+  return items;
+}
+
+/* =========================================================
+   5. הצגה על המסך
+   ========================================================= */
+
+const $ = id => document.getElementById(id);
+
+// עוזר קטן ליצירת אלמנט. משתמש ב-textContent כדי שטקסט של משתמש לא יוכל להזריק קוד.
+function el(tag, props, text) {
+  const e = document.createElement(tag);
+  if (props) Object.assign(e, props);
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function renderWeather() {
+  const box = $('weather');
+  box.replaceChildren();
+  if (!state) { box.classList.add('hidden'); return; }
+  const w = state.weather, t = state.trip;
+
+  box.appendChild(el('strong', null, '🌤️ מזג האוויר ב' + t.place));
+  const stats = el('div', { className: 'stats' });
+  stats.appendChild(el('span', { className: 'stat' }, '🌡️ ' + w.minTemp + '° עד ' + w.maxTemp + '°'));
+  stats.appendChild(el('span', { className: 'stat' }, '🌧️ ' + w.rainyDays + ' ימי גשם'));
+  stats.appendChild(el('span', { className: 'stat' }, '💨 רוח עד ' + w.maxWind + ' קמ"ש'));
+  box.appendChild(stats);
+  box.appendChild(el('div', { className: 'note' },
+    w.source === 'forecast'
+      ? 'תחזית אמיתית לתאריכי הטיול.'
+      : 'הטיול רחוק, אז זה ממוצע של אותם תאריכים בשנה שעברה.'));
+  box.classList.remove('hidden');
+}
+
+function renderList() {
+  const section = $('listSection');
+  if (!state) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+
+  const list = $('list');
+  list.replaceChildren();
+
+  // מקבצים את הפריטים לפי קטגוריה
+  const groups = {};
+  state.items.forEach(it => { (groups[it.cat] = groups[it.cat] || []).push(it); });
+
+  Object.keys(groups).forEach(cat => {
+    list.appendChild(el('h3', { className: 'cat-title' }, cat));
+    groups[cat].forEach(it => {
+      const row = el('div', { className: 'item' + (it.checked ? ' done' : '') });
+      const box = el('input', { type: 'checkbox', checked: it.checked });
+      box.setAttribute('aria-label', it.text);
+      box.addEventListener('change', () => toggleItem(it.id));
+      const del = el('button', { type: 'button', className: 'del', title: 'מחק' }, '✕');
+      del.addEventListener('click', () => deleteItem(it.id));
+      row.append(box, el('span', { className: 'text' }, it.text), del);
+      list.appendChild(row);
+    });
+  });
+  renderProgress();
+}
+
+function renderProgress() {
+  const total = state.items.length;
+  const done = state.items.filter(i => i.checked).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  $('barFill').style.width = pct + '%';
+  $('progressText').textContent = 'ארזת ' + done + ' מתוך ' + total + ' (' + pct + '%)';
+}
+
+/* =========================================================
+   6. פעולות על הרשימה
+   ========================================================= */
+
+function toggleItem(id) {
+  const it = state.items.find(i => i.id === id);
+  it.checked = !it.checked;
+  save();
+  renderList();
+  // אם הכול מסומן – חוגגים!
+  if (state.items.length && state.items.every(i => i.checked)) launchConfetti();
+}
+
+function deleteItem(id) {
+  state.items = state.items.filter(i => i.id !== id);
+  save();
+  renderList();
+}
+
+function addCustomItem(text) {
+  state.items.push(makeItem(text, '✏️ שלי'));
+  save();
+  renderList();
+}
+
+function shareWhatsApp() {
+  const t = state.trip;
+  let msg = '🧳 רשימת אריזה לטיול ל' + t.place + '\n';
+  const groups = {};
+  state.items.forEach(it => { (groups[it.cat] = groups[it.cat] || []).push(it); });
+  Object.keys(groups).forEach(cat => {
+    msg += '\n' + cat + '\n';
+    groups[cat].forEach(it => { msg += (it.checked ? '✅ ' : '⬜ ') + it.text + '\n'; });
+  });
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+/* =========================================================
+   7. קונפטי 🎉
+   ========================================================= */
+
+function launchConfetti() {
+  const canvas = $('confetti');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const colors = ['#2f80ed', '#27ae60', '#f2c94c', '#eb5757', '#9b51e0'];
+  const pieces = Array.from({ length: 140 }, () => ({
+    x: Math.random() * canvas.width,
+    y: -20 - Math.random() * canvas.height * 0.5,
+    size: 6 + Math.random() * 6,
+    speed: 2 + Math.random() * 4,
+    drift: -1 + Math.random() * 2,
+    color: colors[Math.floor(Math.random() * colors.length)]
+  }));
+  let frames = 0;
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      p.y += p.speed;
+      p.x += p.drift;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, p.size, p.size);
+    });
+    frames++;
+    if (frames < 180) requestAnimationFrame(tick);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  tick();
+}
+
+/* =========================================================
+   8. חיבור הכול – טופס, כפתורים, טעינה ראשונית
+   ========================================================= */
+
+// יוצרים את כפתורי הפעילויות
+Object.keys(ACTIVITIES).forEach(key => {
+  const label = el('label', { className: 'chip' });
+  const input = el('input', { type: 'checkbox', value: key });
+  label.append(input, el('span', null, ACTIVITIES[key]));
+  $('activities').appendChild(label);
+});
+
+// אי אפשר לבחור תאריך שעבר
+const todayISO = toISO(new Date());
+$('startDate').min = todayISO;
+$('endDate').min = todayISO;
+$('startDate').addEventListener('change', () => { $('endDate').min = $('startDate').value || todayISO; });
+
+$('tripForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  $('error').textContent = '';
+  const name = $('destination').value.trim();
+  const start = $('startDate').value;
+  const end = $('endDate').value;
+  if (end < start) { $('error').textContent = 'תאריך החזרה חייב להיות אחרי תאריך היציאה.'; return; }
+
+  const activities = Array.from(document.querySelectorAll('#activities input:checked')).map(i => i.value);
+  const btn = $('goBtn');
+  btn.disabled = true;
+  btn.textContent = 'בודק מזג אוויר...';
+  try {
+    const place = await geocode(name);
+    const weather = await getWeather(place, start, end);
+    const trip = { place: place.label, start: start, end: end, activities: activities };
+    nextId = 1;
+    state = { trip: trip, weather: weather, items: buildList(trip, weather) };
+    save();
+    renderWeather();
+    renderList();
+    $('weather').scrollIntoView({ behavior: 'smooth' });
+  } catch (err) {
+    $('error').textContent = err.message || 'משהו השתבש, נסי שוב.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'בנה לי רשימה';
+  }
+});
+
+$('addForm').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const text = $('newItem').value.trim();
+  if (!text) return;
+  addCustomItem(text);
+  $('newItem').value = '';
+});
+
+$('shareBtn').addEventListener('click', shareWhatsApp);
+
+$('resetBtn').addEventListener('click', () => {
+  if (!confirm('למחוק את הרשימה ולהתחיל טיול חדש?')) return;
+  state = null;
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  renderWeather();
+  renderList();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// בטעינת הדף – אם יש טיול שמור, מציגים אותו
+state = load();
+if (state && state.items) {
+  nextId = state.items.reduce((m, i) => Math.max(m, i.id), 0) + 1;
+  $('destination').value = state.trip.place;
+  $('startDate').value = state.trip.start;
+  $('endDate').value = state.trip.end;
+  document.querySelectorAll('#activities input').forEach(i => { i.checked = state.trip.activities.includes(i.value); });
+  renderWeather();
+  renderList();
+} else {
+  state = null;
+}
+</script>
+</body>
+</html>
