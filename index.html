@@ -48,11 +48,13 @@
   .row > div { flex: 1; }
 
   /* ===== כפתורי פעילויות ===== */
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 6px; }
   .chip input { display: none; }
+  .chip { margin: 0; font-weight: normal; }
   .chip span {
-    display: inline-block;
-    padding: 8px 14px;
+    display: block;
+    text-align: center;
+    padding: 10px 8px;
     border: 1px solid var(--border);
     border-radius: 999px;
     cursor: pointer;
