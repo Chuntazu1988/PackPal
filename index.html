@@ -16,6 +16,26 @@
     --ok: #27ae60;
     --danger: #e5484d;
     --border: #dde4ec;
+    --soft: #eaf1fb;      /* רקע בהיר לכפתורים משניים */
+    --stat: #eef4fc;      /* רקע לנתוני מזג האוויר */
+    --track: #e6ecf3;     /* רקע פס ההתקדמות */
+    --shadow: rgba(0,0,0,.06);
+    color-scheme: light;
+  }
+  /* מצב כהה: מחליפים רק את המשתנים, וכל האתר משתנה לבד */
+  :root[data-theme="dark"] {
+    --bg: #12171f;
+    --card: #1c2430;
+    --text: #e8edf3;
+    --muted: #9aa7b6;
+    --accent: #4c98ff;
+    --accent-dark: #8bbcff;
+    --border: #2f3b4a;
+    --soft: #26354a;
+    --stat: #243142;
+    --track: #2b3746;
+    --shadow: rgba(0,0,0,.4);
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   body {
@@ -33,7 +53,7 @@
     border-radius: 16px;
     padding: 16px;
     margin: 14px 0;
-    box-shadow: 0 2px 10px rgba(0,0,0,.06);
+    box-shadow: 0 2px 10px var(--shadow);
   }
   label { display: block; font-weight: 600; margin: 10px 0 4px; }
   input[type=text], input[type=date] {
@@ -43,6 +63,8 @@
     border-radius: 10px;
     font-size: 1rem;
     font-family: inherit;
+    background: var(--card);
+    color: var(--text);
   }
   .row { display: flex; gap: 10px; }
   .row > div { flex: 1; }
@@ -79,18 +101,18 @@
   .primary { background: var(--accent); color: #fff; width: 100%; margin-top: 16px; font-weight: 600; }
   .primary:hover { background: var(--accent-dark); }
   .primary:disabled { opacity: .6; cursor: wait; }
-  .secondary { background: #eaf1fb; color: var(--accent-dark); }
+  .secondary { background: var(--soft); color: var(--accent-dark); }
   .whatsapp { background: #25d366; color: #fff; }
 
   #error { color: var(--danger); margin-top: 10px; min-height: 1.2em; }
 
   /* ===== מזג אוויר ===== */
   #weather .stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-  .stat { background: #eef4fc; border-radius: 10px; padding: 6px 12px; font-size: .95rem; }
+  .stat { background: var(--stat); border-radius: 10px; padding: 6px 12px; font-size: .95rem; }
   .note { color: var(--muted); font-size: .85rem; margin-top: 8px; }
 
   /* ===== התקדמות ===== */
-  .bar { height: 14px; background: #e6ecf3; border-radius: 999px; overflow: hidden; margin: 8px 0; }
+  .bar { height: 14px; background: var(--track); border-radius: 999px; overflow: hidden; margin: 8px 0; }
   .bar > div { height: 100%; width: 0; background: var(--ok); transition: width .4s ease; }
 
   /* ===== הרשימה ===== */
@@ -128,6 +150,19 @@
   }
   #devBanner small { display: block; font-size: 1rem; font-weight: 600; }
 
+  #themeBtn {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 20;
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 14px;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+
   .hidden { display: none; }
   canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
 </style>
@@ -137,6 +172,7 @@
   🚧 גרסת פיתוח (DEV) 🚧
   <small>זו לא הגרסה הסופית – כאן מנסים דברים חדשים</small>
 </div>
+<button type="button" id="themeBtn" aria-label="החלף מצב כהה / בהיר"></button>
 <main>
   <h1>🧳 PackPal <small>רשימת אריזה חכמה לפי מזג האוויר והפעילויות שלך</small></h1>
 
@@ -222,6 +258,28 @@ if (IS_DEV) {
 
 // אחסון נפרד לגרסת פיתוח, כדי שנתוני בדיקה לא יתערבבו עם הגרסה הסופית
 const STORAGE_KEY = IS_DEV ? 'packpal-v1-dev' : 'packpal-v1';
+
+/* =========================================================
+   1ב. מצב כהה / בהיר
+   ========================================================= */
+
+const THEME_KEY = 'packpal-theme';
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;          // CSS מגיב ל-data-theme
+  document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️ בהיר' : '🌙 כהה';
+}
+
+// בוחרים: מה ששמרנו בפעם הקודמת, ואם אין – מה שמוגדר במכשיר
+let savedTheme = null;
+try { savedTheme = localStorage.getItem(THEME_KEY); } catch (e) {}
+applyTheme(savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+});
 
 /* =========================================================
    2. שמירה בטלפון (localStorage)
