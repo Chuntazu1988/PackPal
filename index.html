@@ -634,9 +634,12 @@ function renderPast() {
       fmtDate(t.start) + ' – ' + fmtDate(t.end) + ' · ארזת ' + done + ' מתוך ' + total));
     const openBtn = el('button', { type: 'button', className: 'secondary' }, 'פתח');
     openBtn.addEventListener('click', () => openPastTrip(idx));
+    const dupBtn = el('button', { type: 'button', className: 'secondary' }, 'שכפל');
+    dupBtn.title = 'טיול חדש עם אותם פריטים, בלי סימונים';
+    dupBtn.addEventListener('click', () => duplicatePastTrip(idx));
     const del = el('button', { type: 'button', className: 'del', title: 'מחק' }, '✕');
     del.addEventListener('click', () => deletePastTrip(idx));
-    row.append(info, openBtn, del);
+    row.append(info, openBtn, dupBtn, del);
     box.appendChild(row);
   });
   box.classList.remove('hidden');
@@ -657,6 +660,20 @@ function openPastTrip(idx) {
   saveHistory(hist);
   archiveCurrentTrip();
   state = trip;
+  save();
+  applyStateToPage();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// יוצר טיול חדש מעותק של טיול ישן: אותם פריטים, אבל הכול לא מסומן.
+// הטיול הישן נשאר ברשימה, והטיול הפעיל (אם יש) נשמר בטיולים קודמים.
+function duplicatePastTrip(idx) {
+  const source = loadHistory()[idx];
+  if (!source) return;
+  archiveCurrentTrip();
+  const copy = JSON.parse(JSON.stringify(source));
+  copy.items.forEach(it => { it.checked = false; });
+  state = copy;
   save();
   applyStateToPage();
   window.scrollTo({ top: 0, behavior: 'smooth' });
