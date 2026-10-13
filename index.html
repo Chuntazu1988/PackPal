@@ -148,6 +148,10 @@
   .past-row .info small { display: block; color: var(--muted); }
   .past-row .del { background: none; color: var(--danger); padding: 4px 8px; font-size: 1.1rem; }
 
+  .dup-form { padding: 6px 4px 14px; border-bottom: 1px solid var(--border); }
+  .dup-form .primary { margin-top: 0; }
+  .dup-error { color: var(--danger); min-height: 1.2em; margin-top: 6px; }
+
   /* ===== באנר גרסת פיתוח ===== */
   #devBanner {
     background: repeating-linear-gradient(45deg, #ff6b00, #ff6b00 20px, #ffb300 20px, #ffb300 40px);
@@ -405,6 +409,9 @@ function summarize(daily, source) {
    4. בניית רשימת האריזה
    ========================================================= */
 
+// הקטגוריה של פריטים שהמשתמשת הוסיפה בעצמה
+const CUSTOM_CAT = '✏️ שלי';
+
 let nextId = 1;
 function makeItem(text, cat) {
   return { id: nextId++, text: text, cat: cat, checked: false };
@@ -635,12 +642,13 @@ function renderPast() {
     const openBtn = el('button', { type: 'button', className: 'secondary' }, 'פתח');
     openBtn.addEventListener('click', () => openPastTrip(idx));
     const dupBtn = el('button', { type: 'button', className: 'secondary' }, 'שכפל');
-    dupBtn.title = 'טיול חדש עם אותם פריטים, בלי סימונים';
-    dupBtn.addEventListener('click', () => duplicatePastTrip(idx));
+    dupBtn.title = 'טיול חדש לאותו יעד, בתאריכים אחרים';
+    dupBtn.addEventListener('click', () => { dupOpenIdx = dupOpenIdx === idx ? null : idx; renderPast(); });
     const del = el('button', { type: 'button', className: 'del', title: 'מחק' }, '✕');
     del.addEventListener('click', () => deletePastTrip(idx));
     row.append(info, openBtn, dupBtn, del);
     box.appendChild(row);
+    if (dupOpenIdx === idx) box.appendChild(renderDupForm(idx));
   });
   box.classList.remove('hidden');
 }
@@ -657,6 +665,7 @@ function openPastTrip(idx) {
   const hist = loadHistory();
   const trip = hist.splice(idx, 1)[0];
   if (!trip) return;
+  dupOpenIdx = null;
   saveHistory(hist);
   archiveCurrentTrip();
   state = trip;
@@ -665,24 +674,81 @@ function openPastTrip(idx) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// יוצר טיול חדש מעותק של טיול ישן: אותם פריטים, אבל הכול לא מסומן.
-// הטיול הישן נשאר ברשימה, והטיול הפעיל (אם יש) נשמר בטיולים קודמים.
-function duplicatePastTrip(idx) {
+// איזה טיול ישן פתוח כרגע לשכפול (מציג שדות תאריך מתחתיו), או null
+let dupOpenIdx = null;
+
+// יוצר טיול חדש מעותק של טיול ישן, עם תאריכים חדשים:
+// אותו יעד ואותן פעילויות, מזג אוויר מעודכן, רשימה חדשה לפי התאריכים,
+// ועליה הפריטים האישיים שהוספת בטיול הישן. הטיול הישן נשאר ברשימה.
+async function duplicatePastTrip(idx, start, end) {
   const source = loadHistory()[idx];
   if (!source) return;
+
+  const old = source.trip;
+  let place = { lat: old.lat, lon: old.lon, label: old.place };
+  if (place.lat === undefined || place.lon === undefined) {
+    // טיול ישן שנשמר בלי קואורדינטות – מחפשים לפי שם היעד (בלי שם המדינה)
+    place = await geocode(old.place.split(', ')[0]);
+    place.label = old.place;
+  }
+  const weather = await getWeather(place, start, end);
+  const trip = { place: old.place, lat: place.lat, lon: place.lon, start: start, end: end, activities: old.activities };
+
+  nextId = 1;
+  const items = buildList(trip, weather);
+  source.items.filter(it => it.cat === CUSTOM_CAT).forEach(it => items.push(makeItem(it.text, CUSTOM_CAT)));
+
   archiveCurrentTrip();
-  const copy = JSON.parse(JSON.stringify(source));
-  copy.items.forEach(it => { it.checked = false; });
-  state = copy;
+  state = { trip: trip, weather: weather, items: items };
+  dupOpenIdx = null;
   save();
   applyStateToPage();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// שורת השכפול: שדות תאריך, ויוצרת את הטיול לפי מה שהוזן
+function renderDupForm(idx) {
+  const form = el('form', { className: 'dup-form' });
+  const startIn = el('input', { type: 'date', required: true });
+  const endIn = el('input', { type: 'date', required: true });
+  const todayISO = toISO(new Date());
+  startIn.min = todayISO;
+  endIn.min = todayISO;
+  startIn.addEventListener('change', () => { endIn.min = startIn.value || todayISO; });
+
+  const startBox = el('div'); startBox.append(el('label', null, 'מתאריך'), startIn);
+  const endBox = el('div'); endBox.append(el('label', null, 'עד תאריך'), endIn);
+  const dates = el('div', { className: 'row' }); dates.append(startBox, endBox);
+
+  const err = el('div', { className: 'dup-error' });
+  const go = el('button', { type: 'submit', className: 'primary' }, 'צור טיול עם התאריכים האלה');
+  const cancel = el('button', { type: 'button', className: 'secondary' }, 'ביטול');
+  cancel.addEventListener('click', () => { dupOpenIdx = null; renderPast(); });
+  const btns = el('div', { className: 'actions' }); btns.append(go, cancel);
+
+  form.append(dates, err, btns);
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    err.textContent = '';
+    if (endIn.value < startIn.value) { err.textContent = 'תאריך החזרה חייב להיות אחרי תאריך היציאה.'; return; }
+    go.disabled = true;
+    go.textContent = 'בודק מזג אוויר...';
+    try {
+      await duplicatePastTrip(idx, startIn.value, endIn.value);
+    } catch (e) {
+      err.textContent = e.message || 'משהו השתבש, נסי שוב.';
+      go.disabled = false;
+      go.textContent = 'צור טיול עם התאריכים האלה';
+    }
+  });
+  return form;
 }
 
 function deletePastTrip(idx) {
   if (!confirm('למחוק את הטיול הזה לצמיתות?')) return;
   const hist = loadHistory();
   hist.splice(idx, 1);
+  dupOpenIdx = null;
   saveHistory(hist);
   renderPast();
 }
@@ -727,7 +793,7 @@ function deleteItem(id) {
 }
 
 function addCustomItem(text) {
-  state.items.push(makeItem(text, '✏️ שלי'));
+  state.items.push(makeItem(text, CUSTOM_CAT));
   save();
   renderList();
 }
@@ -811,7 +877,7 @@ $('tripForm').addEventListener('submit', async (ev) => {
   try {
     const place = await geocode(name);
     const weather = await getWeather(place, start, end);
-    const trip = { place: place.label, start: start, end: end, activities: activities };
+    const trip = { place: place.label, lat: place.lat, lon: place.lon, start: start, end: end, activities: activities };
     nextId = 1;
     state = { trip: trip, weather: weather, items: buildList(trip, weather) };
     save();
@@ -839,6 +905,7 @@ $('shareBtn').addEventListener('click', shareWhatsApp);
 $('resetBtn').addEventListener('click', () => {
   if (!confirm('לשמור את הטיול הזה בטיולים קודמים ולהתחיל טיול חדש?')) return;
   archiveCurrentTrip();
+  dupOpenIdx = null;
   state = null;
   try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
   $('destination').value = '';
