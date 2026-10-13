@@ -743,6 +743,18 @@ if (state && state.items) {
 } else {
   state = null;
 }
+
+// כשהאפליקציה רצה בתוך מסגרת של Streamlit – מתאימים את גובה המסגרת לתוכן,
+// כדי שלא תהיה גלילה כפולה (אחת של הדף ואחת של המסגרת)
+(function autoResizeFrame() {
+  const frame = window.frameElement;
+  if (!frame) return;
+  const fit = () => { frame.style.height = document.body.scrollHeight + 'px'; };
+  try {
+    new ResizeObserver(fit).observe(document.body);
+    fit();
+  } catch (e) {}
+})();
 </script>
 </body>
 </html>
