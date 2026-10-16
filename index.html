@@ -38,8 +38,10 @@
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
+  html { font-size: 100%; }
   body {
     margin: 0;
+    font-size: 1rem;
     font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
@@ -182,11 +184,15 @@
   }
   #devBanner small { display: block; font-size: 1rem; font-weight: 600; }
 
-  #themeBtn {
+  #tools {
     position: fixed;
     top: 12px;
     left: 12px;
     z-index: 20;
+    display: flex;
+    gap: 8px;
+  }
+  #themeBtn, #sizeBtn {
     background: var(--card);
     color: var(--text);
     border: 1px solid var(--border);
@@ -204,7 +210,10 @@
   🚧 גרסת פיתוח (DEV) 🚧
   <small>זו לא הגרסה הסופית – כאן מנסים דברים חדשים</small>
 </div>
-<button type="button" id="themeBtn" aria-label="החלף מצב כהה / בהיר"></button>
+<div id="tools">
+  <button type="button" id="themeBtn" aria-label="החלף מצב כהה / בהיר"></button>
+  <button type="button" id="sizeBtn" aria-label="שנה את גודל הטקסט"></button>
+</div>
 <main>
   <h1>🧳 PackPal <small>רשימת אריזה חכמה לפי מזג האוויר והפעילויות שלך</small></h1>
 
@@ -318,6 +327,34 @@ document.getElementById('themeBtn').addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(next);
   try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+});
+
+/* =========================================================
+   1ג. גודל טקסט
+   ========================================================= */
+
+// כל לחיצה עוברת לגודל הבא, ואחרי האחרון חוזרים לרגיל
+const TEXT_SIZES = [
+  { pct: 100, label: 'רגיל' },
+  { pct: 120, label: 'גדול' },
+  { pct: 145, label: 'גדול מאוד' }
+];
+const TEXT_SIZE_KEY = 'packpal-textsize';
+
+function applyTextSize(i) {
+  const size = TEXT_SIZES[i] || TEXT_SIZES[0];
+  document.documentElement.style.fontSize = size.pct + '%';   // כל הגדלים באתר יחסיים לזה
+  document.getElementById('sizeBtn').textContent = '🔠 ' + size.label;
+  return i;
+}
+
+let textSizeIdx = 0;
+try { textSizeIdx = parseInt(localStorage.getItem(TEXT_SIZE_KEY), 10) || 0; } catch (e) {}
+textSizeIdx = applyTextSize(textSizeIdx);
+
+document.getElementById('sizeBtn').addEventListener('click', () => {
+  textSizeIdx = applyTextSize((textSizeIdx + 1) % TEXT_SIZES.length);
+  try { localStorage.setItem(TEXT_SIZE_KEY, String(textSizeIdx)); } catch (e) {}
 });
 
 /* =========================================================
