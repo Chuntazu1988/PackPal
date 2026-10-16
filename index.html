@@ -189,6 +189,20 @@
   #backupMsg { margin-top: 10px; min-height: 1.2em; }
   #backupMsg.err { color: var(--danger); }
   #backupMsg.ok { color: var(--ok); }
+  /* ===== טיול משותף ===== */
+  .shared-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  #connStatus { font-size: .85rem; color: var(--muted); }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  .tab { background: var(--soft); color: var(--accent-dark); border-radius: 999px; padding: 8px 16px; }
+  .tab.active { background: var(--accent); color: #fff; font-weight: 600; }
+  .join-form, .invite-panel { margin-top: 12px; }
+  .join-form input[type=text] { margin-top: 6px; }
+  .invite-panel { border-top: 1px solid var(--border); padding-top: 12px; }
+  .shared-link label { font-size: .9rem; color: var(--muted); font-weight: normal; }
+  .link-box .add-row { margin-top: 4px; }
+  /* בטיול משותף הטיול קבוע: מסתירים את מה שקשור לטיולים האישיים */
+  .shared-mode #tripForm, .shared-mode #pastSection, .shared-mode #backupSection,
+  .shared-mode #resetBtn, .shared-mode #inviteBtn, .shared-mode #invitePanel { display: none !important; }
   .dup-form { padding: 6px 4px 14px; border-bottom: 1px solid var(--border); }
   .dup-form .primary { margin-top: 0; }
   .dup-error { color: var(--danger); min-height: 1.2em; margin-top: 6px; }
@@ -271,6 +285,14 @@
 <main>
   <h1>🧳 PackPal <small>רשימת אריזה חכמה לפי מזג האוויר והפעילויות שלך</small></h1>
 
+  <!-- ===== טיול משותף ===== -->
+  <section id="sharedBar" class="card hidden">
+    <div class="shared-head"><strong>👥 טיול משותף</strong><span id="connStatus" role="status"></span></div>
+    <div id="memberTabs" class="tabs" role="tablist"></div>
+    <div id="joinBox"></div>
+    <div class="shared-link"><label>קישור להזמנת עוד אנשים</label><div id="sharedLinkBox"></div></div>
+  </section>
+
   <!-- ===== טופס הטיול ===== -->
   <form id="tripForm" class="card" autocomplete="off">
     <label for="destination">לאן נוסעים?</label>
@@ -319,8 +341,10 @@
       <button type="button" class="whatsapp" id="shareBtn">שתף בוואטסאפ</button>
       <button type="button" class="secondary" id="printBtn">🖨️ הדפס</button>
       <button type="button" class="secondary" id="reorderBtn">↕️ שנה סדר</button>
+      <button type="button" class="secondary" id="inviteBtn">👥 שתף טיול</button>
       <button type="button" class="secondary" id="resetBtn">טיול חדש</button>
     </div>
+    <div id="invitePanel" class="invite-panel hidden"></div>
   </section>
 
   <!-- ===== טיולים קודמים ===== -->
@@ -524,6 +548,8 @@ document.getElementById('fontBtn').addEventListener('click', () => {
 let state = null;
 
 function save() {
+  // בטיול משותף לא נוגעים בטיול המקומי של המשתמשת. רק שולחים את השינויים ל-Firebase.
+  if (typeof sharedMode !== 'undefined' && sharedMode) { syncSharedItems(); return; }
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* אם אין אחסון – ממשיכים בלי */ }
 }
 function load() {
@@ -656,7 +682,8 @@ const CUSTOM_CAT = '✏️ שלי';
 
 let nextId = 1;
 function makeItem(text, cat) {
-  return { id: nextId++, text: text, cat: cat, checked: false, qty: 1 };
+  const id = (typeof sharedMode !== 'undefined' && sharedMode) ? uid() : nextId++;
+  return { id: id, text: text, cat: cat, checked: false, qty: 1 };
 }
 
 function buildList(trip, w) {
@@ -866,6 +893,11 @@ function renderTitle() {
     box.appendChild(renderRenameForm(state.trip,
       (name) => { setTripName(state.trip, name); renamingCurrent = false; save(); renderList(); },
       () => { renamingCurrent = false; renderTitle(); }));
+    return;
+  }
+  if (sharedMode) {
+    const m = remote && remote.members && remote.members[viewMemberId];
+    box.append(el('h2', null, tripName(state.trip) + (m ? ' · ' + m.name : '')));
     return;
   }
   const btn = el('button', { type: 'button', className: 'rename-btn', title: 'שנה שם' }, '✏️');
@@ -1575,6 +1607,10 @@ $('addForm').addEventListener('submit', (ev) => {
 
 $('shareBtn').addEventListener('click', shareWhatsApp);
 $('printBtn').addEventListener('click', printList);
+$('inviteBtn').addEventListener('click', () => {
+  const panel = $('invitePanel');
+  if (panel.classList.contains('hidden')) renderInvitePanel(); else panel.classList.add('hidden');
+});
 $('collapseAllBtn').addEventListener('click', toggleAllCategories);
 $('exportBtn').addEventListener('click', exportBackup);
 $('importBtn').addEventListener('click', () => $('importFile').click());
@@ -1607,13 +1643,434 @@ $('resetBtn').addEventListener('click', () => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
+/* =========================================================
+   9. טיול משותף (Firebase Realtime Database)
+   ========================================================= */
+
+// כתובת מסד הנתונים. היא ציבורית (זו לא סיסמה). ההרשאות נקבעות בכללי Firebase:
+// אפשר לקרוא ולכתוב רק בכתובת שמכילה את המזהה הארוך והאקראי של הטיול.
+const FIREBASE_DB_URL = 'https://packpal-8c618-default-rtdb.europe-west1.firebasedatabase.app';
+const ID_RE = /^[A-Za-z0-9_-]{12,64}$/;
+
+// המזהה מגיע מ-app.py (הפרמטר ?trip= בכתובת), או ישירות מהכתובת כשמריצים את הקובץ לבד
+function readSharedId() {
+  const injected = '@@PACKPAL_TRIP_ID@@';
+  if (ID_RE.test(injected)) return injected;
+  try {
+    const q = new URLSearchParams(location.search).get('trip');
+    if (q && ID_RE.test(q)) return q;
+  } catch (e) {}
+  return null;
+}
+const SHARED_ID = readSharedId();
+let sharedMode = !!SHARED_ID;
+
+const MEMBER_KEY = id => 'packpal-member-' + id;   // איזה משתתף אני בטיול הזה (בדפדפן הזה)
+let remote = null;               // עותק של הטיול המשותף מ-Firebase
+let myMemberId = null;           // המשתתף שאני
+let viewMemberId = null;         // הלשונית שמוצגת עכשיו
+let lastSynced = {};             // מה כבר נשלח, לכל משתתף: { מזהה פריט: רשומה }
+let collapsedByMember = {};      // איזה קטגוריות מקופלות (רק אצלי, לא משותף)
+let pendingWrites = 0;
+let eventSource = null;
+let renderTimer = null;
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function fbUrl(id, path) {
+  return FIREBASE_DB_URL + '/trips/' + id + (path || '') + '.json';
+}
+
+async function fb(method, id, path, body) {
+  const opts = { method: method };
+  if (body !== undefined) {
+    opts.headers = { 'Content-Type': 'application/json' };
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(fbUrl(id, path), opts);
+  if (!res.ok) throw new Error('שגיאה בשמירה (' + res.status + ')');
+  return res.json();
+}
+
+// רשומה של פריט כפי שהיא נשמרת ב-Firebase (pos = המקום ברשימה)
+function itemRecord(it, pos) {
+  return { text: it.text, cat: it.cat, checked: !!it.checked, qty: it.qty || 1, pos: pos };
+}
+
+function itemsToRecords(items) {
+  const out = {};
+  items.forEach((it, i) => { out[it.id] = itemRecord(it, i); });
+  return out;
+}
+
+function itemsFromRemote(member) {
+  const raw = (member && member.items) || {};
+  const entries = Array.isArray(raw)
+    ? raw.map((v, i) => [String(i), v]).filter(e => e[1])
+    : Object.entries(raw);
+  return entries
+    .filter(e => e[1] && typeof e[1].text === 'string')
+    .map(e => ({
+      id: e[0], text: e[1].text, cat: e[1].cat || '', checked: !!e[1].checked,
+      qty: e[1].qty || 1, pos: e[1].pos || 0
+    }))
+    .sort((a, b) => a.pos - b.pos);
+}
+
+function membersList() {
+  const m = (remote && remote.members) || {};
+  return Object.keys(m)
+    .map(id => ({ id: id, name: m[id].name || 'ללא שם', joinedAt: m[id].joinedAt || 0 }))
+    .sort((a, b) => a.joinedAt - b.joinedAt);
+}
+
+/* ---------- סטטוס חיבור ---------- */
+
+function setConn(kind) {
+  const labels = {
+    connecting: '🟡 מתחבר...',
+    live: '🟢 מחובר, מתעדכן בזמן אמת',
+    offline: '🔴 אין חיבור. השינויים עלולים לא להישמר',
+    error: '🔴 לא הצלחתי לשמור. בדקי חיבור ונסי שוב'
+  };
+  const box = $('connStatus');
+  if (box) box.textContent = labels[kind] || '';
+}
+
+/* ---------- שמירה: שולחים רק את מה שהשתנה ---------- */
+
+function syncSharedItems() {
+  if (!viewMemberId || !state) return;
+  collapsedByMember[viewMemberId] = state.collapsed || [];
+  const mid = viewMemberId;
+  const next = itemsToRecords(state.items);
+  const prev = lastSynced[mid] || {};
+  const patch = {};
+  Object.keys(next).forEach(id => {
+    if (JSON.stringify(next[id]) !== JSON.stringify(prev[id])) patch[id] = next[id];
+  });
+  Object.keys(prev).forEach(id => { if (!(id in next)) patch[id] = null; });
+  if (!Object.keys(patch).length) return;
+
+  lastSynced[mid] = next;
+  applyRemoteEvent('patch', '/members/' + mid + '/items', patch);   // מעדכנים גם את העותק המקומי מיד
+  pendingWrites++;
+  fb('PATCH', SHARED_ID, '/members/' + mid + '/items', patch)
+    .catch(() => setConn('error'))
+    .finally(() => { pendingWrites--; if (!pendingWrites) scheduleRender(); });
+}
+
+/* ---------- עדכונים בזמן אמת (SSE) ---------- */
+
+function setChild(obj, key, val) {
+  if (val === null || val === undefined) delete obj[key]; else obj[key] = val;
+}
+
+// מיישם אירוע של Firebase על העותק המקומי: put = מחליף, patch = ממזג
+function applyRemoteEvent(type, path, data) {
+  const parts = path.split('/').filter(Boolean);
+  if (!parts.length) {
+    if (type === 'put') { remote = data; return; }
+    remote = remote || {};
+    Object.keys(data || {}).forEach(k => setChild(remote, k, data[k]));
+    return;
+  }
+  remote = remote || {};
+  let node = remote;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (typeof node[parts[i]] !== 'object' || node[parts[i]] === null) node[parts[i]] = {};
+    node = node[parts[i]];
+  }
+  const last = parts[parts.length - 1];
+  if (type === 'put') { setChild(node, last, data); return; }
+  if (typeof node[last] !== 'object' || node[last] === null) node[last] = {};
+  Object.keys(data || {}).forEach(k => setChild(node[last], k, data[k]));
+}
+
+// חתימה של מה שמוצג, כדי לא לצייר מחדש כשהעדכון שהגיע זהה למה שכבר מוצג (למשל ההד של השינוי שלי)
+let lastSig = '';
+function viewSig() {
+  const m = remote && remote.members && viewMemberId ? remote.members[viewMemberId] : null;
+  return JSON.stringify([remote && remote.trip, remote && remote.weather, membersList(), viewMemberId, myMemberExists(), m ? itemsFromRemote(m) : null]);
+}
+
+function scheduleRender() {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(() => { if (viewSig() !== lastSig) renderShared(); }, 60);
+}
+
+function startStream() {
+  if (eventSource) eventSource.close();
+  setConn('connecting');
+  eventSource = new EventSource(fbUrl(SHARED_ID));
+  eventSource.onopen = () => setConn('live');
+  eventSource.onerror = () => setConn('offline');
+  ['put', 'patch'].forEach(type => {
+    eventSource.addEventListener(type, (ev) => {
+      try {
+        const msg = JSON.parse(ev.data);
+        applyRemoteEvent(type, msg.path, msg.data);
+        setConn('live');
+        if (!pendingWrites) scheduleRender();
+      } catch (e) {}
+    });
+  });
+}
+
+/* ---------- תצוגה ---------- */
+
+function myMemberExists() {
+  return !!(myMemberId && remote && remote.members && remote.members[myMemberId]);
+}
+
+// בונה את ה-state של הלשונית שמוצגת, מהעותק של Firebase
+function buildViewState() {
+  const m = remote.members[viewMemberId];
+  const t = remote.trip || {};
+  lastSynced[viewMemberId] = itemsToRecords(itemsFromRemote(m));
+  state = {
+    trip: {
+      place: t.place || '', lat: t.lat, lon: t.lon, start: t.start, end: t.end,
+      activities: t.activities || [], name: t.name
+    },
+    weather: remote.weather || { source: 'history', minTemp: 0, maxTemp: 0, rainyDays: 0, maxWind: 0 },
+    items: itemsFromRemote(m),
+    collapsed: collapsedByMember[viewMemberId] || []
+  };
+}
+
+function renderShared() {
+  document.body.classList.add('shared-mode');
+  $('sharedBar').classList.remove('hidden');
+
+  const tabs = $('memberTabs');
+  tabs.replaceChildren();
+
+  if (!remote || !remote.trip) {
+    state = null;
+    renderWeather();
+    renderList();
+    tabs.replaceChildren();
+    $('joinBox').replaceChildren(el('p', { className: 'note' }, 'לא מצאתי את הטיול הזה. ייתכן שהקישור לא נכון או שהטיול נמחק.'));
+    return;
+  }
+
+  const members = membersList();
+  if (!viewMemberId || !(remote.members || {})[viewMemberId]) {
+    viewMemberId = myMemberExists() ? myMemberId : (members[0] && members[0].id) || null;
+  }
+
+  members.forEach(m => {
+    const b = el('button', { type: 'button', className: 'tab' + (m.id === viewMemberId ? ' active' : '') },
+      m.name + (m.id === myMemberId ? ' (אני)' : ''));
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(m.id === viewMemberId));
+    b.addEventListener('click', () => { viewMemberId = m.id; renderShared(); });
+    tabs.appendChild(b);
+  });
+
+  renderJoinBox();
+
+  if (viewMemberId) {
+    buildViewState();
+    renderWeather();
+    renderList();
+  } else {
+    state = null;
+    renderWeather();
+    renderList();
+  }
+  lastSig = viewSig();
+}
+
+// מי שעוד לא משתתף בטיול רואה טופס הצטרפות
+function renderJoinBox() {
+  const box = $('joinBox');
+  box.replaceChildren();
+  if (myMemberExists()) return;
+
+  const form = el('form', { className: 'join-form' });
+  form.appendChild(el('strong', null, 'הצטרפי לטיול'));
+  form.appendChild(el('p', { className: 'note' }, 'כתבי את השם שלך, ותקבלי לשונית משלך עם החלק שלך באריזה.'));
+  const input = el('input', { type: 'text', maxLength: 30, required: true });
+  input.placeholder = 'השם שלך';
+  input.setAttribute('aria-label', 'השם שלך');
+  const full = el('button', { type: 'submit', className: 'primary' }, 'הצטרף עם רשימה מוכנה');
+  const empty = el('button', { type: 'button', className: 'secondary' }, 'הצטרף עם רשימה ריקה');
+  const err = el('div', { className: 'dup-error' });
+  const run = async (withList) => {
+    const name = input.value.trim().slice(0, 30);
+    if (!name) { err.textContent = 'כתבי שם.'; input.focus(); return; }
+    err.textContent = '';
+    full.disabled = empty.disabled = true;
+    try { await joinTrip(name, withList); }
+    catch (e) { err.textContent = e.message || 'משהו השתבש, נסי שוב.'; full.disabled = empty.disabled = false; }
+  };
+  form.addEventListener('submit', (ev) => { ev.preventDefault(); run(true); });
+  empty.addEventListener('click', () => run(false));
+  const btns = el('div', { className: 'actions' });
+  btns.append(full, empty);
+  form.append(input, err, btns);
+  box.appendChild(form);
+}
+
+async function joinTrip(name, withList) {
+  const t = remote.trip;
+  const trip = { place: t.place, start: t.start, end: t.end, activities: t.activities || [] };
+  let items = [];
+  if (withList) {
+    const weather = remote.weather || {};
+    items = buildList(trip, weather);          // בשיתוף makeItem נותן מזהים ייחודיים
+  }
+  const mid = uid();
+  await fb('PUT', SHARED_ID, '/members/' + mid, {
+    name: name, joinedAt: Date.now(), items: itemsToRecords(items)
+  });
+  try { localStorage.setItem(MEMBER_KEY(SHARED_ID), mid); } catch (e) {}
+  myMemberId = mid;
+  viewMemberId = mid;
+  applyRemoteEvent('put', '/members/' + mid, {
+    name: name, joinedAt: Date.now(), items: itemsToRecords(items)
+  });
+  renderShared();
+}
+
+function sharedLink(id) {
+  let base;
+  try { base = window.top.location.origin + window.top.location.pathname; }
+  catch (e) { base = location.origin + location.pathname; }
+  return base + '?trip=' + id;
+}
+
+async function copyText(text, inputEl) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+  try {
+    inputEl.focus(); inputEl.select();
+    return document.execCommand('copy');
+  } catch (e) { return false; }
+}
+
+function linkBox(link) {
+  const wrap = el('div', { className: 'link-box' });
+  const input = el('input', { type: 'text', readOnly: true, value: link });
+  input.setAttribute('aria-label', 'קישור לטיול המשותף');
+  input.addEventListener('focus', () => input.select());
+  const copy = el('button', { type: 'button', className: 'secondary' }, '📋 העתק');
+  const msg = el('div', { className: 'note' });
+  copy.addEventListener('click', async () => {
+    msg.textContent = (await copyText(link, input)) ? 'הקישור הועתק. אפשר לשלוח אותו.' : 'לא הצלחתי להעתיק אוטומטית. סמני את הקישור והעתיקי.';
+  });
+  const row = el('div', { className: 'add-row' });
+  row.append(input, copy);
+  wrap.append(row, msg);
+  return wrap;
+}
+
+/* ---------- יצירת טיול משותף מטיול קיים (במצב הרגיל) ---------- */
+
+function newShareId() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => b.toString(36).padStart(2, '0')).join('').slice(0, 24).padEnd(24, 'x');
+}
+
+async function createSharedTrip(name) {
+  const id = newShareId();
+  const mid = uid();
+  const items = state.items.map(it => ({ id: uid() + it.id, text: it.text, cat: it.cat, checked: it.checked, qty: it.qty || 1 }));
+  const t = state.trip;
+  const trip = { place: t.place, start: t.start, end: t.end, activities: t.activities || [] };
+  if (t.lat !== undefined) { trip.lat = t.lat; trip.lon = t.lon; }
+  if (t.name) trip.name = t.name;
+  await fb('PUT', id, '', {
+    trip: trip,
+    weather: state.weather,
+    createdAt: Date.now(),
+    members: { [mid]: { name: name, joinedAt: Date.now(), items: itemsToRecords(items) } }
+  });
+  try { localStorage.setItem(MEMBER_KEY(id), mid); } catch (e) {}
+  state.shareId = id;
+  save();
+  return id;
+}
+
+function renderInvitePanel() {
+  const panel = $('invitePanel');
+  panel.replaceChildren();
+  if (!state) { panel.classList.add('hidden'); return; }
+  panel.classList.remove('hidden');
+  panel.appendChild(el('strong', null, '👥 שיתוף הטיול'));
+
+  if (state.shareId) {
+    panel.appendChild(el('p', { className: 'note' },
+      'שלחי את הקישור למי שאורז איתך. כל אחד כותב את השם שלו ומקבל לשונית משלו. מעכשיו עורכים דרך הקישור.'));
+    const link = sharedLink(state.shareId);
+    panel.appendChild(linkBox(link));
+    const open = el('button', { type: 'button', className: 'secondary' }, 'פתח את הטיול המשותף');
+    open.addEventListener('click', () => window.open(link, '_blank'));
+    const close = el('button', { type: 'button', className: 'secondary' }, 'סגור');
+    close.addEventListener('click', () => panel.classList.add('hidden'));
+    const row = el('div', { className: 'actions' });
+    row.append(open, close);
+    panel.appendChild(row);
+    return;
+  }
+
+  panel.appendChild(el('p', { className: 'note' },
+    'ייווצר קישור שמי שיש לו אותו יכול לראות ולערוך את הטיול. הטיול יישמר באינטרנט (אצל גוגל) ולא רק בדפדפן הזה.'));
+  const form = el('form', { className: 'join-form' });
+  const input = el('input', { type: 'text', maxLength: 30, required: true });
+  input.placeholder = 'השם שלך (שם הלשונית שלך)';
+  input.setAttribute('aria-label', 'השם שלך');
+  const go = el('button', { type: 'submit', className: 'primary' }, 'צור קישור לשיתוף');
+  const cancel = el('button', { type: 'button', className: 'secondary' }, 'ביטול');
+  cancel.addEventListener('click', () => panel.classList.add('hidden'));
+  const err = el('div', { className: 'dup-error' });
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const name = input.value.trim().slice(0, 30);
+    if (!name) { err.textContent = 'כתבי שם.'; return; }
+    go.disabled = true;
+    go.textContent = 'יוצר קישור...';
+    try {
+      await createSharedTrip(name);
+      renderInvitePanel();
+    } catch (e) {
+      err.textContent = 'לא הצלחתי ליצור את הקישור. בדקי חיבור לאינטרנט ונסי שוב.';
+      go.disabled = false;
+      go.textContent = 'צור קישור לשיתוף';
+    }
+  });
+  const btns = el('div', { className: 'actions' });
+  btns.append(go, cancel);
+  form.append(input, err, btns);
+  panel.appendChild(form);
+}
+
+/* ---------- הפעלה ---------- */
+
+function startShared() {
+  try { myMemberId = localStorage.getItem(MEMBER_KEY(SHARED_ID)); } catch (e) {}
+  document.body.classList.add('shared-mode');
+  $('sharedBar').classList.remove('hidden');
+  $('sharedLinkBox').replaceChildren(linkBox(sharedLink(SHARED_ID)));
+  setConn('connecting');
+  startStream();
+}
+
 // בטעינת הדף – אם יש טיול שמור, מציגים אותו
-state = load();
-if (state && state.items) {
-  applyStateToPage();
+if (sharedMode) {
+  startShared();
 } else {
-  state = null;
-  renderPast();
+  state = load();
+  if (state && state.items) {
+    applyStateToPage();
+  } else {
+    state = null;
+    renderPast();
+  }
 }
 
 // כפתור "עיצוב": פותח וסוגר את חלונית כפתורי העיצוב
