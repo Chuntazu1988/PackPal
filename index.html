@@ -142,6 +142,9 @@
   .item input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--ok); cursor: pointer; }
   .item .text { flex: 1; transition: all .2s; }
   .item.done .text { text-decoration: line-through; color: var(--muted); }
+  .item .qty { font-weight: 600; color: var(--accent-dark); }
+  .item .qty-btn { background: var(--soft); color: var(--accent-dark); width: 30px; height: 30px; padding: 0; border-radius: 999px; font-size: 1.1rem; line-height: 1; }
+  .item .qty-btn:disabled { opacity: .3; cursor: default; }
   .item .move { background: var(--soft); color: var(--accent-dark); padding: 4px 10px; font-size: 1rem; }
   .item .move:disabled { opacity: .3; cursor: default; }
   .item .del { background: none; color: var(--danger); padding: 4px 8px; font-size: 1.1rem; }
@@ -149,6 +152,7 @@
 
   .add-row { display: flex; gap: 8px; margin-top: 14px; }
   .add-row input { flex: 1; }
+  .add-row input[type=number] { flex: 0 0 4.5rem; width: 4.5rem; padding: 10px 6px; text-align: center; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); font: inherit; }
   .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
   .actions button { flex: 1; }
 
@@ -307,6 +311,7 @@
 
     <form class="add-row" id="addForm" autocomplete="off">
       <input type="text" id="newItem" placeholder="הוסף פריט משלך...">
+      <input type="number" id="newQty" min="1" max="99" value="1" aria-label="כמות" title="כמות">
       <button type="submit" class="secondary">הוסף</button>
     </form>
 
@@ -651,7 +656,7 @@ const CUSTOM_CAT = '✏️ שלי';
 
 let nextId = 1;
 function makeItem(text, cat) {
-  return { id: nextId++, text: text, cat: cat, checked: false };
+  return { id: nextId++, text: text, cat: cat, checked: false, qty: 1 };
 }
 
 function buildList(trip, w) {
@@ -945,7 +950,22 @@ function renderList() {
       box.addEventListener('change', () => toggleItem(it.id));
       const del = el('button', { type: 'button', className: 'del', title: 'מחק' }, '✕');
       del.addEventListener('click', () => deleteItem(it.id));
-      row.append(box, el('span', { className: 'text' }, it.text));
+      const label = el('span', { className: 'text' }, it.text);
+      if ((it.qty || 1) > 1) label.appendChild(el('span', { className: 'qty' }, ' ×' + it.qty));
+      row.append(box, label);
+      if (!reorderMode) {
+        if ((it.qty || 1) > 1) {
+          const minus = el('button', { type: 'button', className: 'qty-btn', title: 'הפחת כמות' }, '−');
+          minus.setAttribute('aria-label', 'הפחת כמות: ' + it.text);
+          minus.addEventListener('click', () => changeQty(it.id, -1));
+          row.append(minus);
+        }
+        const plus = el('button', { type: 'button', className: 'qty-btn', title: 'הוסף כמות' }, '+');
+        plus.setAttribute('aria-label', 'הוסף כמות: ' + it.text);
+        plus.disabled = (it.qty || 1) >= 99;
+        plus.addEventListener('click', () => changeQty(it.id, 1));
+        row.append(plus);
+      }
       if (reorderMode) {
         const pos = groups[cat].indexOf(it);
         const up = el('button', { type: 'button', className: 'move', title: 'הזז למעלה', disabled: pos === 0 }, '▲');
@@ -1121,7 +1141,7 @@ function cleanTrip(t) {
   const items = [];
   for (const it of t.items) {
     if (!it || typeof it.text !== 'string' || typeof it.cat !== 'string') return null;
-    items.push({ id: items.length + 1, text: it.text.slice(0, 200), cat: it.cat.slice(0, 60), checked: !!it.checked });
+    items.push({ id: items.length + 1, text: it.text.slice(0, 200), cat: it.cat.slice(0, 60), checked: !!it.checked, qty: clampQty(it.qty) });
   }
   const trip = {
     place: tr.place.slice(0, 120),
@@ -1142,7 +1162,7 @@ function cleanTrip(t) {
 // מזהה טיול כדי לא לשכפל אותו. בלי מספרי ה-id של הפריטים, שמתחדשים בכל ייבוא.
 const tripKey = t => JSON.stringify([
   t.trip.place, t.trip.start, t.trip.end, t.trip.name || '', t.trip.activities,
-  t.items.map(i => [i.text, i.cat, i.checked])
+  t.items.map(i => [i.text, i.cat, i.checked, i.qty || 1])
 ]);
 
 // מוסיף טיולים מהקובץ בלי למחוק כלום: טיול פעיל מהקובץ הופך לפעיל רק אם אין כרגע פעיל,
@@ -1303,6 +1323,25 @@ function renderProgress() {
    6. פעולות על הרשימה
    ========================================================= */
 
+// כמות תקינה: מספר שלם בין 1 ל-99 (כל דבר אחר הופך ל-1)
+function clampQty(v) {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? Math.min(99, Math.max(1, n)) : 1;
+}
+
+function changeQty(id, delta) {
+  const it = state.items.find(i => i.id === id);
+  if (!it) return;
+  it.qty = clampQty((it.qty || 1) + delta);
+  save();
+  renderList();
+}
+
+// הטקסט של הפריט כולל כמות, רק כשהיא יותר מ-1
+function itemLabel(it) {
+  return (it.qty || 1) > 1 ? it.text + ' ×' + it.qty : it.text;
+}
+
 function toggleItem(id) {
   const it = state.items.find(i => i.id === id);
   it.checked = !it.checked;
@@ -1342,8 +1381,10 @@ function deleteItem(id) {
   renderList();
 }
 
-function addCustomItem(text) {
-  state.items.push(makeItem(text, CUSTOM_CAT));
+function addCustomItem(text, qty) {
+  const item = makeItem(text, CUSTOM_CAT);
+  item.qty = clampQty(qty);
+  state.items.push(item);
   // אם הקטגוריה מקופלת – פותחים אותה, כדי שהפריט החדש יופיע
   state.collapsed = (state.collapsed || []).filter(c => c !== CUSTOM_CAT);
   save();
@@ -1366,7 +1407,7 @@ function buildPrintHtml() {
   Object.keys(groups).forEach(cat => {
     body += '<div class="cat"><h2>' + escapeHtml(cat) + '</h2><ul>';
     groups[cat].forEach(it => {
-      body += '<li><span class="box">' + (it.checked ? '☑' : '☐') + '</span> ' + escapeHtml(it.text) + '</li>';
+      body += '<li><span class="box">' + (it.checked ? '☑' : '☐') + '</span> ' + escapeHtml(itemLabel(it)) + '</li>';
     });
     body += '</ul></div>';
   });
@@ -1397,7 +1438,7 @@ function shareWhatsApp() {
   state.items.forEach(it => { (groups[it.cat] = groups[it.cat] || []).push(it); });
   Object.keys(groups).forEach(cat => {
     msg += '\n' + cat + '\n';
-    groups[cat].forEach(it => { msg += (it.checked ? '✅ ' : '⬜ ') + it.text + '\n'; });
+    groups[cat].forEach(it => { msg += (it.checked ? '✅ ' : '⬜ ') + itemLabel(it) + '\n'; });
   });
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
@@ -1527,8 +1568,9 @@ $('addForm').addEventListener('submit', (ev) => {
   ev.preventDefault();
   const text = $('newItem').value.trim();
   if (!text) return;
-  addCustomItem(text);
+  addCustomItem(text, $('newQty').value);
   $('newItem').value = '';
+  $('newQty').value = 1;
 });
 
 $('shareBtn').addEventListener('click', shareWhatsApp);
