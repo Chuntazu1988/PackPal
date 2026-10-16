@@ -42,7 +42,7 @@
   body {
     margin: 0;
     font-size: 1rem;
-    font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    font-family: var(--font, system-ui, -apple-system, "Segoe UI", Arial, sans-serif);
     background: var(--bg);
     color: var(--text);
     line-height: 1.5;
@@ -192,7 +192,7 @@
     display: flex;
     gap: 8px;
   }
-  #themeBtn, #sizeBtn, #bgBtn, #bgReset {
+  #themeBtn, #sizeBtn, #fontBtn, #bgBtn, #bgReset {
     background: var(--card);
     color: var(--text);
     border: 1px solid var(--border);
@@ -218,6 +218,7 @@
 <div id="tools">
   <button type="button" id="themeBtn" aria-label="החלף מצב כהה / בהיר"></button>
   <button type="button" id="sizeBtn" aria-label="שנה את גודל הטקסט"></button>
+  <button type="button" id="fontBtn" aria-label="שנה את סוג הפונט"></button>
   <label id="bgBtn" title="בחרי צבע רקע">🎨 רקע<input type="color" id="bgPicker" aria-label="בחרי צבע רקע"></label>
   <button type="button" id="bgReset" class="hidden" aria-label="חזרה לצבע הרקע המקורי" title="חזרה לצבע המקורי">↺</button>
 </div>
@@ -407,6 +408,49 @@ textSizeIdx = applyTextSize(textSizeIdx);
 document.getElementById('sizeBtn').addEventListener('click', () => {
   textSizeIdx = applyTextSize((textSizeIdx + 1) % TEXT_SIZES.length);
   try { localStorage.setItem(TEXT_SIZE_KEY, String(textSizeIdx)); } catch (e) {}
+});
+
+/* =========================================================
+   1ד. סוג פונט
+   ========================================================= */
+
+// פונטים עם תמיכה בעברית. הפונט נטען מ-Google Fonts רק כשבוחרים בו.
+const FONTS = [
+  { label: 'רגיל',          family: null,                       url: null },
+  { label: 'Heebo',          family: '"Heebo", sans-serif',        url: 'Heebo:wght@400;600;700' },
+  { label: 'Rubik',          family: '"Rubik", sans-serif',        url: 'Rubik:wght@400;600;700' },
+  { label: 'Assistant',      family: '"Assistant", sans-serif',    url: 'Assistant:wght@400;600;700' },
+  { label: 'Frank Ruhl',     family: '"Frank Ruhl Libre", serif',  url: 'Frank+Ruhl+Libre:wght@400;600;700' },
+  { label: 'Secular One',    family: '"Secular One", sans-serif',  url: 'Secular+One' }
+];
+const FONT_KEY = 'packpal-font';
+let fontIdx = 0;
+try { fontIdx = parseInt(localStorage.getItem(FONT_KEY), 10) || 0; } catch (e) {}
+if (!FONTS[fontIdx]) fontIdx = 0;
+
+function loadFont(f) {
+  if (!f.url || document.getElementById('font-' + f.url)) return;
+  const link = document.createElement('link');
+  link.id = 'font-' + f.url;
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=' + f.url + '&display=swap&subset=hebrew';
+  document.head.appendChild(link);
+}
+
+function applyFont() {
+  const f = FONTS[fontIdx];
+  loadFont(f);
+  if (f.family) document.documentElement.style.setProperty('--font', f.family + ', system-ui, Arial, sans-serif');
+  else document.documentElement.style.removeProperty('--font');
+  const btn = document.getElementById('fontBtn');
+  btn.textContent = '🔤 ' + f.label;
+}
+applyFont();
+
+document.getElementById('fontBtn').addEventListener('click', () => {
+  fontIdx = (fontIdx + 1) % FONTS.length;
+  applyFont();
+  try { localStorage.setItem(FONT_KEY, String(fontIdx)); } catch (e) {}
 });
 
 /* =========================================================
