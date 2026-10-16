@@ -247,6 +247,7 @@
 
     <div class="actions">
       <button type="button" class="whatsapp" id="shareBtn">שתף בוואטסאפ</button>
+      <button type="button" class="secondary" id="printBtn">🖨️ הדפס</button>
       <button type="button" class="secondary" id="resetBtn">טיול חדש</button>
     </div>
   </section>
@@ -927,6 +928,46 @@ function addCustomItem(text) {
   renderList();
 }
 
+// הדפסה: פותחים חלון נקי עם הרשימה בלבד (בלי באנר וכפתורים) ומפעילים בו הדפסה
+function escapeHtml(t) {
+  return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function buildPrintHtml() {
+  const t = state.trip, w = state.weather;
+  const groups = {};
+  state.items.forEach(it => { (groups[it.cat] = groups[it.cat] || []).push(it); });
+
+  let body = '<h1>🧳 ' + escapeHtml(tripName(t)) + '</h1>';
+  body += '<p class="meta">' + escapeHtml(t.place) + ' · ' + fmtDate(t.start) + ' – ' + fmtDate(t.end) +
+    '<br>🌡️ ' + w.minTemp + '° עד ' + w.maxTemp + '° · 🌧️ ' + w.rainyDays + ' ימי גשם · 💨 רוח עד ' + w.maxWind + ' קמ"ש</p>';
+  Object.keys(groups).forEach(cat => {
+    body += '<div class="cat"><h2>' + escapeHtml(cat) + '</h2><ul>';
+    groups[cat].forEach(it => {
+      body += '<li><span class="box">' + (it.checked ? '☑' : '☐') + '</span> ' + escapeHtml(it.text) + '</li>';
+    });
+    body += '</ul></div>';
+  });
+
+  return '<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8">' +
+    '<title>' + escapeHtml(tripName(t)) + ' – רשימת אריזה</title><style>' +
+    'body{font-family:system-ui,Arial,sans-serif;color:#000;background:#fff;margin:24px;line-height:1.5}' +
+    'h1{margin:0 0 4px}.meta{color:#444;margin:0 0 16px}' +
+    '.cat{break-inside:avoid;margin-bottom:14px}h2{font-size:1.1rem;margin:0 0 4px;border-bottom:1px solid #999}' +
+    'ul{list-style:none;margin:0;padding:0;columns:2}li{padding:2px 0;break-inside:avoid}' +
+    '.box{font-size:1.2rem;margin-inline-end:6px}' +
+    '</style></head><body>' + body + '<script>window.onload=function(){window.print();};<\/script></body></html>';
+}
+
+function printList() {
+  if (!state) return;
+  const win = window.open('', '_blank');
+  if (!win) { $('error').textContent = 'הדפדפן חסם את חלון ההדפסה. אפשרי חלונות קופצים לאתר ונסי שוב.'; return; }
+  win.document.open();
+  win.document.write(buildPrintHtml());
+  win.document.close();
+}
+
 function shareWhatsApp() {
   const t = state.trip;
   let msg = '🧳 רשימת אריזה לטיול ל' + t.place + '\n';
@@ -1069,6 +1110,7 @@ $('addForm').addEventListener('submit', (ev) => {
 });
 
 $('shareBtn').addEventListener('click', shareWhatsApp);
+$('printBtn').addEventListener('click', printList);
 
 $('resetBtn').addEventListener('click', () => {
   if (!confirm('לשמור את הטיול הזה בטיולים קודמים ולהתחיל טיול חדש?')) return;
