@@ -148,6 +148,12 @@
   .past-row .info small { display: block; color: var(--muted); }
   .past-row .del { background: none; color: var(--danger); padding: 4px 8px; font-size: 1.1rem; }
 
+  .trip-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .trip-title h2 { margin: 0; font-size: 1.3rem; flex: 1; }
+  .trip-title .rename-btn, .past-row .rename-btn { background: none; padding: 4px 8px; font-size: 1.1rem; }
+  .rename-form { display: flex; gap: 8px; align-items: center; flex: 1; }
+  .rename-form input { flex: 1; }
+  .past-row + .rename-form { padding: 6px 4px 14px; border-bottom: 1px solid var(--border); }
   .dup-form { padding: 6px 4px 14px; border-bottom: 1px solid var(--border); }
   .dup-form .primary { margin-top: 0; }
   .dup-error { color: var(--danger); min-height: 1.2em; margin-top: 6px; }
@@ -220,6 +226,7 @@
 
   <!-- ===== הרשימה ===== -->
   <section id="listSection" class="card hidden">
+    <div id="tripTitle" class="trip-title"></div>
     <strong id="progressText"></strong>
     <div class="bar"><div id="barFill"></div></div>
     <div id="list"></div>
@@ -592,10 +599,55 @@ function renderWeather() {
   box.classList.remove('hidden');
 }
 
+// השם שמוצג לטיול: שם שהמשתמשת נתנה, ואם אין – שם היעד
+function tripName(t) { return t.name || t.place; }
+
+// טופס קטן לשינוי שם (שדה טקסט + שמור + ביטול)
+function renderRenameForm(t, onSave, onCancel) {
+  const form = el('form', { className: 'rename-form' });
+  const input = el('input', { type: 'text', value: tripName(t), maxLength: 60 });
+  input.setAttribute('aria-label', 'שם הטיול');
+  input.placeholder = t.place;
+  const save = el('button', { type: 'submit', className: 'secondary' }, 'שמור');
+  const cancel = el('button', { type: 'button', className: 'secondary' }, 'ביטול');
+  cancel.addEventListener('click', onCancel);
+  form.append(input, save, cancel);
+  form.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const name = input.value.trim();
+    // שם ריק או זהה ליעד = חוזרים לשם ברירת המחדל
+    onSave(name && name !== t.place ? name : '');
+  });
+  setTimeout(() => input.focus(), 0);
+  return form;
+}
+
+let renamingCurrent = false;
+
+function renderTitle() {
+  const box = $('tripTitle');
+  box.replaceChildren();
+  if (renamingCurrent) {
+    box.appendChild(renderRenameForm(state.trip,
+      (name) => { setTripName(state.trip, name); renamingCurrent = false; save(); renderList(); },
+      () => { renamingCurrent = false; renderTitle(); }));
+    return;
+  }
+  const btn = el('button', { type: 'button', className: 'rename-btn', title: 'שנה שם' }, '✏️');
+  btn.setAttribute('aria-label', 'שנה את שם הטיול');
+  btn.addEventListener('click', () => { renamingCurrent = true; renderTitle(); });
+  box.append(el('h2', null, tripName(state.trip)), btn);
+}
+
+function setTripName(trip, name) {
+  if (name) trip.name = name; else delete trip.name;
+}
+
 function renderList() {
   const section = $('listSection');
   if (!state) { section.classList.add('hidden'); return; }
   section.classList.remove('hidden');
+  renderTitle();
 
   const list = $('list');
   list.replaceChildren();
@@ -636,18 +688,32 @@ function renderPast() {
     const done = entry.items.filter(i => i.checked).length;
     const row = el('div', { className: 'past-row' });
     const info = el('div', { className: 'info' });
-    info.appendChild(el('span', null, t.place));
+    info.appendChild(el('span', null, tripName(t)));
     info.appendChild(el('small', null,
-      fmtDate(t.start) + ' – ' + fmtDate(t.end) + ' · ארזת ' + done + ' מתוך ' + total));
+      (t.name ? t.place + ' · ' : '') + fmtDate(t.start) + ' – ' + fmtDate(t.end) + ' · ארזת ' + done + ' מתוך ' + total));
     const openBtn = el('button', { type: 'button', className: 'secondary' }, 'פתח');
     openBtn.addEventListener('click', () => openPastTrip(idx));
+    const renameBtn = el('button', { type: 'button', className: 'rename-btn', title: 'שנה שם' }, '✏️');
+    renameBtn.setAttribute('aria-label', 'שנה את שם הטיול');
+    renameBtn.addEventListener('click', () => { renameOpenIdx = renameOpenIdx === idx ? null : idx; dupOpenIdx = null; renderPast(); });
     const dupBtn = el('button', { type: 'button', className: 'secondary' }, 'שכפל');
     dupBtn.title = 'טיול חדש לאותו יעד, בתאריכים אחרים';
-    dupBtn.addEventListener('click', () => { dupOpenIdx = dupOpenIdx === idx ? null : idx; renderPast(); });
+    dupBtn.addEventListener('click', () => { dupOpenIdx = dupOpenIdx === idx ? null : idx; renameOpenIdx = null; renderPast(); });
     const del = el('button', { type: 'button', className: 'del', title: 'מחק' }, '✕');
     del.addEventListener('click', () => deletePastTrip(idx));
-    row.append(info, openBtn, dupBtn, del);
+    row.append(info, openBtn, dupBtn, renameBtn, del);
     box.appendChild(row);
+    if (renameOpenIdx === idx) {
+      box.appendChild(renderRenameForm(t,
+        (name) => {
+          const h = loadHistory();
+          setTripName(h[idx].trip, name);
+          saveHistory(h);
+          renameOpenIdx = null;
+          renderPast();
+        },
+        () => { renameOpenIdx = null; renderPast(); }));
+    }
     if (dupOpenIdx === idx) box.appendChild(renderDupForm(idx));
   });
   box.classList.remove('hidden');
@@ -666,6 +732,7 @@ function openPastTrip(idx) {
   const trip = hist.splice(idx, 1)[0];
   if (!trip) return;
   dupOpenIdx = null;
+  renameOpenIdx = null;
   saveHistory(hist);
   archiveCurrentTrip();
   state = trip;
@@ -676,6 +743,8 @@ function openPastTrip(idx) {
 
 // איזה טיול ישן פתוח כרגע לשכפול (מציג שדות תאריך מתחתיו), או null
 let dupOpenIdx = null;
+// איזה טיול ישן פתוח כרגע לשינוי שם, או null
+let renameOpenIdx = null;
 
 // יוצר טיול חדש מעותק של טיול ישן, עם תאריכים חדשים:
 // אותו יעד ואותן פעילויות, מזג אוויר מעודכן, רשימה חדשה לפי התאריכים,
@@ -749,6 +818,7 @@ function deletePastTrip(idx) {
   const hist = loadHistory();
   hist.splice(idx, 1);
   dupOpenIdx = null;
+  renameOpenIdx = null;
   saveHistory(hist);
   renderPast();
 }
@@ -878,6 +948,7 @@ $('tripForm').addEventListener('submit', async (ev) => {
     const place = await geocode(name);
     const weather = await getWeather(place, start, end);
     const trip = { place: place.label, lat: place.lat, lon: place.lon, start: start, end: end, activities: activities };
+    if (state && state.trip.name && state.trip.place === place.label) trip.name = state.trip.name;
     nextId = 1;
     state = { trip: trip, weather: weather, items: buildList(trip, weather) };
     save();
@@ -906,6 +977,8 @@ $('resetBtn').addEventListener('click', () => {
   if (!confirm('לשמור את הטיול הזה בטיולים קודמים ולהתחיל טיול חדש?')) return;
   archiveCurrentTrip();
   dupOpenIdx = null;
+  renameOpenIdx = null;
+  renamingCurrent = false;
   state = null;
   try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
   $('destination').value = '';
