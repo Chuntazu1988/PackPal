@@ -69,7 +69,9 @@
     color: var(--text);
   }
   .row { display: flex; gap: 10px; }
-  .row > div { flex: 1; }
+  .row > div { flex: 1; min-width: 0; }
+  /* בלי זה שדה התאריך מסרב להצטמצם ובולט מחוץ לכרטיס במסך צר (טלפון) */
+  input[type=date] { min-width: 0; }
 
   /* ===== כפתורי פעילויות ===== */
   .chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 6px; }
