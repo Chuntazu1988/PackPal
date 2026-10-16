@@ -152,6 +152,10 @@
   .past-row .info small { display: block; color: var(--muted); }
   .past-row .del { background: none; color: var(--danger); padding: 4px 8px; font-size: 1.1rem; }
 
+  .countdown { background: var(--stat); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; font-weight: 600; }
+  .countdown.soon { border: 2px solid var(--danger); }
+  .countdown.over { color: var(--muted); font-weight: normal; }
+  .countdown small { display: block; font-weight: normal; color: var(--muted); }
   .trip-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .trip-title h2 { margin: 0; font-size: 1.3rem; flex: 1; }
   .trip-title .rename-btn, .past-row .rename-btn { background: none; padding: 4px 8px; font-size: 1.1rem; }
@@ -281,6 +285,7 @@
   <!-- ===== הרשימה ===== -->
   <section id="listSection" class="card hidden">
     <div id="tripTitle" class="trip-title"></div>
+    <div id="countdown" class="countdown" role="status"></div>
     <strong id="progressText"></strong>
     <div class="bar"><div id="barFill"></div></div>
     <div id="list"></div>
@@ -849,6 +854,40 @@ function renderTitle() {
   box.append(el('h2', null, tripName(state.trip)), btn);
 }
 
+// כמה ימים מהיום עד התאריך (שלילי = כבר עבר)
+function daysFromToday(iso) {
+  return Math.round((parseISO(iso) - parseISO(toISO(new Date()))) / 86400000);
+}
+
+function renderCountdown() {
+  const box = $('countdown');
+  const t = state.trip;
+  const toStart = daysFromToday(t.start);
+  const toEnd = daysFromToday(t.end);
+  const total = state.items.length;
+  const done = state.items.filter(i => i.checked).length;
+  const allPacked = total > 0 && done === total;
+
+  let text, cls = 'countdown', extra = '';
+  if (toEnd < 0) {
+    text = '🏁 הטיול הסתיים';
+    cls += ' over';
+  } else if (toStart <= 0) {
+    const dayNo = -toStart + 1, days = daysFromToday(t.end) + dayNo;
+    text = toStart === 0 ? '🎉 הטיול מתחיל היום!' : '🌴 הטיול בעיצומו – יום ' + dayNo + ' מתוך ' + days;
+  } else {
+    text = toStart === 1 ? '✈️ הטיול מתחיל מחר!' : '✈️ עוד ' + toStart + ' ימים לטיול';
+    if (toStart <= 3 && !allPacked) {
+      cls += ' soon';
+      const left = total - done;
+      extra = left === 1 ? 'נשאר פריט אחד לארוז' : 'נשארו ' + left + ' פריטים לארוז';
+    }
+  }
+  box.className = cls;
+  box.replaceChildren(text);
+  if (extra) box.appendChild(el('small', null, extra));
+}
+
 function setTripName(trip, name) {
   if (name) trip.name = name; else delete trip.name;
 }
@@ -858,6 +897,7 @@ function renderList() {
   if (!state) { section.classList.add('hidden'); return; }
   section.classList.remove('hidden');
   renderTitle();
+  renderCountdown();
 
   const list = $('list');
   list.replaceChildren();
