@@ -128,6 +128,8 @@
   .item input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--ok); cursor: pointer; }
   .item .text { flex: 1; transition: all .2s; }
   .item.done .text { text-decoration: line-through; color: var(--muted); }
+  .item .move { background: var(--soft); color: var(--accent-dark); padding: 4px 10px; font-size: 1rem; }
+  .item .move:disabled { opacity: .3; cursor: default; }
   .item .del { background: none; color: var(--danger); padding: 4px 8px; font-size: 1.1rem; }
   @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
@@ -248,6 +250,7 @@
     <div class="actions">
       <button type="button" class="whatsapp" id="shareBtn">שתף בוואטסאפ</button>
       <button type="button" class="secondary" id="printBtn">🖨️ הדפס</button>
+      <button type="button" class="secondary" id="reorderBtn">↕️ שנה סדר</button>
       <button type="button" class="secondary" id="resetBtn">טיול חדש</button>
     </div>
   </section>
@@ -701,7 +704,18 @@ function renderList() {
       box.addEventListener('change', () => toggleItem(it.id));
       const del = el('button', { type: 'button', className: 'del', title: 'מחק' }, '✕');
       del.addEventListener('click', () => deleteItem(it.id));
-      row.append(box, el('span', { className: 'text' }, it.text), del);
+      row.append(box, el('span', { className: 'text' }, it.text));
+      if (reorderMode) {
+        const pos = groups[cat].indexOf(it);
+        const up = el('button', { type: 'button', className: 'move', title: 'הזז למעלה', disabled: pos === 0 }, '▲');
+        const down = el('button', { type: 'button', className: 'move', title: 'הזז למטה', disabled: pos === groups[cat].length - 1 }, '▼');
+        up.setAttribute('aria-label', 'הזז למעלה: ' + it.text);
+        down.setAttribute('aria-label', 'הזז למטה: ' + it.text);
+        up.addEventListener('click', () => moveItem(it.id, -1));
+        down.addEventListener('click', () => moveItem(it.id, 1));
+        row.append(up, down);
+      }
+      row.append(del);
       list.appendChild(row);
     });
   });
@@ -885,6 +899,8 @@ function deletePastTrip(idx) {
 
 // ממלא את הטופס ואת התצוגה לפי state
 function applyStateToPage() {
+  reorderMode = false;
+  $('reorderBtn').textContent = '↕️ שנה סדר';
   nextId = state.items.reduce((m, i) => Math.max(m, i.id), 0) + 1;
   $('destination').value = state.trip.place;
   $('startDate').value = state.trip.start;
@@ -914,6 +930,30 @@ function toggleItem(id) {
   renderList();
   // אם הכול מסומן – חוגגים!
   if (state.items.length && state.items.every(i => i.checked)) launchConfetti();
+}
+
+// מצב שינוי סדר: מציג ▲▼ ליד כל פריט (לא נשמר, תמיד מתחילים בלי)
+let reorderMode = false;
+
+function setReorderMode(on) {
+  reorderMode = on;
+  $('reorderBtn').textContent = on ? '✔ סיום' : '↕️ שנה סדר';
+  if (state) renderList();
+}
+
+// מזיז פריט צעד אחד למעלה (-1) או למטה (1) בתוך הקטגוריה שלו
+function moveItem(id, dir) {
+  const idx = state.items.findIndex(i => i.id === id);
+  if (idx < 0) return;
+  const cat = state.items[idx].cat;
+  let j = idx + dir;
+  while (j >= 0 && j < state.items.length && state.items[j].cat !== cat) j += dir;
+  if (j < 0 || j >= state.items.length) return;
+  const tmp = state.items[idx];
+  state.items[idx] = state.items[j];
+  state.items[j] = tmp;
+  save();
+  renderList();
 }
 
 function deleteItem(id) {
@@ -1111,6 +1151,7 @@ $('addForm').addEventListener('submit', (ev) => {
 
 $('shareBtn').addEventListener('click', shareWhatsApp);
 $('printBtn').addEventListener('click', printList);
+$('reorderBtn').addEventListener('click', () => setReorderMode(!reorderMode));
 
 $('resetBtn').addEventListener('click', () => {
   if (!confirm('לשמור את הטיול הזה בטיולים קודמים ולהתחיל טיול חדש?')) return;
@@ -1118,6 +1159,8 @@ $('resetBtn').addEventListener('click', () => {
   dupOpenIdx = null;
   renameOpenIdx = null;
   renamingCurrent = false;
+  reorderMode = false;
+  $('reorderBtn').textContent = '↕️ שנה סדר';
   state = null;
   try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
   $('destination').value = '';
