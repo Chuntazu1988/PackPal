@@ -166,6 +166,9 @@
   .choices .hint { color: var(--muted); font-size: .9rem; margin-bottom: 6px; }
   .choices button { display: block; width: 100%; text-align: start; margin-top: 6px; background: var(--soft); color: var(--text); border: 1px solid var(--border); }
   .choices button small { color: var(--muted); }
+  #backupMsg { margin-top: 10px; min-height: 1.2em; }
+  #backupMsg.err { color: var(--danger); }
+  #backupMsg.ok { color: var(--ok); }
   .dup-form { padding: 6px 4px 14px; border-bottom: 1px solid var(--border); }
   .dup-form .primary { margin-top: 0; }
   .dup-error { color: var(--danger); min-height: 1.2em; margin-top: 6px; }
@@ -297,6 +300,18 @@
 
   <!-- ===== טיולים קודמים ===== -->
   <section id="pastSection" class="card hidden"></section>
+
+  <!-- ===== גיבוי ושחזור ===== -->
+  <section id="backupSection" class="card">
+    <strong>💾 גיבוי ושחזור</strong>
+    <p class="note">הטיולים נשמרים רק בדפדפן הזה. גיבוי לקובץ מאפשר לשמור אותם, או להעביר אותם למכשיר אחר.</p>
+    <div class="actions">
+      <button type="button" class="secondary" id="exportBtn">⬇️ ייצא גיבוי</button>
+      <button type="button" class="secondary" id="importBtn">⬆️ ייבא גיבוי</button>
+    </div>
+    <input type="file" id="importFile" accept=".json,application/json" class="hidden">
+    <div id="backupMsg" role="status"></div>
+  </section>
 </main>
 
 <canvas id="confetti"></canvas>
@@ -971,6 +986,125 @@ function clearAllPast() {
   renderPast();
 }
 
+/* =========================================================
+   גיבוי ושחזור (קובץ JSON)
+   ========================================================= */
+
+const BACKUP_APP = 'packpal';
+const BACKUP_VERSION = 1;
+
+function backupMessage(text, ok) {
+  const box = $('backupMsg');
+  box.textContent = text;
+  box.className = ok ? 'ok' : 'err';
+}
+
+function exportBackup() {
+  const backup = {
+    app: BACKUP_APP,
+    version: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    current: state,
+    history: loadHistory()
+  };
+  const count = (state ? 1 : 0) + backup.history.length;
+  if (!count) { backupMessage('אין עדיין טיולים לגבות.', false); return; }
+
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = el('a', { href: url, download: 'packpal-backup-' + toISO(new Date()) + '.json' });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  backupMessage('הגיבוי ירד כקובץ (' + count + ' טיולים).', true);
+}
+
+// בודק שטיול מהקובץ נראה תקין, ומחזיר עותק נקי שלו (או null אם הוא לא תקין)
+function cleanTrip(t) {
+  if (!t || typeof t !== 'object' || !t.trip || typeof t.trip !== 'object') return null;
+  const tr = t.trip, w = t.weather;
+  const isDate = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  if (typeof tr.place !== 'string' || !isDate(tr.start) || !isDate(tr.end)) return null;
+  if (!Array.isArray(t.items) || !w || typeof w !== 'object') return null;
+
+  const items = [];
+  for (const it of t.items) {
+    if (!it || typeof it.text !== 'string' || typeof it.cat !== 'string') return null;
+    items.push({ id: items.length + 1, text: it.text.slice(0, 200), cat: it.cat.slice(0, 60), checked: !!it.checked });
+  }
+  const trip = {
+    place: tr.place.slice(0, 120),
+    start: tr.start,
+    end: tr.end,
+    activities: Array.isArray(tr.activities) ? tr.activities.filter(a => a in ACTIVITIES) : []
+  };
+  if (typeof tr.name === 'string' && tr.name.trim()) trip.name = tr.name.trim().slice(0, 60);
+  if (Number.isFinite(tr.lat) && Number.isFinite(tr.lon)) { trip.lat = tr.lat; trip.lon = tr.lon; }
+  const num = v => (Number.isFinite(v) ? v : 0);
+  const weather = {
+    source: w.source === 'forecast' ? 'forecast' : 'history',
+    minTemp: num(w.minTemp), maxTemp: num(w.maxTemp), rainyDays: num(w.rainyDays), maxWind: num(w.maxWind)
+  };
+  return { trip: trip, weather: weather, items: items };
+}
+
+// מזהה טיול כדי לא לשכפל אותו. בלי מספרי ה-id של הפריטים, שמתחדשים בכל ייבוא.
+const tripKey = t => JSON.stringify([
+  t.trip.place, t.trip.start, t.trip.end, t.trip.name || '', t.trip.activities,
+  t.items.map(i => [i.text, i.cat, i.checked])
+]);
+
+// מוסיף טיולים מהקובץ בלי למחוק כלום: טיול פעיל מהקובץ הופך לפעיל רק אם אין כרגע פעיל,
+// ואחרת נכנס לטיולים קודמים. טיולים שכבר קיימים לא מוכפלים.
+function importBackup(text) {
+  let data;
+  try { data = JSON.parse(text); } catch (e) { backupMessage('הקובץ לא נראה כמו גיבוי של PackPal.', false); return; }
+  if (!data || data.app !== BACKUP_APP || !Array.isArray(data.history)) {
+    backupMessage('הקובץ לא נראה כמו גיבוי של PackPal.', false);
+    return;
+  }
+
+  const incoming = data.history.map(cleanTrip).filter(Boolean);
+  const current = data.current ? cleanTrip(data.current) : null;
+  const skipped = data.history.length - incoming.length + (data.current && !current ? 1 : 0);
+
+  const hist = loadHistory();
+  const known = new Set(hist.map(tripKey));
+  if (state) known.add(tripKey(state));
+  let added = 0, becameCurrent = false;
+
+  if (current && !known.has(tripKey(current))) {
+    if (!state) {
+      state = current;
+      save();
+      becameCurrent = true;
+    } else {
+      hist.push(current);
+    }
+    known.add(tripKey(current));
+    added++;
+  }
+  incoming.forEach(t => {
+    if (known.has(tripKey(t))) return;
+    known.add(tripKey(t));
+    hist.push(t);
+    added++;
+  });
+
+  saveHistory(hist);
+  if (becameCurrent) applyStateToPage(); else renderPast();
+
+  let msg;
+  if (added) msg = added === 1 ? 'שוחזר טיול אחד.' : 'שוחזרו ' + added + ' טיולים.';
+  else if (!data.history.length && !data.current) msg = 'הקובץ ריק, אין בו טיולים.';
+  else if (skipped && !incoming.length && !current) msg = 'לא נמצאו בקובץ טיולים תקינים לשחזור.';
+  else msg = 'כל הטיולים שבקובץ כבר קיימים כאן.';
+  if (hist.length > HISTORY_MAX) msg += ' (נשמרים עד ' + HISTORY_MAX + ' טיולים קודמים.)';
+  if (skipped && added) msg += ' ' + (skipped === 1 ? 'טיול אחד בקובץ לא תקין ודולג.' : skipped + ' טיולים בקובץ לא תקינים ודולגו.');
+  backupMessage(msg, added > 0 || (!skipped && !!(data.history.length || data.current)));
+}
+
 // איזה טיול ישן פתוח כרגע לשכפול (מציג שדות תאריך מתחתיו), או null
 let dupOpenIdx = null;
 // איזה טיול ישן פתוח כרגע לשינוי שם, או null
@@ -1307,6 +1441,15 @@ $('addForm').addEventListener('submit', (ev) => {
 
 $('shareBtn').addEventListener('click', shareWhatsApp);
 $('printBtn').addEventListener('click', printList);
+$('exportBtn').addEventListener('click', exportBackup);
+$('importBtn').addEventListener('click', () => $('importFile').click());
+$('importFile').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  ev.target.value = '';           // מאפשר לבחור את אותו קובץ שוב
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { backupMessage('הקובץ גדול מדי.', false); return; }
+  importBackup(await file.text());
+});
 $('reorderBtn').addEventListener('click', () => setReorderMode(!reorderMode));
 
 $('resetBtn').addEventListener('click', () => {
