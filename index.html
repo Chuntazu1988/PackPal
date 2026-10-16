@@ -1224,7 +1224,8 @@ if (state && state.items) {
 (function autoResizeFrame() {
   const frame = window.frameElement;
   if (!frame) return;
-  const fit = () => { frame.style.height = document.body.scrollHeight + 'px'; };
+  // מעגלים למעלה: גובה עם שבר (למשל 1444.4) היה משאיר פיקסל חסר ופס גלילה דק
+  const fit = () => { frame.style.height = Math.ceil(document.body.getBoundingClientRect().height) + 'px'; };
   try {
     new ResizeObserver(fit).observe(document.body);
     fit();
