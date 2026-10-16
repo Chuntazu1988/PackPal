@@ -201,6 +201,14 @@
   .tab-manage button { padding: 6px 12px; font-size: .9rem; }
   .tab-manage .rename-form { flex: 1 1 100%; }
   .tab-manage .confirm-text { flex: 1 1 100%; color: var(--danger); font-size: .95rem; }
+  .check-label { display: flex; align-items: center; gap: 8px; margin-top: 16px; font-weight: normal; cursor: pointer; }
+  .check-label input { width: 20px; height: 20px; accent-color: var(--accent); }
+  #sharedOptions { margin-top: 4px; padding: 4px 12px 12px; border: 1px dashed var(--border); border-radius: 12px; }
+  .chips.three { grid-template-columns: repeat(3, 1fr); }
+  .chips.three .chip span { padding: 10px 4px; font-size: .95rem; }
+  .my-group { background: var(--stat); border-radius: 10px; padding: 8px 12px; margin-bottom: 8px; font-size: .95rem; }
+  .item .assignee { max-width: 8.5rem; padding: 4px 6px; font: inherit; font-size: .85rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); }
+  .item .assignee.empty { color: var(--muted); }
   .join-form, .invite-panel { margin-top: 12px; }
   .join-form input[type=text] { margin-top: 6px; }
   .invite-panel { border-top: 1px solid var(--border); padding-top: 12px; }
@@ -293,9 +301,11 @@
 
   <!-- ===== טיול משותף ===== -->
   <section id="sharedBar" class="card hidden">
-    <div class="shared-head"><strong>👥 טיול משותף</strong><span id="connStatus" role="status"></span></div>
+    <div class="shared-head"><strong>👥 טיול משותף<span id="sharedType"></span></strong><span id="connStatus" role="status"></span></div>
     <div id="memberTabs" class="tabs" role="tablist"></div>
     <div id="tabManage" class="tab-manage"></div>
+    <div id="groupHint" class="note hidden">בלשונית הזו כל אחד בוחר ליד פריט מי מביא אותו, כדי שלא יביאו אותו כולם.</div>
+    <div id="myGroupItems" class="my-group hidden"></div>
     <div id="joinBox"></div>
     <div class="shared-link"><label>קישור להזמנת עוד אנשים</label><div id="sharedLinkBox"></div></div>
   </section>
@@ -319,6 +329,14 @@
 
     <label>מה מתכננים לעשות?</label>
     <div class="chips" id="activities"></div>
+
+    <label class="check-label"><input type="checkbox" id="sharedCheck"> 👥 טיול משותף (כמה אנשים אורזים יחד)</label>
+    <div id="sharedOptions" class="hidden">
+      <label for="ownerName">השם שלך (שם הלשונית שלך)</label>
+      <input type="text" id="ownerName" maxlength="30" placeholder="למשל: נטע">
+      <label>סוג הטיול</label>
+      <div class="chips three" id="tripTypes"></div>
+    </div>
 
     <button type="submit" class="primary" id="goBtn">בנה לי רשימה</button>
     <div id="error" role="alert"></div>
@@ -992,6 +1010,9 @@ function renderList() {
       const label = el('span', { className: 'text' }, it.text);
       if ((it.qty || 1) > 1) label.appendChild(el('span', { className: 'qty' }, ' ×' + it.qty));
       row.append(box, label);
+      if (typeof sharedMode !== 'undefined' && sharedMode && viewMemberId === GROUP_ID) {
+        row.append(assigneeSelect(it));
+      }
       if (!reorderMode) {
         if ((it.qty || 1) > 1) {
           const minus = el('button', { type: 'button', className: 'qty-btn', title: 'הפחת כמות' }, '−');
@@ -1362,6 +1383,26 @@ function renderProgress() {
    6. פעולות על הרשימה
    ========================================================= */
 
+// רשימה נפתחת: מי מביא את הפריט המשותף
+function assigneeSelect(it) {
+  const sel = el('select', { className: 'assignee' + (it.by ? '' : ' empty') });
+  sel.setAttribute('aria-label', 'מי מביא: ' + it.text);
+  sel.appendChild(el('option', { value: '' }, 'מי מביא?'));
+  membersList().filter(m => !m.group).forEach(m => {
+    sel.appendChild(el('option', { value: m.id }, m.name + (m.id === myMemberId ? ' (אני)' : '')));
+  });
+  // מי שהוסר מהטיול: עדיין מראים שהוא היה משויך
+  if (it.by && !(remote.members || {})[it.by]) sel.appendChild(el('option', { value: it.by }, '(הוסר)'));
+  sel.value = it.by || '';
+  sel.addEventListener('change', () => {
+    it.by = sel.value || undefined;
+    save();
+    renderList();
+    renderMyGroupItems();
+  });
+  return sel;
+}
+
 // כמות תקינה: מספר שלם בין 1 ל-99 (כל דבר אחר הופך ל-1)
 function clampQty(v) {
   const n = Math.round(Number(v));
@@ -1378,7 +1419,9 @@ function changeQty(id, delta) {
 
 // הטקסט של הפריט כולל כמות, רק כשהיא יותר מ-1
 function itemLabel(it) {
-  return (it.qty || 1) > 1 ? it.text + ' ×' + it.qty : it.text;
+  let t = (it.qty || 1) > 1 ? it.text + ' ×' + it.qty : it.text;
+  if (it.by && typeof remote !== 'undefined' && remote && remote.members && remote.members[it.by]) t += ' (' + remote.members[it.by].name + ')';
+  return t;
 }
 
 function toggleItem(id) {
@@ -1535,6 +1578,12 @@ $('endDate').min = todayISO;
 $('startDate').addEventListener('change', () => { $('endDate').min = $('startDate').value || todayISO; });
 
 // בונה את הטיול והרשימה אחרי שיודעים בדיוק איזה מקום נבחר
+// בטופס: סימון "טיול משותף" חושף את שם המארגנת ואת סוג הטיול
+$('sharedCheck').addEventListener('change', () => {
+  $('sharedOptions').classList.toggle('hidden', !$('sharedCheck').checked);
+  if ($('sharedCheck').checked) $('ownerName').focus();
+});
+
 async function buildTrip(place, start, end, activities) {
   const weather = await getWeather(place, start, end);
   const trip = { place: place.label, lat: place.lat, lon: place.lon, start: start, end: end, activities: activities };
@@ -1545,6 +1594,17 @@ async function buildTrip(place, start, end, activities) {
   renderWeather();
   renderList();
   $('weather').scrollIntoView({ behavior: 'smooth' });
+
+  // טיול משותף מההתחלה: יוצרים מיד את הקישור ופותחים את חלון השיתוף
+  if ($('sharedCheck').checked) {
+    try {
+      await createSharedTrip($('ownerName').value.trim().slice(0, 30), selectedType($('tripTypes')));
+      renderInvitePanel();
+      $('invitePanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) {
+      $('error').textContent = 'הרשימה נבנתה, אבל לא הצלחתי ליצור קישור לשיתוף. אפשר ללחוץ "שתף טיול" למטה ולנסות שוב.';
+    }
+  }
 }
 
 function hideChoices() {
@@ -1575,6 +1635,11 @@ $('tripForm').addEventListener('submit', async (ev) => {
   const start = $('startDate').value;
   const end = $('endDate').value;
   if (end < start) { $('error').textContent = 'תאריך החזרה חייב להיות אחרי תאריך היציאה.'; return; }
+  if ($('sharedCheck').checked && !$('ownerName').value.trim()) {
+    $('error').textContent = 'בטיול משותף צריך לכתוב את השם שלך.';
+    $('ownerName').focus();
+    return;
+  }
 
   const activities = Array.from(document.querySelectorAll('#activities input:checked')).map(i => i.value);
   const btn = $('goBtn');
@@ -1659,6 +1724,42 @@ $('resetBtn').addEventListener('click', () => {
 const FIREBASE_DB_URL = 'https://packpal-8c618-default-rtdb.europe-west1.firebasedatabase.app';
 const ID_RE = /^[A-Za-z0-9_-]{12,64}$/;
 
+// סוגי טיול משותף, ופריטים משותפים מוצעים לכל סוג
+const TRIP_TYPES = {
+  friends: { label: '👫 חברים', title: 'חברים' },
+  couple: { label: '💑 זוגי', title: 'זוגי' },
+  family: { label: '👨‍👩‍👧 משפחתי', title: 'משפחתי' }
+};
+const GROUP_ID = '__group__';                       // "משתתף" מיוחד שהוא הרשימה המשותפת
+const GROUP_CAT = '🧰 ציוד משותף';
+const GROUP_DEFAULTS = {
+  friends: ['ערכת עזרה ראשונה', 'מפצל חשמל / מטען רב-שקעים', 'רמקול בלוטות׳', 'קלפים ומשחקי קופסה', 'שקיות אשפה', 'חטיפים ושתייה לכולם'],
+  couple: ['ערכת עזרה ראשונה', 'מפצל חשמל / מטען רב-שקעים', 'מצלמה', 'שמיכת פיקניק', 'שקיות אשפה'],
+  family: ['ערכת עזרה ראשונה', 'מגבונים לחים', 'חטיפים ושתייה לדרך', 'משחקים לילדים', 'מפצל חשמל / מטען רב-שקעים', 'תרופות לילדים (חום, כאבים)', 'שקיות אשפה']
+};
+
+function groupItems(type) {
+  return (GROUP_DEFAULTS[type] || GROUP_DEFAULTS.friends)
+    .map(text => ({ id: uid(), text: text, cat: GROUP_CAT, checked: false, qty: 1 }));
+}
+
+function typeTitle(type) { return TRIP_TYPES[type] ? TRIP_TYPES[type].title : ''; }
+
+// כפתורי בחירה של סוג הטיול (רדיו). name = שם הקבוצה, כדי שאפשר יהיה לבחור רק אחד.
+function buildTypeChips(container, name) {
+  container.replaceChildren();
+  Object.keys(TRIP_TYPES).forEach((key, i) => {
+    const label = el('label', { className: 'chip' });
+    const input = el('input', { type: 'radio', name: name, value: key, checked: i === 0 });
+    label.append(input, el('span', null, TRIP_TYPES[key].label));
+    container.appendChild(label);
+  });
+}
+function selectedType(container) {
+  const r = container.querySelector('input:checked');
+  return r ? r.value : 'friends';
+}
+
 // המזהה מגיע מ-app.py (הפרמטר ?trip= בכתובת), או ישירות מהכתובת כשמריצים את הקובץ לבד
 function readSharedId() {
   const injected = '@@PACKPAL_TRIP_ID@@';
@@ -1703,7 +1804,9 @@ async function fb(method, id, path, body) {
 
 // רשומה של פריט כפי שהיא נשמרת ב-Firebase (pos = המקום ברשימה)
 function itemRecord(it, pos) {
-  return { text: it.text, cat: it.cat, checked: !!it.checked, qty: it.qty || 1, pos: pos };
+  const rec = { text: it.text, cat: it.cat, checked: !!it.checked, qty: it.qty || 1, pos: pos };
+  if (it.by) rec.by = it.by;   // מי מביא (רק ברשימה המשותפת)
+  return rec;
 }
 
 function itemsToRecords(items) {
@@ -1721,7 +1824,7 @@ function itemsFromRemote(member) {
     .filter(e => e[1] && typeof e[1].text === 'string')
     .map(e => ({
       id: e[0], text: e[1].text, cat: e[1].cat || '', checked: !!e[1].checked,
-      qty: e[1].qty || 1, pos: e[1].pos || 0
+      qty: e[1].qty || 1, pos: e[1].pos || 0, by: e[1].by || undefined
     }))
     .sort((a, b) => a.pos - b.pos);
 }
@@ -1729,8 +1832,8 @@ function itemsFromRemote(member) {
 function membersList() {
   const m = (remote && remote.members) || {};
   return Object.keys(m)
-    .map(id => ({ id: id, name: m[id].name || 'ללא שם', joinedAt: m[id].joinedAt || 0 }))
-    .sort((a, b) => a.joinedAt - b.joinedAt);
+    .map(id => ({ id: id, name: m[id].name || 'ללא שם', joinedAt: m[id].joinedAt || 0, group: id === GROUP_ID }))
+    .sort((a, b) => (b.group - a.group) || (a.joinedAt - b.joinedAt));   // הרשימה המשותפת תמיד ראשונה
 }
 
 /* ---------- סטטוס חיבור ---------- */
@@ -1872,7 +1975,7 @@ function renderShared() {
 
   members.forEach(m => {
     const b = el('button', { type: 'button', className: 'tab' + (m.id === viewMemberId ? ' active' : '') },
-      m.name + (m.id === myMemberId ? ' (אני)' : ''));
+      m.group ? '👥 ' + m.name : m.name + (m.id === myMemberId ? ' (אני)' : ''));
     b.setAttribute('role', 'tab');
     b.setAttribute('aria-selected', String(m.id === viewMemberId));
     b.addEventListener('click', () => { viewMemberId = m.id; renderShared(); });
@@ -1891,7 +1994,23 @@ function renderShared() {
     renderWeather();
     renderList();
   }
+  const t = remote.trip && remote.trip.type;
+  $('sharedType').textContent = t && typeTitle(t) ? ' · ' + typeTitle(t) : '';
+  $('groupHint').classList.toggle('hidden', viewMemberId !== GROUP_ID);
+  renderMyGroupItems();
   lastSig = viewSig();
+}
+
+// "מה אני מביא מהרשימה המשותפת": מוצג למי שהצטרפה לטיול
+function renderMyGroupItems() {
+  const box = $('myGroupItems');
+  box.replaceChildren();
+  const group = remote && remote.members && remote.members[GROUP_ID];
+  if (!group || !myMemberExists()) { box.classList.add('hidden'); return; }
+  const mine = itemsFromRemote(group).filter(i => i.by === myMemberId);
+  if (!mine.length) { box.classList.add('hidden'); return; }
+  box.textContent = '📌 מהרשימה המשותפת אני מביא/ה: ' + mine.map(i => i.text).join(', ');
+  box.classList.remove('hidden');
 }
 
 /* ---------- ניהול לשוניות והטיול (שינוי שם, הסרה, מחיקה) ---------- */
@@ -1908,7 +2027,8 @@ function renderManage() {
   if (!remote || !remote.trip || !viewMemberId || !(remote.members || {})[viewMemberId]) return;
 
   const mine = viewMemberId === myMemberId;
-  const canEditTab = mine || isOwner();
+  const isGroupTab = viewMemberId === GROUP_ID;
+  const canEditTab = !isGroupTab && (mine || isOwner());
   const name = remote.members[viewMemberId].name || '';
 
   if (manageMode === 'rename' && canEditTab) {
@@ -2084,7 +2204,7 @@ function newShareId() {
   return Array.from(bytes, b => b.toString(36).padStart(2, '0')).join('').slice(0, 24).padEnd(24, 'x');
 }
 
-async function createSharedTrip(name) {
+async function createSharedTrip(name, type) {
   const id = newShareId();
   const mid = uid();
   const items = state.items.map(it => ({ id: uid() + it.id, text: it.text, cat: it.cat, checked: it.checked, qty: it.qty || 1 }));
@@ -2092,12 +2212,16 @@ async function createSharedTrip(name) {
   const trip = { place: t.place, start: t.start, end: t.end, activities: t.activities || [] };
   if (t.lat !== undefined) { trip.lat = t.lat; trip.lon = t.lon; }
   if (t.name) trip.name = t.name;
+  trip.type = TRIP_TYPES[type] ? type : 'friends';
   await fb('PUT', id, '', {
     trip: trip,
     weather: state.weather,
     createdAt: Date.now(),
     ownerId: mid,
-    members: { [mid]: { name: name, joinedAt: Date.now(), items: itemsToRecords(items) } }
+    members: {
+      [GROUP_ID]: { name: 'משותף', group: true, joinedAt: 0, items: itemsToRecords(groupItems(trip.type)) },
+      [mid]: { name: name, joinedAt: Date.now(), items: itemsToRecords(items) }
+    }
   });
   try { localStorage.setItem(MEMBER_KEY(id), mid); } catch (e) {}
   state.shareId = id;
@@ -2142,6 +2266,8 @@ function renderInvitePanel() {
   const input = el('input', { type: 'text', maxLength: 30, required: true });
   input.placeholder = 'השם שלך (שם הלשונית שלך)';
   input.setAttribute('aria-label', 'השם שלך');
+  const typeBox = el('div', { className: 'chips three' });
+  buildTypeChips(typeBox, 'inviteType');
   const go = el('button', { type: 'submit', className: 'primary' }, 'צור קישור לשיתוף');
   const cancel = el('button', { type: 'button', className: 'secondary' }, 'ביטול');
   cancel.addEventListener('click', () => panel.classList.add('hidden'));
@@ -2153,7 +2279,7 @@ function renderInvitePanel() {
     go.disabled = true;
     go.textContent = 'יוצר קישור...';
     try {
-      await createSharedTrip(name);
+      await createSharedTrip(name, selectedType(typeBox));
       renderInvitePanel();
     } catch (e) {
       err.textContent = 'לא הצלחתי ליצור את הקישור. בדקי חיבור לאינטרנט ונסי שוב.';
@@ -2163,7 +2289,7 @@ function renderInvitePanel() {
   });
   const btns = el('div', { className: 'actions' });
   btns.append(go, cancel);
-  form.append(input, err, btns);
+  form.append(input, el('label', null, 'סוג הטיול'), typeBox, err, btns);
   panel.appendChild(form);
 }
 
@@ -2179,6 +2305,9 @@ function startShared() {
 }
 
 // בטעינת הדף – אם יש טיול שמור, מציגים אותו
+// כפתורי סוג הטיול בטופס (נבנים כאן, אחרי שכל ההגדרות למעלה כבר קיימות)
+buildTypeChips($('tripTypes'), 'tripType');
+
 if (sharedMode) {
   startShared();
 } else {
