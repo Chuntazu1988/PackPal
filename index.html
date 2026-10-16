@@ -190,9 +190,27 @@
     left: 12px;
     z-index: 20;
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 8px;
   }
-  #themeBtn, #sizeBtn, #fontBtn, #bgBtn, #bgReset {
+  /* החלונית שנפתחת מכפתור "עיצוב" ומרכזת את כל כפתורי העיצוב */
+  #designPanel {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px var(--shadow);
+  }
+  #designPanel.hidden { display: none; }
+  .tool-row { display: flex; gap: 8px; }
+  .tool-row #bgBtn { flex: 1; }
+  #designPanel button, #designPanel #bgBtn { text-align: start; }
+  #themeBtn, #sizeBtn, #fontBtn, #designToggle, #bgBtn, #bgReset {
     background: var(--card);
     color: var(--text);
     border: 1px solid var(--border);
@@ -216,11 +234,16 @@
   <small>זו לא הגרסה הסופית – כאן מנסים דברים חדשים</small>
 </div>
 <div id="tools">
-  <button type="button" id="themeBtn" aria-label="החלף מצב כהה / בהיר"></button>
-  <button type="button" id="sizeBtn" aria-label="שנה את גודל הטקסט"></button>
-  <button type="button" id="fontBtn" aria-label="שנה את סוג הפונט"></button>
-  <label id="bgBtn" title="בחרי צבע רקע">🎨 רקע<input type="color" id="bgPicker" aria-label="בחרי צבע רקע"></label>
-  <button type="button" id="bgReset" class="hidden" aria-label="חזרה לצבע הרקע המקורי" title="חזרה לצבע המקורי">↺</button>
+  <button type="button" id="designToggle" aria-expanded="false" aria-controls="designPanel">🎨 עיצוב</button>
+  <div id="designPanel" class="hidden">
+    <button type="button" id="themeBtn" aria-label="החלף מצב כהה / בהיר"></button>
+    <button type="button" id="sizeBtn" aria-label="שנה את גודל הטקסט"></button>
+    <button type="button" id="fontBtn" aria-label="שנה את סוג הפונט"></button>
+    <div class="tool-row">
+      <label id="bgBtn" title="בחרי צבע רקע">🖌️ צבע רקע<input type="color" id="bgPicker" aria-label="בחרי צבע רקע"></label>
+      <button type="button" id="bgReset" class="hidden" aria-label="חזרה לצבע הרקע המקורי" title="חזרה לצבע המקורי">↺</button>
+    </div>
+  </div>
 </div>
 <main>
   <h1>🧳 PackPal <small>רשימת אריזה חכמה לפי מזג האוויר והפעילויות שלך</small></h1>
@@ -1314,6 +1337,22 @@ if (state && state.items) {
   state = null;
   renderPast();
 }
+
+// כפתור "עיצוב": פותח וסוגר את חלונית כפתורי העיצוב
+(function designMenu() {
+  const toggle = document.getElementById('designToggle');
+  const panel = document.getElementById('designPanel');
+  const setOpen = (open) => {
+    panel.classList.toggle('hidden', !open);
+    toggle.setAttribute('aria-expanded', String(open));
+  };
+  toggle.addEventListener('click', () => setOpen(panel.classList.contains('hidden')));
+  // לחיצה מחוץ לחלונית, או Escape – סוגרות אותה
+  document.addEventListener('click', (ev) => {
+    if (!document.getElementById('tools').contains(ev.target)) setOpen(false);
+  });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') setOpen(false); });
+})();
 
 // כשהאפליקציה רצה בתוך מסגרת של Streamlit – מתאימים את גובה המסגרת לתוכן,
 // כדי שלא תהיה גלילה כפולה (אחת של הדף ואחת של המסגרת)
