@@ -192,7 +192,7 @@
     display: flex;
     gap: 8px;
   }
-  #themeBtn, #sizeBtn, #bgBtn {
+  #themeBtn, #sizeBtn, #bgBtn, #bgReset {
     background: var(--card);
     color: var(--text);
     border: 1px solid var(--border);
@@ -201,6 +201,11 @@
     box-shadow: 0 2px 8px var(--shadow);
   }
 
+  #bgBtn { margin: 0; font-weight: normal; cursor: pointer; display: inline-flex; align-items: center; position: relative; font-size: 1rem; }
+  #bgBtn input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+  /* צבע הכותרת מחוץ לכרטיסים מותאם לרקע שנבחר, כדי שיהיה קריא */
+  main > h1 { color: var(--page-text, var(--text)); }
+  main > h1 small { color: var(--page-muted, var(--muted)); }
   .hidden { display: none; }
   canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
 </style>
@@ -213,7 +218,8 @@
 <div id="tools">
   <button type="button" id="themeBtn" aria-label="החלף מצב כהה / בהיר"></button>
   <button type="button" id="sizeBtn" aria-label="שנה את גודל הטקסט"></button>
-  <button type="button" id="bgBtn" aria-label="שנה את צבע הרקע"></button>
+  <label id="bgBtn" title="בחרי צבע רקע">🎨 רקע<input type="color" id="bgPicker" aria-label="בחרי צבע רקע"></label>
+  <button type="button" id="bgReset" class="hidden" aria-label="חזרה לצבע הרקע המקורי" title="חזרה לצבע המקורי">↺</button>
 </div>
 <main>
   <h1>🧳 PackPal <small>רשימת אריזה חכמה לפי מזג האוויר והפעילויות שלך</small></h1>
@@ -327,7 +333,6 @@ applyTheme(savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matc
 document.getElementById('themeBtn').addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(next);
-  applyBackground();   // לכל צבע רקע יש גרסה בהירה וגרסה כהה
   try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
 });
 
@@ -335,33 +340,45 @@ document.getElementById('themeBtn').addEventListener('click', () => {
    1ג. צבע רקע
    ========================================================= */
 
-// לכל צבע יש גוון למצב בהיר וגוון למצב כהה. הראשון = ברירת המחדל של האתר
-const BACKGROUNDS = [
-  { label: 'רגיל',  light: null,      dark: null },
-  { label: 'תכלת',  light: '#e3f1fb', dark: '#0f2230' },
-  { label: 'מנטה',  light: '#e2f5ea', dark: '#10261c' },
-  { label: 'ורוד',  light: '#fbe8f0', dark: '#2a1621' },
-  { label: 'חמאה',  light: '#fbf4d9', dark: '#2a2511' },
-  { label: 'סגול',  light: '#eee8fb', dark: '#1e1730' }
-];
-const BG_KEY = 'packpal-bg';
-let bgIdx = 0;
-try { bgIdx = parseInt(localStorage.getItem(BG_KEY), 10) || 0; } catch (e) {}
-if (!BACKGROUNDS[bgIdx]) bgIdx = 0;
+// הצבע שבחרת נשמר כמו שהוא. אם אין צבע שמור – נשאר הרקע המקורי של העיצוב.
+const BG_KEY = 'packpal-bgcolor';
+let bgColor = null;
+try { bgColor = localStorage.getItem(BG_KEY); } catch (e) {}
+if (!/^#[0-9a-f]{6}$/i.test(bgColor || '')) bgColor = null;
+
+// קריאות: אם הרקע בהיר – כותרת כהה, ואם כהה – כותרת בהירה
+function isLight(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const lum = 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  return lum > 150;
+}
 
 function applyBackground() {
-  const bg = BACKGROUNDS[bgIdx];
-  const color = document.documentElement.dataset.theme === 'dark' ? bg.dark : bg.light;
-  if (color) document.documentElement.style.setProperty('--bg', color);
-  else document.documentElement.style.removeProperty('--bg');   // חוזרים לצבע מהעיצוב
-  document.getElementById('bgBtn').textContent = '🎨 ' + bg.label;
+  const root = document.documentElement.style;
+  if (bgColor) {
+    root.setProperty('--bg', bgColor);
+    root.setProperty('--page-text', isLight(bgColor) ? '#1f2a37' : '#e8edf3');
+    root.setProperty('--page-muted', isLight(bgColor) ? '#4b5867' : '#b4bfcc');
+    document.getElementById('bgPicker').value = bgColor;
+  } else {
+    root.removeProperty('--bg');
+    root.removeProperty('--page-text');
+    root.removeProperty('--page-muted');
+  }
+  document.getElementById('bgReset').classList.toggle('hidden', !bgColor);
 }
 applyBackground();
 
-document.getElementById('bgBtn').addEventListener('click', () => {
-  bgIdx = (bgIdx + 1) % BACKGROUNDS.length;
+document.getElementById('bgPicker').addEventListener('input', (ev) => {
+  bgColor = ev.target.value;
   applyBackground();
-  try { localStorage.setItem(BG_KEY, String(bgIdx)); } catch (e) {}
+  try { localStorage.setItem(BG_KEY, bgColor); } catch (e) {}
+});
+
+document.getElementById('bgReset').addEventListener('click', () => {
+  bgColor = null;
+  applyBackground();
+  try { localStorage.removeItem(BG_KEY); } catch (e) {}
 });
 
 /* =========================================================
