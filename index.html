@@ -154,6 +154,10 @@
   .rename-form { display: flex; gap: 8px; align-items: center; flex: 1; }
   .rename-form input { flex: 1; }
   .past-row + .rename-form { padding: 6px 4px 14px; border-bottom: 1px solid var(--border); }
+  .choices { margin-top: 8px; }
+  .choices .hint { color: var(--muted); font-size: .9rem; margin-bottom: 6px; }
+  .choices button { display: block; width: 100%; text-align: start; margin-top: 6px; background: var(--soft); color: var(--text); border: 1px solid var(--border); }
+  .choices button small { color: var(--muted); }
   .dup-form { padding: 6px 4px 14px; border-bottom: 1px solid var(--border); }
   .dup-form .primary { margin-top: 0; }
   .dup-error { color: var(--danger); min-height: 1.2em; margin-top: 6px; }
@@ -201,7 +205,8 @@
   <!-- ===== טופס הטיול ===== -->
   <form id="tripForm" class="card" autocomplete="off">
     <label for="destination">לאן נוסעים?</label>
-    <input type="text" id="destination" placeholder="לדוגמה: פריז" required>
+    <input type="text" id="destination" placeholder="עיר או מדינה, למשל: פריז או ספרינגפילד, אילינוי" required>
+    <div id="placeChoices" class="choices hidden" role="group" aria-label="בחרי את המקום הנכון"></div>
 
     <div class="row">
       <div>
@@ -347,15 +352,41 @@ function toISO(d) {
 }
 function parseISO(s) { return new Date(s + 'T12:00:00'); }
 
-// מוצא קואורדינטות של היעד
-async function geocode(name) {
-  const url = 'https://geocoding-api.open-meteo.com/v1/search?count=1&language=he&name=' + encodeURIComponent(name);
+// שם יפה למקום: עיר, אזור (אם יש ושונה מהעיר), מדינה (אם שונה מהשם)
+function placeLabel(p) {
+  const parts = [p.name];
+  if (p.admin1 && p.admin1 !== p.name) parts.push(p.admin1);
+  if (p.country && p.country !== p.name) parts.push(p.country);
+  return parts.join(', ');
+}
+
+// מחפש מקומות לפי שם. אפשר לכתוב גם "עיר, מדינה" או "עיר, מחוז" כדי לצמצם.
+async function geocodeAll(text) {
+  const parts = text.split(',').map(x => x.trim()).filter(Boolean);
+  const name = parts[0] || text.trim();
+  const hints = parts.slice(1).map(h => h.toLowerCase());
+
+  const url = 'https://geocoding-api.open-meteo.com/v1/search?count=10&language=he&name=' + encodeURIComponent(name);
   const res = await fetch(url);
   if (!res.ok) throw new Error('שגיאה בחיפוש היעד');
   const data = await res.json();
-  if (!data.results || !data.results.length) throw new Error('לא מצאתי את היעד "' + name + '". נסי שם אחר או באנגלית.');
-  const p = data.results[0];
-  return { lat: p.latitude, lon: p.longitude, label: p.name + (p.country ? ', ' + p.country : '') };
+  let results = data.results || [];
+  if (hints.length) {
+    const narrowed = results.filter(p => {
+      const hay = [p.country, p.admin1, p.admin2, p.country_code].filter(Boolean).join(' ').toLowerCase();
+      return hints.every(h => hay.includes(h));
+    });
+    if (narrowed.length) results = narrowed;
+  }
+  if (!results.length) throw new Error('לא מצאתי את היעד "' + text + '". נסי שם אחר או באנגלית.');
+  // הגדולים קודם – בדרך כלל זה מה שהתכוונו אליו
+  results.sort((x, y) => (y.population || 0) - (x.population || 0));
+  return results.map(p => ({ lat: p.latitude, lon: p.longitude, label: placeLabel(p), country: p.country, admin1: p.admin1, population: p.population }));
+}
+
+// מוצא קואורדינטות של היעד (התוצאה הראשונה)
+async function geocode(name) {
+  return (await geocodeAll(name))[0];
 }
 
 // מקבל תחזית (עד 16 יום קדימה) או ממוצע משנה שעברה
@@ -932,9 +963,43 @@ $('startDate').min = todayISO;
 $('endDate').min = todayISO;
 $('startDate').addEventListener('change', () => { $('endDate').min = $('startDate').value || todayISO; });
 
+// בונה את הטיול והרשימה אחרי שיודעים בדיוק איזה מקום נבחר
+async function buildTrip(place, start, end, activities) {
+  const weather = await getWeather(place, start, end);
+  const trip = { place: place.label, lat: place.lat, lon: place.lon, start: start, end: end, activities: activities };
+  if (state && state.trip.name && state.trip.place === place.label) trip.name = state.trip.name;
+  nextId = 1;
+  state = { trip: trip, weather: weather, items: buildList(trip, weather) };
+  save();
+  renderWeather();
+  renderList();
+  $('weather').scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideChoices() {
+  $('placeChoices').classList.add('hidden');
+  $('placeChoices').replaceChildren();
+}
+
+// כמה מקומות באותו שם – נותנים לבחור
+function showChoices(places, onPick) {
+  const box = $('placeChoices');
+  box.replaceChildren(el('div', { className: 'hint' }, 'מצאתי כמה מקומות, איזה מהם?'));
+  places.forEach(p => {
+    const b = el('button', { type: 'button' }, p.label);
+    if (p.population) b.append(' ', el('small', null, '· ' + p.population.toLocaleString('he-IL') + ' תושבים'));
+    b.addEventListener('click', () => onPick(p));
+    box.appendChild(b);
+  });
+  box.classList.remove('hidden');
+}
+
+$('destination').addEventListener('input', hideChoices);
+
 $('tripForm').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   $('error').textContent = '';
+  hideChoices();
   const name = $('destination').value.trim();
   const start = $('startDate').value;
   const end = $('endDate').value;
@@ -942,24 +1007,28 @@ $('tripForm').addEventListener('submit', async (ev) => {
 
   const activities = Array.from(document.querySelectorAll('#activities input:checked')).map(i => i.value);
   const btn = $('goBtn');
-  btn.disabled = true;
-  btn.textContent = 'בודק מזג אוויר...';
+  const setBusy = (busy) => { btn.disabled = busy; btn.textContent = busy ? 'בודק מזג אוויר...' : 'בנה לי רשימה'; };
+  setBusy(true);
   try {
-    const place = await geocode(name);
-    const weather = await getWeather(place, start, end);
-    const trip = { place: place.label, lat: place.lat, lon: place.lon, start: start, end: end, activities: activities };
-    if (state && state.trip.name && state.trip.place === place.label) trip.name = state.trip.name;
-    nextId = 1;
-    state = { trip: trip, weather: weather, items: buildList(trip, weather) };
-    save();
-    renderWeather();
-    renderList();
-    $('weather').scrollIntoView({ behavior: 'smooth' });
+    const places = await geocodeAll(name);
+    if (places.length === 1) {
+      await buildTrip(places[0], start, end, activities);
+    } else {
+      showChoices(places, async (place) => {
+        hideChoices();
+        $('error').textContent = '';
+        setBusy(true);
+        try {
+          await buildTrip(place, $('startDate').value, $('endDate').value, activities);
+        } catch (err) {
+          $('error').textContent = err.message || 'משהו השתבש, נסי שוב.';
+        } finally { setBusy(false); }
+      });
+    }
   } catch (err) {
     $('error').textContent = err.message || 'משהו השתבש, נסי שוב.';
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'בנה לי רשימה';
+    setBusy(false);
   }
 });
 
