@@ -154,6 +154,10 @@
   .rename-form { display: flex; gap: 8px; align-items: center; flex: 1; }
   .rename-form input { flex: 1; }
   .past-row + .rename-form { padding: 6px 4px 14px; border-bottom: 1px solid var(--border); }
+  .past-head { display: flex; align-items: center; gap: 8px; }
+  .past-head strong { flex: 1; }
+  .past-head button { padding: 6px 12px; font-size: .9rem; }
+  .danger-btn { background: var(--danger); color: #fff; }
   .choices { margin-top: 8px; }
   .choices .hint { color: var(--muted); font-size: .9rem; margin-bottom: 6px; }
   .choices button { display: block; width: 100%; text-align: start; margin-top: 6px; background: var(--soft); color: var(--text); border: 1px solid var(--border); }
@@ -711,9 +715,22 @@ function renderPast() {
   const box = $('pastSection');
   box.replaceChildren();
   const hist = loadHistory();
-  if (!hist.length) { box.classList.add('hidden'); return; }
+  if (!hist.length) { confirmClearAll = false; box.classList.add('hidden'); return; }
 
-  box.appendChild(el('strong', null, '🗂️ טיולים קודמים'));
+  const head = el('div', { className: 'past-head' });
+  head.appendChild(el('strong', null, '🗂️ טיולים קודמים'));
+  if (confirmClearAll) {
+    const yes = el('button', { type: 'button', className: 'danger-btn' }, 'כן, למחוק ' + hist.length + ' טיולים');
+    yes.addEventListener('click', clearAllPast);
+    const no = el('button', { type: 'button', className: 'secondary' }, 'ביטול');
+    no.addEventListener('click', () => { confirmClearAll = false; renderPast(); });
+    head.append(yes, no);
+  } else {
+    const all = el('button', { type: 'button', className: 'secondary' }, 'מחק הכל');
+    all.addEventListener('click', () => { confirmClearAll = true; dupOpenIdx = null; renameOpenIdx = null; renderPast(); });
+    head.appendChild(all);
+  }
+  box.appendChild(head);
   hist.forEach((entry, idx) => {
     const t = entry.trip, total = entry.items.length;
     const done = entry.items.filter(i => i.checked).length;
@@ -726,10 +743,10 @@ function renderPast() {
     openBtn.addEventListener('click', () => openPastTrip(idx));
     const renameBtn = el('button', { type: 'button', className: 'rename-btn', title: 'שנה שם' }, '✏️');
     renameBtn.setAttribute('aria-label', 'שנה את שם הטיול');
-    renameBtn.addEventListener('click', () => { renameOpenIdx = renameOpenIdx === idx ? null : idx; dupOpenIdx = null; renderPast(); });
+    renameBtn.addEventListener('click', () => { renameOpenIdx = renameOpenIdx === idx ? null : idx; dupOpenIdx = null; confirmClearAll = false; renderPast(); });
     const dupBtn = el('button', { type: 'button', className: 'secondary' }, 'שכפל');
     dupBtn.title = 'טיול חדש לאותו יעד, בתאריכים אחרים';
-    dupBtn.addEventListener('click', () => { dupOpenIdx = dupOpenIdx === idx ? null : idx; renameOpenIdx = null; renderPast(); });
+    dupBtn.addEventListener('click', () => { dupOpenIdx = dupOpenIdx === idx ? null : idx; renameOpenIdx = null; confirmClearAll = false; renderPast(); });
     const del = el('button', { type: 'button', className: 'del', title: 'מחק' }, '✕');
     del.addEventListener('click', () => deletePastTrip(idx));
     row.append(info, openBtn, dupBtn, renameBtn, del);
@@ -770,6 +787,17 @@ function openPastTrip(idx) {
   save();
   applyStateToPage();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// האם מחכים לאישור "מחק הכל" בכרטיס הטיולים הקודמים
+let confirmClearAll = false;
+
+function clearAllPast() {
+  confirmClearAll = false;
+  dupOpenIdx = null;
+  renameOpenIdx = null;
+  saveHistory([]);
+  renderPast();
 }
 
 // איזה טיול ישן פתוח כרגע לשכפול (מציג שדות תאריך מתחתיו), או null
