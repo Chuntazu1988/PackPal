@@ -152,7 +152,8 @@
   .item .del { background: none; color: var(--danger); padding: 4px 8px; font-size: 1.1rem; }
   @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-  .add-row { display: flex; gap: 8px; margin-top: 14px; }
+  .add-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .add-row .fav-check { flex: 1 1 100%; margin-top: 2px; font-size: .9rem; color: var(--muted); }
   .add-row input { flex: 1; }
   .add-row input[type=number] { flex: 0 0 4.5rem; width: 4.5rem; padding: 10px 6px; text-align: center; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); font: inherit; }
   .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
@@ -188,6 +189,10 @@
   .choices .hint { color: var(--muted); font-size: .9rem; margin-bottom: 6px; }
   .choices button { display: block; width: 100%; text-align: start; margin-top: 6px; background: var(--soft); color: var(--text); border: 1px solid var(--border); }
   .choices button small { color: var(--muted); }
+  .fav-row { display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--border); }
+  .fav-row .text { flex: 1; }
+  .fav-row .del { background: none; color: var(--danger); padding: 4px 8px; font-size: 1.1rem; }
+  #favMsg { margin-top: 10px; min-height: 1.2em; color: var(--ok); }
   #backupMsg { margin-top: 10px; min-height: 1.2em; }
   #backupMsg.err { color: var(--danger); }
   #backupMsg.ok { color: var(--ok); }
@@ -215,7 +220,7 @@
   .shared-link label { font-size: .9rem; color: var(--muted); font-weight: normal; }
   .link-box .add-row { margin-top: 4px; }
   /* בטיול משותף הטיול קבוע: מסתירים את מה שקשור לטיולים האישיים */
-  .shared-mode #tripForm, .shared-mode #pastSection, .shared-mode #backupSection,
+  .shared-mode #tripForm, .shared-mode #pastSection, .shared-mode #backupSection, .shared-mode #favSection,
   .shared-mode #resetBtn, .shared-mode #inviteBtn, .shared-mode #invitePanel { display: none !important; }
   .dup-form { padding: 6px 4px 14px; border-bottom: 1px solid var(--border); }
   .dup-form .primary { margin-top: 0; }
@@ -360,6 +365,7 @@
       <input type="text" id="newItem" placeholder="הוסף פריט משלך...">
       <input type="number" id="newQty" min="1" max="99" value="1" aria-label="כמות" title="כמות">
       <button type="submit" class="secondary">הוסף</button>
+      <label class="check-label fav-check"><input type="checkbox" id="newFav"> ⭐ שמור גם בפריטים הקבועים (יתווסף לכל טיול חדש)</label>
     </form>
 
     <div class="actions">
@@ -374,6 +380,22 @@
 
   <!-- ===== טיולים קודמים ===== -->
   <section id="pastSection" class="card hidden"></section>
+
+  <!-- ===== פריטים קבועים ===== -->
+  <section id="favSection" class="card">
+    <strong>⭐ פריטים קבועים</strong>
+    <p class="note">דברים שתמיד אורזים. הם יתווספו אוטומטית לכל טיול חדש, בקטגוריה משלהם.</p>
+    <div id="favList"></div>
+    <form class="add-row" id="favForm" autocomplete="off">
+      <input type="text" id="favText" maxlength="80" placeholder="הוסף פריט קבוע...">
+      <input type="number" id="favQty" min="1" max="99" value="1" aria-label="כמות" title="כמות">
+      <button type="submit" class="secondary">הוסף</button>
+    </form>
+    <div class="actions">
+      <button type="button" class="secondary" id="favApplyBtn">הוסף את הקבועים לטיול הנוכחי</button>
+    </div>
+    <div id="favMsg" role="status"></div>
+  </section>
 
   <!-- ===== גיבוי ושחזור ===== -->
   <section id="backupSection" class="card">
@@ -971,8 +993,9 @@ function setTripName(trip, name) {
 
 function renderList() {
   const section = $('listSection');
-  if (!state) { section.classList.add('hidden'); return; }
+  if (!state) { section.classList.add('hidden'); renderFavs(); return; }
   section.classList.remove('hidden');
+  renderFavs();
   renderTitle();
   renderCountdown();
 
@@ -1160,6 +1183,86 @@ function clearAllPast() {
    גיבוי ושחזור (קובץ JSON)
    ========================================================= */
 
+/* =========================================================
+   פריטים קבועים: דברים שמתווספים אוטומטית לכל טיול חדש
+   ========================================================= */
+
+const FAV_KEY = STORAGE_KEY + '-favs';
+const FAV_CAT = '⭐ הקבועים שלי';
+const FAV_MAX = 50;
+
+function loadFavs() {
+  try {
+    const f = JSON.parse(localStorage.getItem(FAV_KEY));
+    return Array.isArray(f)
+      ? f.filter(x => x && typeof x.text === 'string' && x.text.trim())
+          .map(x => ({ text: x.text.trim().slice(0, 80), qty: clampQty(x.qty) }))
+      : [];
+  } catch (e) { return []; }
+}
+function saveFavs(f) {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(f.slice(0, FAV_MAX))); } catch (e) {}
+}
+
+// מוסיף פריט קבוע. מחזיר false אם הוא כבר קיים או שהרשימה מלאה.
+function addFav(text, qty) {
+  text = String(text).trim().slice(0, 80);
+  const f = loadFavs();
+  if (!text || f.length >= FAV_MAX || f.some(x => x.text === text)) return false;
+  f.push({ text: text, qty: clampQty(qty) });
+  saveFavs(f);
+  return true;
+}
+
+// מוסיף לרשימת פריטים את הקבועים שעוד לא בה. מחזיר את הרשימה.
+function withFavorites(items) {
+  const have = new Set(items.map(i => i.text));
+  loadFavs().forEach(f => {
+    if (have.has(f.text)) return;
+    const it = makeItem(f.text, FAV_CAT);
+    it.qty = f.qty;
+    items.push(it);
+  });
+  return items;
+}
+
+function favMessage(text) { $('favMsg').textContent = text; }
+
+function renderFavs() {
+  const box = $('favList');
+  box.replaceChildren();
+  const favs = loadFavs();
+  if (!favs.length) {
+    box.appendChild(el('p', { className: 'note' }, 'עדיין אין פריטים קבועים.'));
+  }
+  favs.forEach((f, idx) => {
+    const row = el('div', { className: 'fav-row' });
+    row.appendChild(el('span', { className: 'text' }, f.qty > 1 ? f.text + ' ×' + f.qty : f.text));
+    const del = el('button', { type: 'button', className: 'del', title: 'הסר' }, '✕');
+    del.setAttribute('aria-label', 'הסר פריט קבוע: ' + f.text);
+    del.addEventListener('click', () => {
+      const all = loadFavs();
+      all.splice(idx, 1);
+      saveFavs(all);
+      favMessage('');
+      renderFavs();
+    });
+    row.appendChild(del);
+    box.appendChild(row);
+  });
+  $('favApplyBtn').classList.toggle('hidden', !favs.length || !state);
+}
+
+// מוסיף את הקבועים לטיול שכבר בנוי
+function applyFavsToCurrent() {
+  if (!state) return;
+  const before = state.items.length;
+  withFavorites(state.items);
+  const added = state.items.length - before;
+  if (added) { save(); renderList(); }
+  favMessage(added ? (added === 1 ? 'נוסף פריט אחד לטיול.' : 'נוספו ' + added + ' פריטים לטיול.') : 'כל הקבועים כבר ברשימה.');
+}
+
 const BACKUP_APP = 'packpal';
 const BACKUP_VERSION = 1;
 
@@ -1175,10 +1278,11 @@ function exportBackup() {
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     current: state,
-    history: loadHistory()
+    history: loadHistory(),
+    favorites: loadFavs()
   };
   const count = (state ? 1 : 0) + backup.history.length;
-  if (!count) { backupMessage('אין עדיין טיולים לגבות.', false); return; }
+  if (!count && !backup.favorites.length) { backupMessage('אין עדיין מה לגבות.', false); return; }
 
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -1187,7 +1291,11 @@ function exportBackup() {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  backupMessage('הגיבוי ירד כקובץ (' + count + ' טיולים).', true);
+  const parts = [];
+  if (count) parts.push(count === 1 ? 'טיול אחד' : count + ' טיולים');
+  const nf = backup.favorites.length;
+  if (nf) parts.push(nf === 1 ? 'פריט קבוע אחד' : nf + ' פריטים קבועים');
+  backupMessage('הגיבוי ירד כקובץ (' + parts.join(' ו-') + ').', true);
 }
 
 // בודק שטיול מהקובץ נראה תקין, ומחזיר עותק נקי שלו (או null אם הוא לא תקין)
@@ -1265,14 +1373,22 @@ function importBackup(text) {
   saveHistory(hist);
   if (becameCurrent) applyStateToPage(); else renderPast();
 
+  // פריטים קבועים מהקובץ: מוסיפים רק את מה שעוד אין
+  let favAdded = 0;
+  const favsIn = Array.isArray(data.favorites) ? data.favorites : [];
+  favsIn.forEach(f => { if (f && typeof f.text === 'string' && addFav(f.text, f.qty)) favAdded++; });
+  renderFavs();
+
   let msg;
   if (added) msg = added === 1 ? 'שוחזר טיול אחד.' : 'שוחזרו ' + added + ' טיולים.';
-  else if (!data.history.length && !data.current) msg = 'הקובץ ריק, אין בו טיולים.';
+  else if (favAdded) msg = 'שוחזרו פריטים קבועים.';
+  else if (!data.history.length && !data.current && !favsIn.length) msg = 'הקובץ ריק, אין בו טיולים.';
   else if (skipped && !incoming.length && !current) msg = 'לא נמצאו בקובץ טיולים תקינים לשחזור.';
   else msg = 'כל הטיולים שבקובץ כבר קיימים כאן.';
   if (hist.length > HISTORY_MAX) msg += ' (נשמרים עד ' + HISTORY_MAX + ' טיולים קודמים.)';
   if (skipped && added) msg += ' ' + (skipped === 1 ? 'טיול אחד בקובץ לא תקין ודולג.' : skipped + ' טיולים בקובץ לא תקינים ודולגו.');
-  backupMessage(msg, added > 0 || (!skipped && !!(data.history.length || data.current)));
+  if (favAdded && added) msg += ' ' + (favAdded === 1 ? 'נוסף פריט קבוע אחד.' : 'נוספו ' + favAdded + ' פריטים קבועים.');
+  backupMessage(msg, added > 0 || favAdded > 0 || (!skipped && !!(data.history.length || data.current || favsIn.length)));
 }
 
 // איזה טיול ישן פתוח כרגע לשכפול (מציג שדות תאריך מתחתיו), או null
@@ -1299,7 +1415,12 @@ async function duplicatePastTrip(idx, start, end) {
 
   nextId = 1;
   const items = buildList(trip, weather);
-  source.items.filter(it => it.cat === CUSTOM_CAT).forEach(it => items.push(makeItem(it.text, CUSTOM_CAT)));
+  source.items.filter(it => it.cat === CUSTOM_CAT).forEach(it => {
+    const copy = makeItem(it.text, CUSTOM_CAT);
+    copy.qty = it.qty || 1;
+    items.push(copy);
+  });
+  withFavorites(items);
 
   archiveCurrentTrip();
   state = { trip: trip, weather: weather, items: items };
@@ -1589,7 +1710,7 @@ async function buildTrip(place, start, end, activities) {
   const trip = { place: place.label, lat: place.lat, lon: place.lon, start: start, end: end, activities: activities };
   if (state && state.trip.name && state.trip.place === place.label) trip.name = state.trip.name;
   nextId = 1;
-  state = { trip: trip, weather: weather, items: buildList(trip, weather) };
+  state = { trip: trip, weather: weather, items: withFavorites(buildList(trip, weather)) };
   save();
   renderWeather();
   renderList();
@@ -1673,12 +1794,23 @@ $('addForm').addEventListener('submit', (ev) => {
   const text = $('newItem').value.trim();
   if (!text) return;
   addCustomItem(text, $('newQty').value);
+  if ($('newFav').checked) { addFav(text, $('newQty').value); renderFavs(); $('newFav').checked = false; }
   $('newItem').value = '';
   $('newQty').value = 1;
 });
 
 $('shareBtn').addEventListener('click', shareWhatsApp);
 $('printBtn').addEventListener('click', printList);
+$('favForm').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const text = $('favText').value.trim();
+  if (!text) return;
+  const ok = addFav(text, $('favQty').value);
+  favMessage(ok ? '' : 'הפריט הזה כבר קיים (או שהרשימה מלאה).');
+  if (ok) { $('favText').value = ''; $('favQty').value = 1; }
+  renderFavs();
+});
+$('favApplyBtn').addEventListener('click', applyFavsToCurrent);
 $('inviteBtn').addEventListener('click', () => {
   const panel = $('invitePanel');
   if (panel.classList.contains('hidden')) renderInvitePanel(); else panel.classList.add('hidden');
@@ -2150,7 +2282,7 @@ async function joinTrip(name, withList) {
   let items = [];
   if (withList) {
     const weather = remote.weather || {};
-    items = buildList(trip, weather);          // בשיתוף makeItem נותן מזהים ייחודיים
+    items = withFavorites(buildList(trip, weather));   // בשיתוף makeItem נותן מזהים ייחודיים
   }
   const mid = uid();
   await fb('PUT', SHARED_ID, '/members/' + mid, {
@@ -2305,6 +2437,9 @@ function startShared() {
 }
 
 // בטעינת הדף – אם יש טיול שמור, מציגים אותו
+// כרטיס הפריטים הקבועים
+renderFavs();
+
 // כפתורי סוג הטיול בטופס (נבנים כאן, אחרי שכל ההגדרות למעלה כבר קיימות)
 buildTypeChips($('tripTypes'), 'tripType');
 
