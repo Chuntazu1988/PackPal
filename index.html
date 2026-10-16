@@ -118,7 +118,19 @@
   .bar > div { height: 100%; width: 0; background: var(--ok); transition: width .4s ease; }
 
   /* ===== הרשימה ===== */
+  .progress-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .progress-row button { padding: 6px 12px; font-size: .9rem; }
   .cat-title { margin: 18px 0 6px; font-size: 1.05rem; color: var(--accent-dark); }
+  .cat-toggle {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    background: none; color: inherit; font: inherit; font-weight: inherit; text-align: start;
+    padding: 6px 0; border-radius: 8px;
+  }
+  .cat-toggle .arrow { display: inline-block; transition: transform .15s; }
+  .cat-toggle[aria-expanded="false"] .arrow { transform: rotate(90deg); }
+  .cat-toggle .name { flex: 1; }
+  .cat-toggle .count { font-weight: normal; font-size: .9rem; color: var(--muted); }
+  .cat-toggle .count.full { color: var(--ok); }
   .item {
     display: flex;
     align-items: center;
@@ -286,7 +298,10 @@
   <section id="listSection" class="card hidden">
     <div id="tripTitle" class="trip-title"></div>
     <div id="countdown" class="countdown" role="status"></div>
-    <strong id="progressText"></strong>
+    <div class="progress-row">
+      <strong id="progressText"></strong>
+      <button type="button" class="secondary" id="collapseAllBtn"></button>
+    </div>
     <div class="bar"><div id="barFill"></div></div>
     <div id="list"></div>
 
@@ -906,8 +921,23 @@ function renderList() {
   const groups = {};
   state.items.forEach(it => { (groups[it.cat] = groups[it.cat] || []).push(it); });
 
+  const collapsed = state.collapsed || [];
   Object.keys(groups).forEach(cat => {
-    list.appendChild(el('h3', { className: 'cat-title' }, cat));
+    const isCollapsed = collapsed.includes(cat);
+    const doneInCat = groups[cat].filter(i => i.checked).length;
+    const full = doneInCat === groups[cat].length;
+    const head = el('h3', { className: 'cat-title' });
+    const toggle = el('button', { type: 'button', className: 'cat-toggle' });
+    toggle.setAttribute('aria-expanded', String(!isCollapsed));
+    toggle.append(
+      el('span', { className: 'arrow' }, '▾'),
+      el('span', { className: 'name' }, cat),
+      el('span', { className: 'count' + (full ? ' full' : '') }, doneInCat + ' מתוך ' + groups[cat].length + (full ? ' ✅' : ''))
+    );
+    toggle.addEventListener('click', () => toggleCategory(cat));
+    head.appendChild(toggle);
+    list.appendChild(head);
+    if (isCollapsed) return;
     groups[cat].forEach(it => {
       const row = el('div', { className: 'item' + (it.checked ? ' done' : '') });
       const box = el('input', { type: 'checkbox', checked: it.checked });
@@ -931,6 +961,26 @@ function renderList() {
     });
   });
   renderProgress();
+  const allCats = Object.keys(groups);
+  const allCollapsed = allCats.length > 0 && allCats.every(c => collapsed.includes(c));
+  $('collapseAllBtn').textContent = allCollapsed ? 'הרחב הכל' : 'כווץ הכל';
+}
+
+// פותח או מקפל קטגוריה אחת. הבחירה נשמרת יחד עם הטיול.
+function toggleCategory(cat) {
+  const set = new Set(state.collapsed || []);
+  if (set.has(cat)) set.delete(cat); else set.add(cat);
+  state.collapsed = [...set];
+  save();
+  renderList();
+}
+
+function toggleAllCategories() {
+  const cats = [...new Set(state.items.map(i => i.cat))];
+  const allCollapsed = cats.every(c => (state.collapsed || []).includes(c));
+  state.collapsed = allCollapsed ? [] : cats;
+  save();
+  renderList();
 }
 
 function fmtDate(iso) {
@@ -1294,6 +1344,8 @@ function deleteItem(id) {
 
 function addCustomItem(text) {
   state.items.push(makeItem(text, CUSTOM_CAT));
+  // אם הקטגוריה מקופלת – פותחים אותה, כדי שהפריט החדש יופיע
+  state.collapsed = (state.collapsed || []).filter(c => c !== CUSTOM_CAT);
   save();
   renderList();
 }
@@ -1481,6 +1533,7 @@ $('addForm').addEventListener('submit', (ev) => {
 
 $('shareBtn').addEventListener('click', shareWhatsApp);
 $('printBtn').addEventListener('click', printList);
+$('collapseAllBtn').addEventListener('click', toggleAllCategories);
 $('exportBtn').addEventListener('click', exportBackup);
 $('importBtn').addEventListener('click', () => $('importFile').click());
 $('importFile').addEventListener('change', async (ev) => {
