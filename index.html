@@ -192,7 +192,7 @@
     display: flex;
     gap: 8px;
   }
-  #themeBtn, #sizeBtn {
+  #themeBtn, #sizeBtn, #bgBtn {
     background: var(--card);
     color: var(--text);
     border: 1px solid var(--border);
@@ -213,6 +213,7 @@
 <div id="tools">
   <button type="button" id="themeBtn" aria-label="החלף מצב כהה / בהיר"></button>
   <button type="button" id="sizeBtn" aria-label="שנה את גודל הטקסט"></button>
+  <button type="button" id="bgBtn" aria-label="שנה את צבע הרקע"></button>
 </div>
 <main>
   <h1>🧳 PackPal <small>רשימת אריזה חכמה לפי מזג האוויר והפעילויות שלך</small></h1>
@@ -326,7 +327,41 @@ applyTheme(savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matc
 document.getElementById('themeBtn').addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(next);
+  applyBackground();   // לכל צבע רקע יש גרסה בהירה וגרסה כהה
   try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+});
+
+/* =========================================================
+   1ג. צבע רקע
+   ========================================================= */
+
+// לכל צבע יש גוון למצב בהיר וגוון למצב כהה. הראשון = ברירת המחדל של האתר
+const BACKGROUNDS = [
+  { label: 'רגיל',  light: null,      dark: null },
+  { label: 'תכלת',  light: '#e3f1fb', dark: '#0f2230' },
+  { label: 'מנטה',  light: '#e2f5ea', dark: '#10261c' },
+  { label: 'ורוד',  light: '#fbe8f0', dark: '#2a1621' },
+  { label: 'חמאה',  light: '#fbf4d9', dark: '#2a2511' },
+  { label: 'סגול',  light: '#eee8fb', dark: '#1e1730' }
+];
+const BG_KEY = 'packpal-bg';
+let bgIdx = 0;
+try { bgIdx = parseInt(localStorage.getItem(BG_KEY), 10) || 0; } catch (e) {}
+if (!BACKGROUNDS[bgIdx]) bgIdx = 0;
+
+function applyBackground() {
+  const bg = BACKGROUNDS[bgIdx];
+  const color = document.documentElement.dataset.theme === 'dark' ? bg.dark : bg.light;
+  if (color) document.documentElement.style.setProperty('--bg', color);
+  else document.documentElement.style.removeProperty('--bg');   // חוזרים לצבע מהעיצוב
+  document.getElementById('bgBtn').textContent = '🎨 ' + bg.label;
+}
+applyBackground();
+
+document.getElementById('bgBtn').addEventListener('click', () => {
+  bgIdx = (bgIdx + 1) % BACKGROUNDS.length;
+  applyBackground();
+  try { localStorage.setItem(BG_KEY, String(bgIdx)); } catch (e) {}
 });
 
 /* =========================================================
