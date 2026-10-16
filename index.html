@@ -195,6 +195,10 @@
   .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
   .tab { background: var(--soft); color: var(--accent-dark); border-radius: 999px; padding: 8px 16px; }
   .tab.active { background: var(--accent); color: #fff; font-weight: 600; }
+  .tab-manage { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .tab-manage button { padding: 6px 12px; font-size: .9rem; }
+  .tab-manage .rename-form { flex: 1 1 100%; }
+  .tab-manage .confirm-text { flex: 1 1 100%; color: var(--danger); font-size: .95rem; }
   .join-form, .invite-panel { margin-top: 12px; }
   .join-form input[type=text] { margin-top: 6px; }
   .invite-panel { border-top: 1px solid var(--border); padding-top: 12px; }
@@ -289,6 +293,7 @@
   <section id="sharedBar" class="card hidden">
     <div class="shared-head"><strong>👥 טיול משותף</strong><span id="connStatus" role="status"></span></div>
     <div id="memberTabs" class="tabs" role="tablist"></div>
+    <div id="tabManage" class="tab-manage"></div>
     <div id="joinBox"></div>
     <div class="shared-link"><label>קישור להזמנת עוד אנשים</label><div id="sharedLinkBox"></div></div>
   </section>
@@ -1853,6 +1858,7 @@ function renderShared() {
     renderWeather();
     renderList();
     tabs.replaceChildren();
+    $('tabManage').replaceChildren();
     $('joinBox').replaceChildren(el('p', { className: 'note' }, 'לא מצאתי את הטיול הזה. ייתכן שהקישור לא נכון או שהטיול נמחק.'));
     return;
   }
@@ -1872,6 +1878,7 @@ function renderShared() {
   });
 
   renderJoinBox();
+  renderManage();
 
   if (viewMemberId) {
     buildViewState();
@@ -1883,6 +1890,105 @@ function renderShared() {
     renderList();
   }
   lastSig = viewSig();
+}
+
+/* ---------- ניהול לשוניות והטיול (שינוי שם, הסרה, מחיקה) ---------- */
+
+let manageMode = null;   // null | 'rename' | 'removeTab' | 'deleteTrip'
+
+function isOwner() {
+  return !!(remote && remote.ownerId && remote.ownerId === myMemberId);
+}
+
+function renderManage() {
+  const box = $('tabManage');
+  box.replaceChildren();
+  if (!remote || !remote.trip || !viewMemberId || !(remote.members || {})[viewMemberId]) return;
+
+  const mine = viewMemberId === myMemberId;
+  const canEditTab = mine || isOwner();
+  const name = remote.members[viewMemberId].name || '';
+
+  if (manageMode === 'rename' && canEditTab) {
+    const form = el('form', { className: 'rename-form' });
+    const input = el('input', { type: 'text', value: name, maxLength: 30, required: true });
+    input.setAttribute('aria-label', 'שם הלשונית');
+    const save = el('button', { type: 'submit', className: 'secondary' }, 'שמור');
+    const cancel = el('button', { type: 'button', className: 'secondary' }, 'ביטול');
+    cancel.addEventListener('click', () => { manageMode = null; renderManage(); });
+    form.append(input, save, cancel);
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const next = input.value.trim().slice(0, 30);
+      if (next) renameTab(viewMemberId, next);
+    });
+    box.appendChild(form);
+    setTimeout(() => input.focus(), 0);
+    return;
+  }
+
+  if ((manageMode === 'removeTab' && canEditTab) || (manageMode === 'deleteTrip' && isOwner())) {
+    const removing = manageMode === 'removeTab';
+    box.appendChild(el('div', { className: 'confirm-text' }, removing
+      ? (mine ? 'לעזוב את הטיול ולמחוק את הלשונית שלך?' : 'להסיר את הלשונית של ' + name + '?') + ' אי אפשר לשחזר.'
+      : 'למחוק את כל הטיול המשותף, לכל המשתתפים? אי אפשר לשחזר.'));
+    const yes = el('button', { type: 'button', className: 'danger-btn' }, 'כן, למחוק');
+    const no = el('button', { type: 'button', className: 'secondary' }, 'ביטול');
+    no.addEventListener('click', () => { manageMode = null; renderManage(); });
+    yes.addEventListener('click', async () => {
+      yes.disabled = true;
+      try { if (removing) await removeTab(viewMemberId); else await deleteSharedTrip(); }
+      catch (e) { setConn('error'); yes.disabled = false; }
+    });
+    box.append(yes, no);
+    return;
+  }
+
+  manageMode = null;
+  if (canEditTab) {
+    const rn = el('button', { type: 'button', className: 'secondary' }, '✏️ שנה שם');
+    rn.addEventListener('click', () => { manageMode = 'rename'; renderManage(); });
+    box.append(rn);
+    // המארגנת לא עוזבת (אחרת אף אחד לא יוכל למחוק את הטיול). היא יכולה למחוק אותו לכולם.
+    if (!(mine && isOwner())) {
+      const rm = el('button', { type: 'button', className: 'secondary' }, mine ? '🚪 עזוב את הטיול' : '🗑️ הסר לשונית');
+      rm.addEventListener('click', () => { manageMode = 'removeTab'; renderManage(); });
+      box.append(rm);
+    }
+  }
+  if (isOwner()) {
+    const del = el('button', { type: 'button', className: 'secondary' }, '🗑️ מחק את הטיול לכולם');
+    del.addEventListener('click', () => { manageMode = 'deleteTrip'; renderManage(); });
+    box.appendChild(del);
+  }
+}
+
+async function renameTab(mid, name) {
+  await fb('PATCH', SHARED_ID, '/members/' + mid, { name: name });
+  applyRemoteEvent('patch', '/members/' + mid, { name: name });
+  manageMode = null;
+  renderShared();
+}
+
+async function removeTab(mid) {
+  await fb('DELETE', SHARED_ID, '/members/' + mid);
+  applyRemoteEvent('put', '/members/' + mid, null);
+  delete lastSynced[mid];
+  if (mid === myMemberId) {
+    try { localStorage.removeItem(MEMBER_KEY(SHARED_ID)); } catch (e) {}
+    myMemberId = null;
+  }
+  viewMemberId = null;
+  manageMode = null;
+  renderShared();
+}
+
+async function deleteSharedTrip() {
+  await fb('DELETE', SHARED_ID, '');
+  remote = null;
+  manageMode = null;
+  try { localStorage.removeItem(MEMBER_KEY(SHARED_ID)); } catch (e) {}
+  renderShared();
 }
 
 // מי שעוד לא משתתף בטיול רואה טופס הצטרפות
@@ -1988,6 +2094,7 @@ async function createSharedTrip(name) {
     trip: trip,
     weather: state.weather,
     createdAt: Date.now(),
+    ownerId: mid,
     members: { [mid]: { name: name, joinedAt: Date.now(), items: itemsToRecords(items) } }
   });
   try { localStorage.setItem(MEMBER_KEY(id), mid); } catch (e) {}
@@ -2004,6 +2111,15 @@ function renderInvitePanel() {
   panel.appendChild(el('strong', null, '👥 שיתוף הטיול'));
 
   if (state.shareId) {
+    // אם הטיול המשותף נמחק (למשל על ידי המארגנת), חוזרים להצעה ליצור קישור חדש
+    const checkedId = state.shareId;
+    fetch(fbUrl(checkedId, '/trip')).then(r => r.json()).then(t => {
+      if (t === null && state && state.shareId === checkedId) {
+        delete state.shareId;
+        save();
+        renderInvitePanel();
+      }
+    }).catch(() => {});
     panel.appendChild(el('p', { className: 'note' },
       'שלחי את הקישור למי שאורז איתך. כל אחד כותב את השם שלו ומקבל לשונית משלו. מעכשיו עורכים דרך הקישור.'));
     const link = sharedLink(state.shareId);
