@@ -242,6 +242,27 @@
   .countdown.soon { border: 2px solid var(--danger); }
   .countdown.over { color: var(--muted); font-weight: normal; }
   .countdown small { display: block; font-weight: normal; color: var(--muted); }
+
+  /* ----- טיימר מונפש: מספר שסופר, מטוס שטס לאורך המסלול ועד היעד ----- */
+  .countdown.big { padding: 14px 16px 12px; background: linear-gradient(135deg, var(--sand), color-mix(in srgb, var(--sand) 60%, var(--hero-top))); overflow: hidden; }
+  .cd-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .cd-num { font-size: 2.6rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; color: var(--accent-dark); }
+  .cd-unit { font-size: 1.1rem; font-weight: 800; }
+  .cd-track { position: relative; height: 38px; margin-top: 10px; }
+  .cd-line { position: absolute; top: 20px; inset-inline: 10px; height: 0; border-top: 3px dotted color-mix(in srgb, var(--muted) 55%, transparent); }
+  .cd-fill { position: absolute; top: 20px; inset-inline-start: 10px; height: 4px; margin-top: -2px; width: 0; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--ok)); transition: width 1.6s cubic-bezier(.25,.8,.3,1); }
+  .cd-plane { position: absolute; top: 2px; inset-inline-start: 0; font-size: 1.6rem; transform: translateX(50%) scaleX(-1); transition: inset-inline-start 1.6s cubic-bezier(.25,.8,.3,1); animation: bob 2.4s ease-in-out infinite; }
+  .cd-dest { position: absolute; top: 4px; inset-inline-end: 0; font-size: 1.5rem; }
+  .cd-start { position: absolute; top: 12px; inset-inline-start: 0; font-size: 1rem; }
+  .countdown.big.soon .cd-num { color: var(--danger); animation: pulse 1.1s ease-in-out infinite; }
+  .countdown.big.soon { animation: glow 1.8s ease-in-out infinite; }
+  .cd-palm { display: inline-block; font-size: 2rem; transform-origin: 50% 100%; animation: sway 2.6s ease-in-out infinite; }
+  @keyframes bob { 0%, 100% { margin-top: 0; } 50% { margin-top: -5px; } }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+  @keyframes glow { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 35%, transparent); } 50% { box-shadow: 0 0 0 8px transparent; } }
+  @keyframes sway { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+  @keyframes party { 0% { transform: scale(.6) rotate(-10deg); } 60% { transform: scale(1.25) rotate(8deg); } 100% { transform: scale(1) rotate(0); } }
+  .cd-party { display: inline-block; font-size: 2rem; animation: party .8s ease both; }
   .trip-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .trip-title h2 { margin: 0; font-size: 1.3rem; flex: 1; }
   .trip-title .rename-btn, .past-row .rename-btn { background: none; padding: 4px 8px; font-size: 1.1rem; }
@@ -297,6 +318,22 @@
   .welcome-steps strong { display: block; }
   .welcome-steps span:not(.ico) { color: var(--muted); font-size: .95rem; }
   .link-btn { display: block; margin: 10px auto 0; background: none; color: var(--accent-dark); font-weight: 600; text-decoration: underline; padding: 6px; }
+
+  /* ===== משימות לפני הטיסה ===== */
+  .task { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--border); }
+  .task input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--ok); cursor: pointer; flex: none; }
+  .task .t-text { flex: 1; }
+  .task .t-due { font-size: .85rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--stat); color: var(--muted); white-space: nowrap; }
+  .task .t-due.late { background: color-mix(in srgb, var(--danger) 18%, var(--card)); color: var(--danger); }
+  .task .t-due.soon { background: var(--sand); color: var(--text); }
+  .task.done .t-text { text-decoration: line-through; color: var(--muted); }
+  .task.done .t-due { opacity: .5; }
+  .task .del { background: none; color: var(--danger); padding: 4px 8px; font-size: 1.1rem; }
+  .task-add { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+  .task-add input[type=text] { flex: 1 1 160px; }
+  .task-add input[type=number] { width: 4.5rem; padding: 10px 6px; text-align: center; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text); font: inherit; }
+  .task-add label { margin: 0; font-weight: normal; font-size: .9rem; color: var(--muted); }
+  .shared-mode #tasksSection, .pack-mode #tasksSection { display: none !important; }
 
   /* ===== מצב אריזה: מסך נקי עם הרשימה בלבד, בכפתורים גדולים ===== */
   .pack-bar { display: none; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; font-size: 1.15rem; }
@@ -588,6 +625,9 @@
   <section id="attrSection" class="card hidden"></section>
 
   <!-- ===== הרשימה ===== -->
+  <!-- ===== משימות לפני הטיסה ===== -->
+  <section id="tasksSection" class="card hidden"></section>
+
   <section id="listSection" class="card hidden">
     <div id="packBar" class="pack-bar hidden">
       <strong>🎒 מצב אריזה</strong>
@@ -1195,13 +1235,13 @@ function placeCountry(place) {
   return parts.length ? parts[parts.length - 1] : '';
 }
 
-// תזכורות "לבדוק": משימות לבדיקה בעצמך, לא קביעות לגבי מה נדרש
+// תזכורות "לבדוק": משימות לבדיקה בעצמך, לא קביעות לגבי מה נדרש. days = כמה ימים לפני היציאה כדאי לטפל בזה.
 const ENTRY_TODOS = [
-  'לבדוק מהו תוקף הדרכון הנדרש ליעד',
-  'לבדוק אם נדרשת ויזה או אישור כניסה מקוון',
-  'לבדוק את אזהרת המסע ליעד',
-  'לבדוק חיסונים והמלצות בריאות ליעד',
-  'לשמור או להדפיס אישורי כניסה והזמנות'
+  { text: 'לבדוק מהו תוקף הדרכון הנדרש ליעד', days: 30 },
+  { text: 'לבדוק אם נדרשת ויזה או אישור כניסה מקוון', days: 30 },
+  { text: 'לבדוק את אזהרת המסע ליעד', days: 14 },
+  { text: 'לבדוק חיסונים והמלצות בריאות ליעד', days: 30 },
+  { text: 'לשמור או להדפיס אישורי כניסה והזמנות', days: 3 }
 ];
 
 // טבלת הוויזות הרשמית של משרד החוץ, כפי שהייתה ב-31.08.2026. ממירים מהקובץ הרשמי ומעדכנים ידנית כשהוא מתעדכן.
@@ -1518,7 +1558,7 @@ function renderEntry() {
   }
   box.appendChild(links);
 
-  const btn = el('button', { type: 'button', className: 'secondary' }, '➕ הוסף לרשימה תזכורות לבדיקה');
+  const btn = el('button', { type: 'button', className: 'secondary' }, '➕ הוסף למשימות לפני הטיסה');
   btn.addEventListener('click', addEntryTodos);
   box.appendChild(btn);
   box.appendChild(el('div', { id: 'entryMsg', role: 'status' }));
@@ -1594,23 +1634,140 @@ function fillVisa(visaBox, cc, country) {
 
 function addEntryTodos() {
   if (!state) return;
-  const have = new Set(state.items.map(i => i.text));
+  ensureTasks();
+  const have = new Set(state.tasks.map(t => t.text));
   let added = 0;
-  ENTRY_TODOS.forEach(text => {
-    if (have.has(text)) return;
-    state.items.push(makeItem(text, ENTRY_CAT));
+  ENTRY_TODOS.forEach(todo => {
+    if (have.has(todo.text)) return;
+    state.tasks.push({ id: uid(), text: todo.text, days: clampDays(todo.days, state.trip), done: false });
     added++;
   });
-  if (added) {
-    state.collapsed = (state.collapsed || []).filter(c => c !== ENTRY_CAT);
+  if (added) { save(); renderTasks(); }
+  $('entryMsg').textContent = added ? (added === 1 ? 'נוספה משימה אחת.' : 'נוספו ' + added + ' משימות.') + ' תמצאי אותן ב"משימות לפני הטיסה".' : 'המשימות כבר שם.';
+}
+
+/* =========================================================
+   משימות לפני הטיסה (צ'ק-אין, ביטוח, הדפסות...) עם תאריך יעד לכל אחת
+   ========================================================= */
+
+// ברירת מחדל: מה כדאי לעשות ובכמה ימים לפני היציאה
+const DEFAULT_TASKS = [
+  { text: 'לבדוק תוקף דרכון', days: 30 },
+  { text: 'לסגור ביטוח נסיעות', days: 14 },
+  { text: 'להחליף מטבע או לוודא כרטיס אשראי לחו"ל', days: 7 },
+  { text: 'להזמין הסעה לשדה התעופה', days: 3 },
+  { text: 'להדפיס או לשמור אישורי הזמנה', days: 3 },
+  { text: 'לעשות צ\'ק-אין לטיסה', days: 1 },
+  { text: 'לטעון טלפון ומטענים', days: 1 },
+  { text: 'לסגור את הבית (גז, חלונות, צמחים)', days: 1 }
+];
+
+function daysToStart(trip) { return daysFromToday(trip.start); }
+
+// לא מציעים משימה "30 יום לפני" לטיול שמתחיל בעוד שבוע: המועד שלה הוא היום לכל היותר
+function clampDays(days, trip) {
+  return Math.max(0, Math.min(days, Math.max(0, daysToStart(trip))));
+}
+
+function ensureTasks() {
+  if (state.tasksInit && Array.isArray(state.tasks)) return;
+  if (!Array.isArray(state.tasks)) state.tasks = [];
+  if (!state.tasksInit) {
+    DEFAULT_TASKS.forEach(t => state.tasks.push({ id: uid(), text: t.text, days: clampDays(t.days, state.trip), done: false }));
+    state.tasksInit = true;
     save();
-    renderList();
   }
-  $('entryMsg').textContent = added ? (added === 1 ? 'נוספה תזכורת אחת לרשימה.' : 'נוספו ' + added + ' תזכורות לרשימה.') : 'התזכורות כבר ברשימה.';
+}
+
+function taskDue(task) {
+  const d = parseISO(state.trip.start);
+  d.setDate(d.getDate() - task.days);
+  return toISO(d);
+}
+
+let tasksShowAll = false;
+
+function renderTasks() {
+  const box = $('tasksSection');
+  box.replaceChildren();
+  // הכרטיס רלוונטי רק לפני הטיול
+  if (!state || sharedMode || daysFromToday(state.trip.end) < 0) { box.classList.add('hidden'); return; }
+  ensureTasks();
+  box.classList.remove('hidden');
+
+  const tasks = state.tasks.slice().sort((a, b) => (a.done - b.done) || (taskDue(a) < taskDue(b) ? -1 : taskDue(a) > taskDue(b) ? 1 : 0));
+  const left = tasks.filter(t => !t.done).length;
+  box.appendChild(el('strong', null, '✈️ משימות לפני הטיסה'));
+  box.appendChild(el('span', { className: 'note' }, ' · ' + (left ? 'נשארו ' + left + ' מתוך ' + tasks.length : 'הכל בוצע ✅')));
+
+  if (undoInfo && undoInfo.kind === 'task') {
+    const bar = el('div', { className: 'undo-bar' });
+    bar.append(el('span', null, 'המשימה נמחקה.'), undoButton(() => {
+      state.tasks.splice(Math.min(undoInfo.index, state.tasks.length), 0, undoInfo.task);
+      undoInfo = null;
+      clearTimeout(undoTimer);
+      save();
+      renderTasks();
+    }));
+    box.appendChild(bar);
+  }
+
+  const LIMIT = 5;
+  (tasksShowAll ? tasks : tasks.slice(0, LIMIT)).forEach(t => {
+    const due = taskDue(t);
+    const diff = daysFromToday(due);
+    const row = el('div', { className: 'task' + (t.done ? ' done' : '') });
+    const cb = el('input', { type: 'checkbox', checked: t.done });
+    cb.setAttribute('aria-label', t.text);
+    cb.addEventListener('change', () => { t.done = cb.checked; save(); renderTasks(); });
+    let label, cls = 't-due';
+    if (diff < 0) { label = 'באיחור ' + (-diff) + (diff === -1 ? ' יום' : ' ימים'); cls += ' late'; }
+    else if (diff === 0) { label = 'היום'; cls += ' soon'; }
+    else if (diff === 1) { label = 'מחר'; cls += ' soon'; }
+    else label = 'עד ' + fmtDate(due).slice(0, 5);
+    const del = el('button', { type: 'button', className: 'del', title: 'מחק' }, '✕');
+    del.setAttribute('aria-label', 'מחק משימה: ' + t.text);
+    del.addEventListener('click', () => {
+      const idx = state.tasks.findIndex(x => x.id === t.id);
+      setUndo({ kind: 'task', task: t, index: idx });
+      state.tasks.splice(idx, 1);
+      save();
+      renderTasks();
+    });
+    row.append(cb, el('span', { className: 't-text' }, t.text), el('span', { className: cls }, label), del);
+    box.appendChild(row);
+  });
+  if (tasks.length > LIMIT) {
+    const more = el('button', { type: 'button', className: 'secondary' }, tasksShowAll ? 'הצג פחות' : 'הצג עוד (' + (tasks.length - LIMIT) + ')');
+    more.style.marginTop = '10px';
+    more.addEventListener('click', () => { tasksShowAll = !tasksShowAll; renderTasks(); });
+    box.appendChild(more);
+  }
+
+  // הוספת משימה משלך
+  const form = el('form', { className: 'task-add', autocomplete: 'off' });
+  const text = el('input', { type: 'text', maxLength: 80 });
+  text.placeholder = 'הוסף משימה...';
+  text.setAttribute('aria-label', 'משימה חדשה');
+  const days = el('input', { type: 'number', min: '0', max: '365', value: '1' });
+  days.setAttribute('aria-label', 'ימים לפני היציאה');
+  const add = el('button', { type: 'submit', className: 'secondary' }, 'הוסף');
+  form.append(text, el('label', null, 'ימים לפני:'), days, add);
+  form.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const v = text.value.trim();
+    if (!v) return;
+    const n = Math.max(0, Math.min(365, Math.round(Number(days.value)) || 0));
+    state.tasks.push({ id: uid(), text: v.slice(0, 80), days: n, done: false });
+    save();
+    renderTasks();
+  });
+  box.appendChild(form);
 }
 
 function renderWeather() {
   updateWelcome();
+  renderTasks();
   renderEntry();
   renderAttractions();
   updateWizardVisibility();
@@ -1721,6 +1878,21 @@ function daysFromToday(iso) {
   return Math.round((parseISO(iso) - parseISO(toISO(new Date()))) / 86400000);
 }
 
+// סופרים מספר מ-0 עד היעד (אנימציה קצרה). בלי תנועה אם המכשיר מבקש פחות תנועה.
+function countUp(node, to, ms) {
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced || to <= 0) { node.textContent = String(to); return; }
+  const t0 = performance.now();
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / ms);
+    node.textContent = String(Math.round(to * (1 - Math.pow(1 - k, 3))));
+    if (k < 1 && node.isConnected) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+let lastCountdownKey = '';
+
 function renderCountdown() {
   const box = $('countdown');
   const t = state.trip;
@@ -1730,24 +1902,66 @@ function renderCountdown() {
   const done = state.items.filter(i => i.checked).length;
   const allPacked = total > 0 && done === total;
 
-  let text, cls = 'countdown', extra = '';
+  // מפעילים אנימציה רק כשהמצב באמת השתנה (טיול אחר או יום אחר), לא בכל סימון של פריט
+  const key = t.place + '|' + t.start + '|' + toStart;
+  const animate = key !== lastCountdownKey;
+  lastCountdownKey = key;
+
+  box.className = 'countdown';
+  box.replaceChildren();
+
   if (toEnd < 0) {
-    text = '🏁 הטיול הסתיים';
-    cls += ' over';
-  } else if (toStart <= 0) {
-    const dayNo = -toStart + 1, days = daysFromToday(t.end) + dayNo;
-    text = toStart === 0 ? '🎉 הטיול מתחיל היום!' : '🌴 הטיול בעיצומו – יום ' + dayNo + ' מתוך ' + days;
-  } else {
-    text = toStart === 1 ? '✈️ הטיול מתחיל מחר!' : '✈️ עוד ' + toStart + ' ימים לטיול';
-    if (toStart <= 3 && !allPacked) {
-      cls += ' soon';
-      const left = total - done;
-      extra = left === 1 ? 'נשאר פריט אחד לארוז' : 'נשארו ' + left + ' פריטים לארוז';
-    }
+    box.classList.add('over');
+    box.textContent = '🏁 הטיול הסתיים';
+    return;
   }
-  box.className = cls;
-  box.replaceChildren(text);
-  if (extra) box.appendChild(el('small', null, extra));
+  if (toStart <= 0) {
+    box.classList.add('big');
+    const main = el('div', { className: 'cd-main' });
+    if (toStart === 0) {
+      main.append(el('span', { className: 'cd-party' }, '🎉'), el('span', { className: 'cd-unit' }, 'הטיול מתחיל היום!'));
+    } else {
+      const dayNo = -toStart + 1, days = toEnd + dayNo;
+      main.append(el('span', { className: 'cd-palm' }, '🌴'), el('span', { className: 'cd-unit' }, 'הטיול בעיצומו: יום ' + dayNo + ' מתוך ' + days));
+    }
+    box.appendChild(main);
+    return;
+  }
+
+  // לפני הטיול: מספר גדול ומסלול טיסה. כל 60 הימים האחרונים מציגים התקדמות (רחוק יותר: המטוס בתחילת המסלול).
+  box.classList.add('big');
+  const soon = toStart <= 3 && !allPacked;
+  if (soon) box.classList.add('soon');
+
+  const main = el('div', { className: 'cd-main' });
+  const num = el('span', { className: 'cd-num' }, animate ? '0' : String(toStart));
+  main.append(num, el('span', { className: 'cd-unit' }, toStart === 1 ? 'יום אחד לטיול, מחר!' : 'ימים לטיול'));
+  box.appendChild(main);
+
+  const progress = Math.max(0.04, Math.min(1, 1 - Math.min(toStart, 60) / 60));
+  const track = el('div', { className: 'cd-track', 'aria-hidden': 'true' });
+  const fill = el('div', { className: 'cd-fill' });
+  const plane = el('span', { className: 'cd-plane' }, '✈️');
+  track.append(el('div', { className: 'cd-line' }), fill, plane, el('span', { className: 'cd-dest' }, '📍'));
+  box.appendChild(track);
+  const place = () => {
+    const w = track.clientWidth - 20;
+    fill.style.width = Math.round(w * progress) + 'px';
+    plane.style.insetInlineStart = (10 + Math.round(w * progress)) + 'px';
+  };
+  if (animate) {
+    // המטוס יוצא מתחילת המסלול ומגיע למקומו
+    requestAnimationFrame(() => requestAnimationFrame(place));
+    countUp(num, toStart, 1100);
+  } else {
+    fill.style.transition = plane.style.transition = 'none';
+    requestAnimationFrame(place);
+  }
+
+  if (soon) {
+    const left = total - done;
+    box.appendChild(el('small', null, left === 1 ? 'נשאר פריט אחד לארוז' : 'נשארו ' + left + ' פריטים לארוז'));
+  }
 }
 
 function setTripName(trip, name) {
@@ -2305,7 +2519,7 @@ function clearUndo() {
   clearTimeout(undoTimer);
   if (!undoInfo) return;
   undoInfo = null;
-  if (state) renderList();
+  if (state) { renderList(); renderTasks(); }
   renderPast();
 }
 
@@ -3591,6 +3805,7 @@ function normalizeTrip(t) {
   t.items = items.filter(Boolean);
   t.weather = t.weather || { source: 'history', minTemp: 0, maxTemp: 0, rainyDays: 0, maxWind: 0 };
   if (t.collapsed && !Array.isArray(t.collapsed)) t.collapsed = Object.values(t.collapsed);
+  if (t.tasks && !Array.isArray(t.tasks)) t.tasks = Object.values(t.tasks);
   return t;
 }
 function normalizeCloud(c) {
