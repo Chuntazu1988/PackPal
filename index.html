@@ -6,7 +6,7 @@
 <title>PackPal – רשימת אריזה לטיול</title>
 <link rel="icon" type="image/png" sizes="32x32" href="static/favicon-32.png">
 <link rel="apple-touch-icon" href="static/apple-touch-icon.png">
-<link rel="manifest" href="static/manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1b2a41">
 <style>
   /* ===== צבעים: מצב יום = כרטיס טיסה (קרם ונייבי), מצב כהה = לילה ונאון ===== */
@@ -4307,6 +4307,22 @@ function applyIdentity(doc, base) {
   title.content = 'PackPal';
 }
 try { installAppIdentity(); } catch (e) { /* לא קריטי: האפליקציה ממשיכה לעבוד גם בלי זה */ }
+
+/* =========================================================
+   עבודה בלי אינטרנט
+   ========================================================= */
+
+// שומרים את האפליקציה במכשיר (רק כשהאתר מוגש ישירות ולא בתוך Streamlit)
+if ('serviceWorker' in navigator && window.top === window && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+
+// הרשימה והסימונים נשמרים במכשיר, אז רק מודיעים ומסנכרנים כשהרשת חוזרת
+window.addEventListener('offline', () => { if (typeof toast === 'function') toast('אין חיבור. הכל נשמר במכשיר ✈️'); });
+window.addEventListener('online', () => {
+  if (typeof toast === 'function') toast('החיבור חזר');
+  scheduleCloudPush();
+});
 
 // בטעינת הדף – אם יש טיול שמור, מציגים אותו
 // כרטיס הפריטים הקבועים
