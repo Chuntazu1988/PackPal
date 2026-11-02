@@ -5,36 +5,51 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PackPal – רשימת אריזה לטיול</title>
 <style>
-  /* ===== צבעים ===== */
+  /* ===== צבעים: שמיים, ים וחול ===== */
   :root {
-    --bg: #f4f7fb;
+    --bg: #eaf6fb;           /* שמיים בהירים */
     --card: #ffffff;
-    --text: #1f2a37;
-    --muted: #6b7785;
-    --accent: #2f80ed;
-    --accent-dark: #1c5fc0;
-    --ok: #27ae60;
+    --text: #15324a;         /* כחול עמוק */
+    --muted: #587489;
+    --accent: #0b7fb0;       /* ים */
+    --accent-dark: #075f86;
+    --on-accent: #ffffff;    /* צבע טקסט על כפתור בצבע הראשי */
+    --ok: #22a06b;
     --danger: #e5484d;
-    --border: #dde4ec;
-    --soft: #eaf1fb;      /* רקע בהיר לכפתורים משניים */
-    --stat: #eef4fc;      /* רקע לנתוני מזג האוויר */
-    --track: #e6ecf3;     /* רקע פס ההתקדמות */
-    --shadow: rgba(0,0,0,.06);
+    --border: #d3e6f0;
+    --soft: #e0f1f9;         /* רקע בהיר לכפתורים משניים */
+    --stat: #e6f4fa;         /* רקע לנתוני מזג האוויר */
+    --track: #d9ebf4;        /* רקע פס ההתקדמות */
+    --sand: #fbefd5;         /* חול: להדגשות חמות */
+    --sun: #ffb347;
+    --hero-top: #8fd3f0;     /* שמיים בכותרת */
+    --hero-bottom: #e6f6fd;
+    --hero-text: #0f2c44;
+    --cloud: rgba(255,255,255,.85);
+    --shadow: rgba(18, 82, 120, .12);
     color-scheme: light;
   }
   /* מצב כהה: מחליפים רק את המשתנים, וכל האתר משתנה לבד */
   :root[data-theme="dark"] {
-    --bg: #12171f;
-    --card: #1c2430;
-    --text: #e8edf3;
-    --muted: #9aa7b6;
-    --accent: #4c98ff;
-    --accent-dark: #8bbcff;
-    --border: #2f3b4a;
-    --soft: #26354a;
-    --stat: #243142;
-    --track: #2b3746;
-    --shadow: rgba(0,0,0,.4);
+    --bg: #0a1823;
+    --card: #11283a;
+    --text: #e6f3fa;
+    --muted: #8db0c5;
+    --accent: #38bdf8;
+    --accent-dark: #86d6fb;
+    --on-accent: #05202f;
+    --ok: #34d399;
+    --border: #22425a;
+    --soft: #19384e;
+    --stat: #16344a;
+    --track: #1d3d55;
+    --sand: #2c2a1d;
+    --sun: #ffc266;
+    --hero-top: #123f5e;
+    --hero-bottom: #0e2a3f;
+    --hero-text: #eaf6fd;
+    --cloud: rgba(255,255,255,.12);
+    --shadow: rgba(0, 0, 0, .45);
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -47,26 +62,65 @@
     color: var(--text);
     line-height: 1.5;
   }
-  main { max-width: 640px; margin: 0 auto; padding: 16px; }
-  h1 { margin: 8px 0 4px; font-size: 1.8rem; }
-  h1 small { display: block; font-size: 0.95rem; color: var(--muted); font-weight: normal; }
+  main { max-width: 660px; margin: 0 auto; padding: 18px 16px 40px; }
+  /* ===== כותרת פתיחה: שמיים עם שמש, ענן ומטוס ===== */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    margin: 8px 0 18px;
+    padding: 26px 20px 54px;
+    border-radius: 26px;
+    background: linear-gradient(180deg, var(--hero-top) 0%, var(--hero-bottom) 100%);
+    color: var(--hero-text);
+    box-shadow: 0 8px 28px var(--shadow);
+    animation: rise .5s ease both;
+  }
+  .hero h1 { position: relative; z-index: 2; margin: 0; font-size: 2.1rem; letter-spacing: .3px; line-height: 1.2; }
+  .hero h1 small { display: block; margin-top: 6px; font-size: 1rem; font-weight: 500; opacity: .85; letter-spacing: 0; }
+  .hero-art { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  .hero .sun { position: absolute; top: 14px; inset-inline-start: 18px; width: 54px; height: 54px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff4c9, var(--sun)); box-shadow: 0 0 34px 10px rgba(255,179,71,.45); }
+  .hero .cloud { position: absolute; height: 22px; border-radius: 22px; background: var(--cloud); }
+  .hero .cloud::before, .hero .cloud::after { content: ""; position: absolute; background: inherit; border-radius: 50%; }
+  .hero .cloud::before { width: 26px; height: 26px; top: -12px; inset-inline-start: 12px; }
+  .hero .cloud::after { width: 34px; height: 34px; top: -18px; inset-inline-start: 34px; }
+  .hero .cloud.c1 { width: 90px; top: 40px; inset-inline-end: 22%; animation: drift 38s linear infinite alternate; }
+  .hero .cloud.c2 { width: 64px; top: 92px; inset-inline-end: 6%; opacity: .8; animation: drift 52s linear infinite alternate-reverse; }
+  .hero .plane { position: absolute; top: 18px; inset-inline-end: 10%; font-size: 2rem; transform: scaleX(-1); animation: fly 6s ease-in-out infinite alternate; }
+  .hero .waves { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 42px; display: block; }
+  .hero .waves path { fill: var(--bg); }
+  .hero .waves path.back { opacity: .55; }
+  @keyframes fly { from { transform: scaleX(-1) translate(0, 0) rotate(-4deg); } to { transform: scaleX(-1) translate(-22px, -9px) rotate(2deg); } }
+  @keyframes drift { from { transform: translateX(-26px); } to { transform: translateX(26px); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
   .card {
     background: var(--card);
-    border-radius: 16px;
-    padding: 16px;
-    margin: 14px 0;
-    box-shadow: 0 2px 10px var(--shadow);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 20px;
+    margin: 16px 0;
+    box-shadow: 0 6px 22px var(--shadow);
+    animation: rise .45s ease both;
   }
+  main > .card:nth-of-type(2) { animation-delay: .06s; }
+  main > .card:nth-of-type(3) { animation-delay: .12s; }
+  main > .card:nth-of-type(4) { animation-delay: .18s; }
   label { display: block; font-weight: 600; margin: 10px 0 4px; }
   input[type=text], input[type=date], input[type=search] {
     width: 100%;
-    padding: 10px 12px;
+    padding: 11px 14px;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 14px;
     font-size: 1rem;
     font-family: inherit;
     background: var(--card);
     color: var(--text);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input[type=text]:focus, input[type=date]:focus, input[type=search]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
   }
   .row { display: flex; gap: 10px; }
   .row > div { flex: 1; min-width: 0; }
@@ -87,11 +141,13 @@
     user-select: none;
     transition: all .15s;
   }
+  .chip span:hover { border-color: var(--accent); background: var(--soft); }
   .chip input:checked + span {
     background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
-    transform: scale(1.05);
+    color: var(--on-accent);
+    transform: scale(1.04);
+    box-shadow: 0 4px 12px var(--shadow);
   }
 
   button {
@@ -99,25 +155,34 @@
     font-size: 1rem;
     cursor: pointer;
     border: none;
-    border-radius: 10px;
+    border-radius: 14px;
     padding: 11px 16px;
+    transition: transform .12s, filter .15s, background .15s, box-shadow .15s;
   }
-  .primary { background: var(--accent); color: #fff; width: 100%; margin-top: 16px; font-weight: 600; }
-  .primary:hover { background: var(--accent-dark); }
+  button:hover:not(:disabled) { transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: scale(.97); }
+  /* מסגרת מיקוד ברורה למי שמנווט במקלדת */
+  button:focus-visible, select:focus-visible, summary:focus-visible, .chip input:focus-visible + span {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .primary { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: var(--on-accent); width: 100%; margin-top: 18px; font-weight: 700; padding: 14px 16px; border-radius: 16px; box-shadow: 0 6px 16px var(--shadow); }
+  .primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
   .primary:disabled { opacity: .6; cursor: wait; }
-  .secondary { background: var(--soft); color: var(--accent-dark); }
+  .secondary { background: var(--soft); color: var(--accent-dark); font-weight: 600; }
+  .secondary:hover:not(:disabled) { filter: brightness(.97); }
   .whatsapp { background: #25d366; color: #fff; }
 
   #error { color: var(--danger); margin-top: 10px; min-height: 1.2em; }
 
   /* ===== מזג אוויר ===== */
   #weather .stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-  .stat { background: var(--stat); border-radius: 10px; padding: 6px 12px; font-size: .95rem; }
+  .stat { background: var(--stat); border-radius: 999px; padding: 7px 14px; font-size: .95rem; font-weight: 600; }
   .note { color: var(--muted); font-size: .85rem; margin-top: 8px; }
 
   /* ===== התקדמות ===== */
-  .bar { height: 14px; background: var(--track); border-radius: 999px; overflow: hidden; margin: 8px 0; }
-  .bar > div { height: 100%; width: 0; background: var(--ok); transition: width .4s ease; }
+  .bar { height: 16px; background: var(--track); border-radius: 999px; overflow: hidden; margin: 10px 0; box-shadow: inset 0 1px 3px var(--shadow); }
+  .bar > div { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #3fd0b0, var(--ok)); transition: width .5s cubic-bezier(.3,.8,.3,1); }
 
   /* ===== הרשימה ===== */
   .search-row { margin: 10px 0 4px; }
@@ -173,7 +238,7 @@
   .past-row .info small { display: block; color: var(--muted); }
   .past-row .del { background: none; color: var(--danger); padding: 4px 8px; font-size: 1.1rem; }
 
-  .countdown { background: var(--stat); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; font-weight: 600; }
+  .countdown { background: var(--sand); border-radius: 14px; padding: 10px 14px; margin-bottom: 12px; font-weight: 700; }
   .countdown.soon { border: 2px solid var(--danger); }
   .countdown.over { color: var(--muted); font-weight: normal; }
   .countdown small { display: block; font-weight: normal; color: var(--muted); }
@@ -203,7 +268,7 @@
   #connStatus { font-size: .85rem; color: var(--muted); }
   .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
   .tab { background: var(--soft); color: var(--accent-dark); border-radius: 999px; padding: 8px 16px; }
-  .tab.active { background: var(--accent); color: #fff; font-weight: 600; }
+  .tab.active { background: var(--accent); color: var(--on-accent); font-weight: 600; }
   .tab-manage { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
   .tab-manage button { padding: 6px 12px; font-size: .9rem; }
   .tab-manage .rename-form { flex: 1 1 100%; }
@@ -279,10 +344,12 @@
 
   #bgBtn { margin: 0; font-weight: normal; cursor: pointer; display: inline-flex; align-items: center; position: relative; font-size: 1rem; }
   #bgBtn input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
-  /* צבע הכותרת מחוץ לכרטיסים מותאם לרקע שנבחר, כדי שיהיה קריא */
-  main > h1 { color: var(--page-text, var(--text)); }
-  main > h1 small { color: var(--page-muted, var(--muted)); }
   .hidden { display: none; }
+
+  /* מי שביקשה פחות תנועה במכשיר: בלי אנימציות */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
   canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
 </style>
 </head>
@@ -304,7 +371,19 @@
   </div>
 </div>
 <main>
-  <h1>🧳 PackPal <small>רשימת אריזה חכמה לפי מזג האוויר והפעילויות שלך</small></h1>
+  <header class="hero">
+    <div class="hero-art" aria-hidden="true">
+      <span class="sun"></span>
+      <span class="cloud c1"></span>
+      <span class="cloud c2"></span>
+      <span class="plane">✈️</span>
+      <svg class="waves" viewBox="0 0 400 42" preserveAspectRatio="none">
+        <path class="back" d="M0 22 C60 8 120 36 200 20 S340 6 400 22 V42 H0 Z"/>
+        <path d="M0 30 C70 18 130 40 210 28 S350 16 400 30 V42 H0 Z"/>
+      </svg>
+    </div>
+    <h1>🧳 PackPal <small>רשימת אריזה חכמה לפי מזג האוויר והפעילויות שלך</small></h1>
+  </header>
 
   <!-- ===== טיול משותף ===== -->
   <section id="sharedBar" class="card hidden">
@@ -360,11 +439,11 @@
       <strong id="progressText"></strong>
       <button type="button" class="secondary" id="collapseAllBtn"></button>
     </div>
+    <div class="bar"><div id="barFill"></div></div>
     <div class="search-row">
       <input type="search" id="itemSearch" placeholder="🔍 חיפוש ברשימה..." aria-label="חיפוש ברשימה" autocomplete="off">
       <div id="searchInfo" class="note" role="status"></div>
     </div>
-    <div class="bar"><div id="barFill"></div></div>
     <div id="list"></div>
 
     <form class="add-row" id="addForm" autocomplete="off">
