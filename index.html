@@ -260,9 +260,6 @@
   .fav-row .text { flex: 1; }
   .fav-row .del { background: none; color: var(--danger); padding: 4px 8px; font-size: 1.1rem; }
   #favMsg { margin-top: 10px; min-height: 1.2em; color: var(--ok); }
-  #backupMsg { margin-top: 10px; min-height: 1.2em; }
-  #backupMsg.err { color: var(--danger); }
-  #backupMsg.ok { color: var(--ok); }
   /* ===== טיול משותף ===== */
   .shared-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   #connStatus { font-size: .85rem; color: var(--muted); }
@@ -290,7 +287,7 @@
   .shared-link label { font-size: .9rem; color: var(--muted); font-weight: normal; }
   .link-box .add-row { margin-top: 4px; }
   /* בטיול משותף הטיול קבוע: מסתירים את מה שקשור לטיולים האישיים */
-  .shared-mode #tripForm, .shared-mode #pastSection, .shared-mode #backupSection, .shared-mode #favSection,
+  .shared-mode #tripForm, .shared-mode #pastSection, .shared-mode #favSection,
   .shared-mode #resetBtn, .shared-mode #inviteBtn, .shared-mode #invitePanel { display: none !important; }
   /* ===== חשבון והתחברות ===== */
   .account-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 2px 0 10px; font-size: .95rem; }
@@ -526,18 +523,6 @@
       <button type="button" class="secondary" id="favApplyBtn">הוסף את הקבועים לטיול הנוכחי</button>
     </div>
     <div id="favMsg" role="status"></div>
-  </section>
-
-  <!-- ===== גיבוי ושחזור ===== -->
-  <section id="backupSection" class="card">
-    <strong>💾 גיבוי ושחזור</strong>
-    <p class="note">הטיולים נשמרים רק בדפדפן הזה. גיבוי לקובץ מאפשר לשמור אותם, או להעביר אותם למכשיר אחר.</p>
-    <div class="actions">
-      <button type="button" class="secondary" id="exportBtn">⬇️ ייצא גיבוי</button>
-      <button type="button" class="secondary" id="importBtn">⬆️ ייבא גיבוי</button>
-    </div>
-    <input type="file" id="importFile" accept=".json,application/json" class="hidden">
-    <div id="backupMsg" role="status"></div>
   </section>
 </main>
 
@@ -1128,9 +1113,10 @@ let entryToken = 0;
 function renderEntry() {
   const box = $('entrySection');
   box.replaceChildren();
+  const token = ++entryToken;          // מבטל תשובות ישנות שעוד בדרך (גם כשאין טיול)
   if (!state) { box.classList.add('hidden'); return; }
-  const token = ++entryToken;
-  const country = placeCountry(state.trip.place);
+  const trip = state.trip;
+  const country = placeCountry(trip.place);
 
   box.appendChild(el('strong', null, '🛂 לפני שנוסעים' + (country ? ' ל' + country : '') + ': כניסה ובטיחות'));
 
@@ -1167,7 +1153,7 @@ function renderEntry() {
   box.appendChild(el('div', { id: 'entryMsg', role: 'status' }));
   box.classList.remove('hidden');
 
-  resolvePlaceMeta(state.trip).then((meta) => {
+  resolvePlaceMeta(trip).then((meta) => {
     if (token !== entryToken) return;
     const cc = meta.cc;
     fillVisa(visaBox, cc, country);
@@ -1179,8 +1165,8 @@ function renderEntry() {
       items.push(['תקע חשמל', 'סוג ' + plug.p + ' (בישראל: C/H)']);
       items.push(['מתח', plug.v + ', ' + plug.f + ' (בישראל: 230V, 50Hz)']);
     }
-    if (meta.tz && state.trip.start) {
-      const diff = timeDiffText(meta.tz, state.trip.start);
+    if (meta.tz && trip.start) {
+      const diff = timeDiffText(meta.tz, trip.start);
       if (diff) items.push(['הפרש שעות מישראל', diff]);
     }
     if (items.length) {
@@ -1638,133 +1624,11 @@ function applyFavsToCurrent() {
   favMessage(added ? (added === 1 ? 'נוסף פריט אחד לטיול.' : 'נוספו ' + added + ' פריטים לטיול.') : 'כל הקבועים כבר ברשימה.');
 }
 
-const BACKUP_APP = 'packpal';
-const BACKUP_VERSION = 1;
-
-function backupMessage(text, ok) {
-  const box = $('backupMsg');
-  box.textContent = text;
-  box.className = ok ? 'ok' : 'err';
-}
-
-function exportBackup() {
-  const backup = {
-    app: BACKUP_APP,
-    version: BACKUP_VERSION,
-    exportedAt: new Date().toISOString(),
-    current: state,
-    history: loadHistory(),
-    favorites: loadFavs()
-  };
-  const count = (state ? 1 : 0) + backup.history.length;
-  if (!count && !backup.favorites.length) { backupMessage('אין עדיין מה לגבות.', false); return; }
-
-  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = el('a', { href: url, download: 'packpal-backup-' + toISO(new Date()) + '.json' });
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  const parts = [];
-  if (count) parts.push(count === 1 ? 'טיול אחד' : count + ' טיולים');
-  const nf = backup.favorites.length;
-  if (nf) parts.push(nf === 1 ? 'פריט קבוע אחד' : nf + ' פריטים קבועים');
-  backupMessage('הגיבוי ירד כקובץ (' + parts.join(' ו-') + ').', true);
-}
-
-// בודק שטיול מהקובץ נראה תקין, ומחזיר עותק נקי שלו (או null אם הוא לא תקין)
-function cleanTrip(t) {
-  if (!t || typeof t !== 'object' || !t.trip || typeof t.trip !== 'object') return null;
-  const tr = t.trip, w = t.weather;
-  const isDate = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
-  if (typeof tr.place !== 'string' || !isDate(tr.start) || !isDate(tr.end)) return null;
-  if (!Array.isArray(t.items) || !w || typeof w !== 'object') return null;
-
-  const items = [];
-  for (const it of t.items) {
-    if (!it || typeof it.text !== 'string' || typeof it.cat !== 'string') return null;
-    items.push({ id: items.length + 1, text: it.text.slice(0, 200), cat: it.cat.slice(0, 60), checked: !!it.checked, qty: clampQty(it.qty) });
-  }
-  const trip = {
-    place: tr.place.slice(0, 120),
-    start: tr.start,
-    end: tr.end,
-    activities: Array.isArray(tr.activities) ? tr.activities.filter(a => a in ACTIVITIES) : []
-  };
-  if (typeof tr.name === 'string' && tr.name.trim()) trip.name = tr.name.trim().slice(0, 60);
-  if (Number.isFinite(tr.lat) && Number.isFinite(tr.lon)) { trip.lat = tr.lat; trip.lon = tr.lon; }
-  const num = v => (Number.isFinite(v) ? v : 0);
-  const weather = {
-    source: w.source === 'forecast' ? 'forecast' : 'history',
-    minTemp: num(w.minTemp), maxTemp: num(w.maxTemp), rainyDays: num(w.rainyDays), maxWind: num(w.maxWind)
-  };
-  return { trip: trip, weather: weather, items: items };
-}
-
-// מזהה טיול כדי לא לשכפל אותו. בלי מספרי ה-id של הפריטים, שמתחדשים בכל ייבוא.
+// מזהה טיול כדי לא לשכפל אותו באיחוד עם הענן. בלי מספרי ה-id של הפריטים.
 const tripKey = t => JSON.stringify([
   t.trip.place, t.trip.start, t.trip.end, t.trip.name || '', t.trip.activities,
   t.items.map(i => [i.text, i.cat, i.checked, i.qty || 1])
 ]);
-
-// מוסיף טיולים מהקובץ בלי למחוק כלום: טיול פעיל מהקובץ הופך לפעיל רק אם אין כרגע פעיל,
-// ואחרת נכנס לטיולים קודמים. טיולים שכבר קיימים לא מוכפלים.
-function importBackup(text) {
-  let data;
-  try { data = JSON.parse(text); } catch (e) { backupMessage('הקובץ לא נראה כמו גיבוי של PackPal.', false); return; }
-  if (!data || data.app !== BACKUP_APP || !Array.isArray(data.history)) {
-    backupMessage('הקובץ לא נראה כמו גיבוי של PackPal.', false);
-    return;
-  }
-
-  const incoming = data.history.map(cleanTrip).filter(Boolean);
-  const current = data.current ? cleanTrip(data.current) : null;
-  const skipped = data.history.length - incoming.length + (data.current && !current ? 1 : 0);
-
-  const hist = loadHistory();
-  const known = new Set(hist.map(tripKey));
-  if (state) known.add(tripKey(state));
-  let added = 0, becameCurrent = false;
-
-  if (current && !known.has(tripKey(current))) {
-    if (!state) {
-      state = current;
-      save();
-      becameCurrent = true;
-    } else {
-      hist.push(current);
-    }
-    known.add(tripKey(current));
-    added++;
-  }
-  incoming.forEach(t => {
-    if (known.has(tripKey(t))) return;
-    known.add(tripKey(t));
-    hist.push(t);
-    added++;
-  });
-
-  saveHistory(hist);
-  if (becameCurrent) applyStateToPage(); else renderPast();
-
-  // פריטים קבועים מהקובץ: מוסיפים רק את מה שעוד אין
-  let favAdded = 0;
-  const favsIn = Array.isArray(data.favorites) ? data.favorites : [];
-  favsIn.forEach(f => { if (f && typeof f.text === 'string' && addFav(f.text, f.qty)) favAdded++; });
-  renderFavs();
-
-  let msg;
-  if (added) msg = added === 1 ? 'שוחזר טיול אחד.' : 'שוחזרו ' + added + ' טיולים.';
-  else if (favAdded) msg = 'שוחזרו פריטים קבועים.';
-  else if (!data.history.length && !data.current && !favsIn.length) msg = 'הקובץ ריק, אין בו טיולים.';
-  else if (skipped && !incoming.length && !current) msg = 'לא נמצאו בקובץ טיולים תקינים לשחזור.';
-  else msg = 'כל הטיולים שבקובץ כבר קיימים כאן.';
-  if (hist.length > HISTORY_MAX) msg += ' (נשמרים עד ' + HISTORY_MAX + ' טיולים קודמים.)';
-  if (skipped && added) msg += ' ' + (skipped === 1 ? 'טיול אחד בקובץ לא תקין ודולג.' : skipped + ' טיולים בקובץ לא תקינים ודולגו.');
-  if (favAdded && added) msg += ' ' + (favAdded === 1 ? 'נוסף פריט קבוע אחד.' : 'נוספו ' + favAdded + ' פריטים קבועים.');
-  backupMessage(msg, added > 0 || favAdded > 0 || (!skipped && !!(data.history.length || data.current || favsIn.length)));
-}
 
 // איזה טיול ישן פתוח כרגע לשכפול (מציג שדות תאריך מתחתיו), או null
 let dupOpenIdx = null;
@@ -2204,15 +2068,6 @@ $('inviteBtn').addEventListener('click', () => {
   if (panel.classList.contains('hidden')) renderInvitePanel(); else panel.classList.add('hidden');
 });
 $('collapseAllBtn').addEventListener('click', toggleAllCategories);
-$('exportBtn').addEventListener('click', exportBackup);
-$('importBtn').addEventListener('click', () => $('importFile').click());
-$('importFile').addEventListener('change', async (ev) => {
-  const file = ev.target.files[0];
-  ev.target.value = '';           // מאפשר לבחור את אותו קובץ שוב
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { backupMessage('הקובץ גדול מדי.', false); return; }
-  importBackup(await file.text());
-});
 $('reorderBtn').addEventListener('click', () => setReorderMode(!reorderMode));
 
 $('resetBtn').addEventListener('click', () => {
