@@ -394,6 +394,7 @@
     <div id="myGroupItems" class="my-group hidden"></div>
     <div id="joinBox"></div>
     <div class="shared-link"><label>קישור להזמנת עוד אנשים</label><div id="sharedLinkBox"></div></div>
+    <div id="expiryNote" class="note"></div>
   </section>
 
   <!-- ===== טופס הטיול ===== -->
@@ -2014,6 +2015,20 @@ function readSharedId() {
 const SHARED_ID = readSharedId();
 let sharedMode = !!SHARED_ID;
 
+// טיול משותף נמחק אוטומטית מהשרת שבוע אחרי תאריך החזרה
+const RETENTION_DAYS = 7;
+function isExpiredEnd(endISO) { return !!endISO && daysFromToday(endISO) < -RETENTION_DAYS; }
+function expiryDateText(endISO) {
+  const d = parseISO(endISO);
+  d.setDate(d.getDate() + RETENTION_DAYS);
+  return fmtDate(toISO(d));
+}
+function expiryMs(endISO) {
+  const d = parseISO(endISO);
+  d.setDate(d.getDate() + RETENTION_DAYS + 1);
+  return d.getTime();
+}
+
 const MEMBER_KEY = id => 'packpal-member-' + id;   // איזה משתתף אני בטיול הזה (בדפדפן הזה)
 let remote = null;               // עותק של הטיול המשותף מ-Firebase
 let myMemberId = null;           // המשתתף שאני
@@ -2152,6 +2167,20 @@ function scheduleRender() {
   renderTimer = setTimeout(() => { if (viewSig() !== lastSig) renderShared(); }, 60);
 }
 
+let purging = false;
+let expiredGone = false;
+
+// הטיול הסתיים לפני יותר משבוע: מוחקים אותו מהשרת
+async function purgeExpired() {
+  purging = true;
+  try { await fb('DELETE', SHARED_ID, ''); }
+  catch (e) { purging = false; setConn('error'); return; }
+  remote = null;
+  expiredGone = true;
+  try { localStorage.removeItem(MEMBER_KEY(SHARED_ID)); } catch (e) {}
+  renderShared();
+}
+
 function startStream() {
   if (eventSource) eventSource.close();
   setConn('connecting');
@@ -2164,6 +2193,7 @@ function startStream() {
         const msg = JSON.parse(ev.data);
         applyRemoteEvent(type, msg.path, msg.data);
         setConn('live');
+        if (remote && remote.trip && isExpiredEnd(remote.trip.end) && !purging) { purgeExpired(); return; }
         if (!pendingWrites) scheduleRender();
       } catch (e) {}
     });
@@ -2205,7 +2235,8 @@ function renderShared() {
     renderList();
     tabs.replaceChildren();
     $('tabManage').replaceChildren();
-    $('joinBox').replaceChildren(el('p', { className: 'note' }, 'לא מצאתי את הטיול הזה. ייתכן שהקישור לא נכון או שהטיול נמחק.'));
+    $('expiryNote').textContent = '';
+    $('joinBox').replaceChildren(el('p', { className: 'note' }, expiredGone ? 'הטיול הסתיים לפני יותר משבוע, ולכן הוא נמחק אוטומטית מהשרת.' : 'לא מצאתי את הטיול הזה. ייתכן שהקישור לא נכון או שהטיול נמחק.'));
     return;
   }
 
@@ -2235,6 +2266,7 @@ function renderShared() {
     renderWeather();
     renderList();
   }
+  $('expiryNote').textContent = remote.trip.end ? '🗓️ הטיול המשותף יימחק אוטומטית ב-' + expiryDateText(remote.trip.end) + ' (שבוע אחרי החזרה).' : '';
   const t = remote.trip && remote.trip.type;
   $('sharedType').textContent = t && typeTitle(t) ? ' · ' + typeTitle(t) : '';
   $('groupHint').classList.toggle('hidden', viewMemberId !== GROUP_ID);
@@ -2458,6 +2490,7 @@ async function createSharedTrip(name, type) {
     trip: trip,
     weather: state.weather,
     createdAt: Date.now(),
+    expiresAt: expiryMs(trip.end),
     ownerId: mid,
     members: {
       [GROUP_ID]: { name: 'משותף', group: true, joinedAt: 0, items: itemsToRecords(groupItems(trip.type)) },
@@ -2468,6 +2501,31 @@ async function createSharedTrip(name, type) {
   state.shareId = id;
   save();
   return id;
+}
+
+// בפתיחת האפליקציה: בודקת אם טיולים משותפים שיצרת כבר פגו (או נמחקו), ומנקה את הקישור מהם
+async function sweepOldShares() {
+  const ids = new Set();
+  if (state && state.shareId) ids.add(state.shareId);
+  loadHistory().forEach(h => { if (h.shareId) ids.add(h.shareId); });
+  if (!ids.size) return;
+
+  const cleared = new Set();
+  for (const id of ids) {
+    try {
+      const end = await (await fetch(fbUrl(id, '/trip/end'))).json();
+      if (end === null) cleared.add(id);                                          // כבר נמחק
+      else if (isExpiredEnd(end)) { await fb('DELETE', id, ''); cleared.add(id); } // פג: מוחקים
+    } catch (e) { /* אין חיבור: ננסה שוב בפעם הבאה */ }
+  }
+  if (!cleared.size) return;
+
+  // טוענים מחדש, כי בזמן הבדיקה המשתמשת אולי שינתה משהו
+  const hist = loadHistory();
+  let changedHist = false;
+  hist.forEach(h => { if (h.shareId && cleared.has(h.shareId)) { delete h.shareId; changedHist = true; } });
+  if (changedHist) saveHistory(hist);
+  if (state && state.shareId && cleared.has(state.shareId)) { delete state.shareId; save(); }
 }
 
 function renderInvitePanel() {
@@ -2502,7 +2560,7 @@ function renderInvitePanel() {
   }
 
   panel.appendChild(el('p', { className: 'note' },
-    'ייווצר קישור שמי שיש לו אותו יכול לראות ולערוך את הטיול. הטיול יישמר באינטרנט (אצל גוגל) ולא רק בדפדפן הזה.'));
+    'ייווצר קישור שמי שיש לו אותו יכול לראות ולערוך את הטיול. הטיול יישמר באינטרנט (אצל גוגל) ולא רק בדפדפן הזה, ויימחק אוטומטית שבוע אחרי תאריך החזרה.'));
   const form = el('form', { className: 'join-form' });
   const input = el('input', { type: 'text', maxLength: 30, required: true });
   input.placeholder = 'השם שלך (שם הלשונית שלך)';
@@ -2562,6 +2620,7 @@ if (sharedMode) {
     state = null;
     renderPast();
   }
+  sweepOldShares();
 }
 
 // כפתור "עיצוב": פותח וסוגר את חלונית כפתורי העיצוב
