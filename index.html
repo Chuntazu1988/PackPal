@@ -339,6 +339,75 @@
   .task-add label { margin: 0; font-weight: normal; font-size: .9rem; color: var(--muted); }
   .shared-mode #tasksSection, .pack-mode #tasksSection { display: none !important; }
 
+  /* ===== תפריט "עוד": חלונית קטנה שנפתחת מעל הכפתור ===== */
+  .more-wrap { position: relative; flex: 1; }
+  .more-wrap > button { width: 100%; }
+  .popover {
+    position: absolute; bottom: calc(100% + 10px); inset-inline-end: 0; min-width: 210px; z-index: 35;
+    background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 6px;
+    box-shadow: 0 12px 32px var(--shadow);
+    transform-origin: bottom; transform: scale(.85) translateY(10px); opacity: 0; visibility: hidden;
+    transition: transform .2s cubic-bezier(.3, .9, .3, 1.2), opacity .15s ease, visibility 0s linear .2s;
+  }
+  .popover.open { transform: none; opacity: 1; visibility: visible; transition: transform .2s cubic-bezier(.3, .9, .3, 1.2), opacity .15s ease; }
+  .popover button { display: flex; width: 100%; align-items: center; gap: 8px; background: none; color: var(--text); text-align: start; padding: 12px 14px; border-radius: 12px; font-weight: 600; }
+  .popover button:hover { background: var(--soft); transform: none; }
+  .actions .more-wrap, .actions button { flex: 1; }
+
+  /* ===== תפריט מהיר צף (כפתור +) ===== */
+  .fab-wrap { left: 16px; bottom: 18px; width: 56px; height: 56px; }
+  html.embedded .fab-wrap { bottom: auto; top: calc(var(--vt, 0px) + var(--vh, 600px) - 78px); }
+  .fab {
+    width: 56px; height: 56px; border-radius: 50%; padding: 0; font-size: 1.9rem; line-height: 1;
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: var(--on-accent);
+    box-shadow: 0 8px 22px var(--shadow); transition: transform .3s cubic-bezier(.3, .9, .3, 1.3), box-shadow .2s;
+  }
+  .fab-wrap.open .fab { transform: rotate(135deg); }
+  .fab-menu { position: absolute; left: 0; bottom: 66px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; visibility: hidden; transition: visibility 0s linear .3s; }
+  .fab-wrap.open .fab-menu { visibility: visible; transition: none; }
+  .fab-item {
+    display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 16px; border-radius: 999px;
+    background: var(--card); color: var(--text); border: 1px solid var(--border); box-shadow: 0 6px 16px var(--shadow); font-weight: 700;
+    opacity: 0; transform: translateY(16px) scale(.85);
+    transition: opacity .2s ease, transform .28s cubic-bezier(.3, .9, .3, 1.3); transition-delay: calc((3 - var(--i)) * 0ms);
+  }
+  .fab-item b { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--soft); font-size: 1.1rem; }
+  .fab-wrap.open .fab-item { opacity: 1; transform: none; transition-delay: calc(var(--i) * 55ms); }
+  .pack-mode .fab-wrap { display: none !important; }
+
+  /* ===== חלונית שעולה מלמטה ===== */
+  .sheet-overlay { display: flex; align-items: flex-end; justify-content: center; }
+  .sheet {
+    width: min(560px, 100%); background: var(--card); border-radius: 26px 26px 0 0; padding: 10px 18px 22px;
+    box-shadow: 0 -10px 40px var(--shadow); transform: translateY(100%); transition: transform .32s cubic-bezier(.3, .8, .3, 1);
+  }
+  .sheet-overlay.open .sheet { transform: none; }
+  .sheet-handle { width: 44px; height: 5px; border-radius: 3px; background: var(--border); margin: 4px auto 12px; }
+  .sheet h3 { margin: 0 0 8px; }
+  .sheet .add-row { margin-top: 6px; }
+  .sheet .add-row .primary { margin-top: 0; width: auto; flex: 1 1 100%; }
+  .sheet .add-row input[type=text] { flex: 1 1 100%; }
+
+  /* ===== הודעות קצרות ===== */
+  .toasts { left: 50%; bottom: 96px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; z-index: 80; width: max-content; max-width: 92vw; }
+  html.embedded .toasts { bottom: auto; top: calc(var(--vt, 0px) + var(--vh, 600px) - 150px); }
+  .toast {
+    background: var(--text); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 700; box-shadow: 0 8px 24px var(--shadow);
+    animation: toastIn .3s cubic-bezier(.3, .9, .3, 1.2) both;
+  }
+  .toast.out { animation: toastOut .25s ease both; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(14px) scale(.9); } to { opacity: 1; transform: none; } }
+  @keyframes toastOut { to { opacity: 0; transform: translateY(8px) scale(.95); } }
+
+  /* ===== כרטיסים שנסגרים ונפתחים בהחלקה ===== */
+  .card-head { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; border-radius: 12px; }
+  .card-head:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .card-head .chev { margin-inline-start: auto; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--soft); color: var(--accent-dark); transition: transform .3s ease; font-size: .85rem; }
+  .collapsed > .card-head .chev { transform: rotate(90deg); }
+  .card-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .35s ease; }
+  .collapsed > .card-body { grid-template-rows: 0fr; }
+  .card-body-inner { overflow: hidden; min-height: 0; }
+
   /* ===== מצב אריזה: מסך נקי עם הרשימה בלבד, בכפתורים גדולים ===== */
   .pack-bar { display: none; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; font-size: 1.15rem; }
   .pack-actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -346,7 +415,7 @@
   .pack-only { display: none; width: 100%; margin-top: 16px; padding: 14px; }
   .pack-mode .pack-bar:not(.hidden) { display: flex; }
   .pack-mode .pack-only { display: block; }
-  .pack-mode .hero, .pack-mode #accountBar, .pack-mode #welcome, .pack-mode #tripForm, .pack-mode #weather,
+  .pack-mode .fab-wrap, .pack-mode .hero, .pack-mode #accountBar, .pack-mode #welcome, .pack-mode #tripForm, .pack-mode #weather,
   .pack-mode #entrySection, .pack-mode #attrSection, .pack-mode #pastSection, .pack-mode #favSection,
   .pack-mode #listSection > .actions, .pack-mode #addForm, .pack-mode .search-row, .pack-mode #invitePanel,
   .pack-mode .item .del, .pack-mode .item .qty-btn, .pack-mode .item .move, .pack-mode #collapseAllBtn, .pack-mode .trip-title .rename-btn { display: none !important; }
@@ -445,32 +514,33 @@
   }
   #devBanner small { display: block; font-size: 1rem; font-weight: 600; }
 
-  #tools {
-    position: fixed;
-    top: 12px;
-    left: 12px;
-    z-index: 20;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+  /* ===== רכיבים צפים. כשהאפליקציה מוטמעת במסגרת גבוהה, --vt ו--vh (מ-JS) מציינים איפה המסך שרואים עכשיו ===== */
+  .floaty { position: fixed; z-index: 40; }
+  html.embedded .floaty { position: absolute; }
+  .vp { position: fixed; left: 0; right: 0; top: 0; height: 100%; }
+  html.embedded .vp { position: absolute; top: var(--vt, 0px); height: var(--vh, 100vh); }
+  #tools { top: 12px; left: 12px; z-index: 30; }
+  html.embedded #tools { top: calc(var(--vt, 0px) + 12px); }
+
+  .overlay { background: rgba(5, 20, 35, .45); opacity: 0; pointer-events: none; transition: opacity .25s ease; z-index: 50; }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+
+  /* ===== חלונית עיצוב: נפתחת מהצד ===== */
+  .drawer {
+    right: auto; width: min(86vw, 330px); z-index: 60;
+    background: var(--card); box-shadow: 8px 0 30px var(--shadow);
+    border-top-right-radius: 24px; border-bottom-right-radius: 24px;
+    transform: translateX(-105%); visibility: hidden;
+    transition: transform .32s cubic-bezier(.3, .8, .3, 1), visibility 0s linear .32s;
+    display: flex; flex-direction: column; overflow-y: auto;
   }
-  /* החלונית שנפתחת מכפתור "עיצוב" ומרכזת את כל כפתורי העיצוב */
-  #designPanel {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 10px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    box-shadow: 0 4px 16px var(--shadow);
-  }
-  #designPanel.hidden { display: none; }
+  .drawer.open { transform: none; visibility: visible; transition: transform .32s cubic-bezier(.3, .8, .3, 1); }
+  .drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 18px 8px; font-size: 1.15rem; }
+  .drawer-body { display: flex; flex-direction: column; gap: 10px; padding: 8px 18px 24px; }
+  .drawer-body > button, .drawer-body #bgBtn { width: 100%; justify-content: flex-start; text-align: start; padding: 14px 16px; border-radius: 16px; background: var(--soft); border: 1px solid var(--border); box-shadow: none; }
+  .icon-btn { background: var(--soft); color: var(--text); width: 36px; height: 36px; padding: 0; border-radius: 50%; }
   .tool-row { display: flex; gap: 8px; }
   .tool-row #bgBtn { flex: 1; }
-  #designPanel button, #designPanel #bgBtn { text-align: start; }
   #themeBtn, #sizeBtn, #fontBtn, #designToggle, #bgBtn, #bgReset {
     background: var(--card);
     color: var(--text);
@@ -496,9 +566,17 @@
   🚧 גרסת פיתוח (DEV) 🚧
   <small>זו לא הגרסה הסופית – כאן מנסים דברים חדשים</small>
 </div>
-<div id="tools">
+<div id="tools" class="floaty">
   <button type="button" id="designToggle" aria-expanded="false" aria-controls="designPanel">🎨 עיצוב</button>
-  <div id="designPanel" class="hidden">
+</div>
+<div id="drawerOverlay" class="overlay vp"></div>
+<aside id="designPanel" class="drawer vp" aria-label="הגדרות עיצוב" aria-hidden="true">
+  <div class="drawer-head">
+    <strong>🎨 עיצוב</strong>
+    <button type="button" class="icon-btn" id="drawerClose" aria-label="סגור">✕</button>
+  </div>
+  <div class="drawer-body">
+    <p class="note">שינויים נשמרים אוטומטית.</p>
     <button type="button" id="themeBtn" aria-label="החלף מצב כהה / בהיר"></button>
     <button type="button" id="sizeBtn" aria-label="שנה את גודל הטקסט"></button>
     <button type="button" id="fontBtn" aria-label="שנה את סוג הפונט"></button>
@@ -507,7 +585,7 @@
       <button type="button" id="bgReset" class="hidden" aria-label="חזרה לצבע הרקע המקורי" title="חזרה לצבע המקורי">↺</button>
     </div>
   </div>
-</div>
+</aside>
 <main>
   <div id="accountBar" class="account-bar hidden"></div>
 
@@ -664,12 +742,17 @@
     </form>
 
     <div class="actions">
-      <button type="button" class="whatsapp" id="shareBtn">שתף בוואטסאפ</button>
       <button type="button" class="secondary" id="packBtn">🎒 מצב אריזה</button>
-      <button type="button" class="secondary" id="printBtn">🖨️ הדפס</button>
-      <button type="button" class="secondary" id="reorderBtn">↕️ שנה סדר</button>
-      <button type="button" class="secondary" id="inviteBtn">👥 שתף טיול</button>
-      <button type="button" class="secondary" id="resetBtn">טיול חדש</button>
+      <button type="button" class="whatsapp" id="shareBtn">שתף בוואטסאפ</button>
+      <div class="more-wrap">
+        <button type="button" class="secondary" id="moreBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="moreMenu">⋯ עוד</button>
+        <div id="moreMenu" class="popover" role="menu" aria-hidden="true">
+          <button type="button" role="menuitem" id="printBtn">🖨️ הדפס</button>
+          <button type="button" role="menuitem" id="reorderBtn">↕️ שנה סדר</button>
+          <button type="button" role="menuitem" id="inviteBtn">👥 שתף טיול</button>
+          <button type="button" role="menuitem" id="resetBtn">➕ טיול חדש</button>
+        </div>
+      </div>
     </div>
     <div id="invitePanel" class="invite-panel hidden"></div>
   </section>
@@ -693,6 +776,32 @@
     <div id="favMsg" role="status"></div>
   </section>
 </main>
+
+<!-- תפריט מהיר צף: נפתח כמניפה למעלה -->
+<div id="fabWrap" class="fab-wrap floaty hidden">
+  <div id="fabMenu" class="fab-menu" role="menu" aria-hidden="true">
+    <button type="button" class="fab-item" style="--i:3" role="menuitem" id="fabTop"><span>למעלה</span><b>⬆️</b></button>
+    <button type="button" class="fab-item" style="--i:2" role="menuitem" id="fabSearch"><span>חיפוש</span><b>🔍</b></button>
+    <button type="button" class="fab-item" style="--i:1" role="menuitem" id="fabPack"><span>מצב אריזה</span><b>🎒</b></button>
+    <button type="button" class="fab-item" style="--i:0" role="menuitem" id="fabAdd"><span>הוסף פריט</span><b>➕</b></button>
+  </div>
+  <button type="button" class="fab" id="fabBtn" aria-label="תפריט מהיר" aria-expanded="false" aria-controls="fabMenu">＋</button>
+</div>
+
+<!-- חלונית הוספת פריט: עולה מלמטה -->
+<div id="sheetOverlay" class="overlay sheet-overlay vp" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="הוספת פריט">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <h3>➕ פריט חדש</h3>
+    <form id="sheetForm" class="add-row" autocomplete="off">
+      <input type="text" id="sheetText" maxlength="80" placeholder="מה להוסיף לרשימה?" aria-label="פריט חדש">
+      <input type="number" id="sheetQty" min="1" max="99" value="1" aria-label="כמות" title="כמות">
+      <button type="submit" class="primary">הוסף</button>
+    </form>
+  </div>
+</div>
+
+<div id="toasts" class="toasts floaty" aria-live="polite"></div>
 
 <canvas id="confetti"></canvas>
 
@@ -1478,6 +1587,7 @@ function renderAttractions() {
   box.appendChild(body);
   body.appendChild(el('div', { className: 'note' }, 'מחפשת המלצות...'));
   box.classList.remove('hidden');
+  makeCollapsible(box, 'attractions', 1, true);
 
   const searchLink = () => {
     const a = el('a', { href: 'https://en.wikivoyage.org/w/index.php?search=' + encodeURIComponent(city), target: '_blank', rel: 'noopener noreferrer' }, 'חיפוש ב-Wikivoyage');
@@ -1567,6 +1677,7 @@ function renderEntry() {
   box.appendChild(btn);
   box.appendChild(el('div', { id: 'entryMsg', role: 'status' }));
   box.classList.remove('hidden');
+  makeCollapsible(box, 'entry', 1, false);
 
   resolvePlaceMeta(trip).then((meta) => {
     if (token !== entryToken) return;
@@ -1647,6 +1758,7 @@ function addEntryTodos() {
     added++;
   });
   if (added) { save(); renderTasks(); }
+  if (added) toast(added === 1 ? 'נוספה משימה אחת ✓' : 'נוספו ' + added + ' משימות ✓');
   $('entryMsg').textContent = added ? (added === 1 ? 'נוספה משימה אחת.' : 'נוספו ' + added + ' משימות.') + ' תמצאי אותן ב"משימות לפני הטיסה".' : 'המשימות כבר שם.';
 }
 
@@ -1767,6 +1879,7 @@ function renderTasks() {
     renderTasks();
   });
   box.appendChild(form);
+  makeCollapsible(box, 'tasks', 2, false);
 }
 
 function renderWeather() {
@@ -1789,6 +1902,7 @@ function renderWeather() {
     box.appendChild(retry);
     box.appendChild(el('div', { id: 'weatherMsg', className: 'note', role: 'status' }));
     box.classList.remove('hidden');
+    makeCollapsible(box, 'weather', 1, false);
     return;
   }
   const stats = el('div', { className: 'stats' });
@@ -1801,6 +1915,7 @@ function renderWeather() {
       ? 'תחזית אמיתית לתאריכי הטיול.'
       : 'הטיול רחוק, אז זה ממוצע של אותם תאריכים בשנה שעברה.'));
   box.classList.remove('hidden');
+  makeCollapsible(box, 'weather', 1, false);
 }
 
 // מנסה שוב להשיג מזג אוויר. אם הצליח: מחליף את הפריטים הכלליים בפריטים לפי מזג האוויר, בלי לגעת בסימונים אחרים.
@@ -1974,7 +2089,7 @@ function setTripName(trip, name) {
 
 function renderList() {
   const section = $('listSection');
-  if (!state) { section.classList.add('hidden'); if (packMode) setPackMode(false); renderFavs(); return; }
+  if (!state) { section.classList.add('hidden'); if (packMode) setPackMode(false); updateFab(); renderFavs(); return; }
   section.classList.remove('hidden');
   renderFavs();
   renderTitle();
@@ -2059,6 +2174,7 @@ function renderList() {
   });
   placeUndoRow(list);
   renderUndoBar();
+  updateFab();
   renderProgress();
   $('searchInfo').textContent = !query ? '' : (found ? (found === 1 ? 'נמצא פריט אחד.' : 'נמצאו ' + found + ' פריטים.') : 'לא נמצאו פריטים.');
   if (query && !found) list.appendChild(el('p', { className: 'note' }, 'נסי מילה אחרת.'));
@@ -2469,6 +2585,7 @@ function setPackMode(on) {
   packMode = on;
   document.body.classList.toggle('pack-mode', on);
   $('packBar').classList.toggle('hidden', !on);
+  updateFab();
   try { sessionStorage.setItem(PACK_KEY, on ? '1' : ''); } catch (e) {}
   if (state) renderList();
   window.scrollTo(0, 0);
@@ -3512,7 +3629,9 @@ function linkBox(link) {
   const copy = el('button', { type: 'button', className: 'secondary' }, '📋 העתק');
   const msg = el('div', { className: 'note' });
   copy.addEventListener('click', async () => {
-    msg.textContent = (await copyText(link, input)) ? 'הקישור הועתק. אפשר לשלוח אותו.' : 'לא הצלחתי להעתיק אוטומטית. סמני את הקישור והעתיקי.';
+    const ok = await copyText(link, input);
+    msg.textContent = ok ? 'הקישור הועתק. אפשר לשלוח אותו.' : 'לא הצלחתי להעתיק אוטומטית. סמני את הקישור והעתיקי.';
+    if (ok) toast('הקישור הועתק ✓');
   });
   const row = el('div', { className: 'add-row' });
   row.append(input, copy);
@@ -3912,6 +4031,7 @@ async function syncAfterLogin() {
   }
   renderAccount(note);
   updateWelcome();
+  if (note) toast('☁️ ' + note);
 }
 
 async function handleAuthUser(user) {
@@ -3955,9 +4075,10 @@ function installAppIdentity() {
   let top = window;
   try { void window.top.document; top = window.top; } catch (e) { return; }
   const doc = top.document;
-  const embedded = top !== window;
-  // ב-Streamlit הקבצים מוגשים מ-/app/static/. כשמריצים את הקובץ לבד (בפיתוח) מ-/static/.
-  const base = top.location.origin + (embedded ? '/app/static/' : '/static/');
+  // איפה הקבצים מוגשים: ב-Streamlit Cloud האפליקציה רצה בתוך מעטפת, והקבצים ב-/~/+/app/static/.
+  // בשרת Streamlit רגיל (בלי מעטפת) ב-/app/static/, וכשמריצים את הקובץ לבד (בפיתוח) ב-/static/.
+  const nested = window.parent !== window && window.parent !== top;   // מסגרת בתוך מסגרת = יש מעטפת
+  const base = top.location.origin + (nested ? '/~/+/app/static/' : (top !== window ? '/app/static/' : '/static/'));
 
   // מחליפים את האייקון רק אם הקובץ באמת מוגש (אחרת משאירים את מה שיש, ולא מקבלים אייקון שבור)
   const probe = new Image();
@@ -4008,21 +4129,157 @@ if (sharedMode) {
   try { if (sessionStorage.getItem(PACK_KEY) && state) setPackMode(true); } catch (e) {}
 }
 
-// כפתור "עיצוב": פותח וסוגר את חלונית כפתורי העיצוב
-(function designMenu() {
-  const toggle = document.getElementById('designToggle');
-  const panel = document.getElementById('designPanel');
-  const setOpen = (open) => {
-    panel.classList.toggle('hidden', !open);
-    toggle.setAttribute('aria-expanded', String(open));
+/* =========================================================
+   ממשק: רכיבים צפים, חלוניות ותפריטים
+   ========================================================= */
+
+// כשהאפליקציה מוטמעת במסגרת גבוהה (Streamlit), "fixed" מצמיד לתחתית המסגרת ולא למסך.
+// לכן עוקבים אחרי הגלילה של הדף שמסביב וקובעים איפה המסך שרואים עכשיו (--vt = כמה גללנו, --vh = גובה המסך).
+function trackViewport() {
+  const fe = window.frameElement;
+  const root = document.documentElement;
+  if (!fe) { root.classList.remove('embedded'); return; }
+  root.classList.add('embedded');
+  const owner = fe.ownerDocument, ow = owner.defaultView;
+  let raf = 0;
+  const update = () => {
+    raf = 0;
+    const r = fe.getBoundingClientRect();
+    root.style.setProperty('--vt', Math.max(0, -r.top) + 'px');
+    root.style.setProperty('--vh', Math.max(260, Math.min(ow.innerHeight, r.height)) + 'px');
   };
-  toggle.addEventListener('click', () => setOpen(panel.classList.contains('hidden')));
-  // לחיצה מחוץ לחלונית, או Escape – סוגרות אותה
-  document.addEventListener('click', (ev) => {
-    if (!document.getElementById('tools').contains(ev.target)) setOpen(false);
-  });
-  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') setOpen(false); });
+  const sched = () => { if (!raf) raf = requestAnimationFrame(update); };
+  owner.addEventListener('scroll', sched, true);
+  ow.addEventListener('resize', sched);
+  new ResizeObserver(sched).observe(document.body);
+  sched();
+}
+try { trackViewport(); } catch (e) { /* בלי זה הרכיבים הצפים פשוט לא יעקבו אחרי הגלילה */ }
+
+// הודעה קצרה שמופיעה ונעלמת
+function toast(text) {
+  const box = document.getElementById('toasts');
+  if (!box) return;
+  const t = el('div', { className: 'toast' }, text);
+  box.appendChild(t);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 260); }, 2600);
+}
+
+// פותח/סוגר חלונית עם אנימציה ומנהל נגישות (aria-hidden, מקש Escape)
+function setOpen(el_, overlay, open, toggleBtn) {
+  el_.classList.toggle('open', open);
+  el_.setAttribute('aria-hidden', String(!open));
+  if (overlay) overlay.classList.toggle('open', open);
+  if (toggleBtn) toggleBtn.setAttribute('aria-expanded', String(open));
+}
+
+// --- חלונית העיצוב (מהצד) ---
+(function designDrawer() {
+  const toggle = document.getElementById('designToggle');
+  const drawer = document.getElementById('designPanel');
+  const overlay = document.getElementById('drawerOverlay');
+  const set = (open) => setOpen(drawer, overlay, open, toggle);
+  toggle.addEventListener('click', () => set(!drawer.classList.contains('open')));
+  document.getElementById('drawerClose').addEventListener('click', () => set(false));
+  overlay.addEventListener('click', () => set(false));
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') set(false); });
 })();
+
+// --- תפריט "עוד" ---
+(function moreMenu() {
+  const btn = document.getElementById('moreBtn');
+  const menu = document.getElementById('moreMenu');
+  const set = (open) => setOpen(menu, null, open, btn);
+  btn.addEventListener('click', (ev) => { ev.stopPropagation(); set(!menu.classList.contains('open')); });
+  menu.addEventListener('click', () => set(false));       // לחיצה על פעולה סוגרת את התפריט
+  document.addEventListener('click', (ev) => { if (!menu.contains(ev.target)) set(false); });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') set(false); });
+})();
+
+// --- תפריט מהיר צף ---
+function updateFab() {
+  const show = !!state && !packMode && !isFirstVisit();
+  document.getElementById('fabWrap').classList.toggle('hidden', !show);
+  if (!show) setOpen(document.getElementById('fabWrap'), null, false, document.getElementById('fabBtn'));
+}
+
+function scrollToTop() {
+  const fe = window.frameElement;
+  if (fe) fe.scrollIntoView({ behavior: 'smooth', block: 'start' }); else window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+(function fabMenu() {
+  const wrap = document.getElementById('fabWrap');
+  const btn = document.getElementById('fabBtn');
+  const menu = document.getElementById('fabMenu');
+  const set = (open) => { wrap.classList.toggle('open', open); btn.setAttribute('aria-expanded', String(open)); menu.setAttribute('aria-hidden', String(!open)); };
+  btn.addEventListener('click', (ev) => { ev.stopPropagation(); set(!wrap.classList.contains('open')); });
+  menu.addEventListener('click', () => set(false));
+  document.addEventListener('click', (ev) => { if (!wrap.contains(ev.target)) set(false); });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') set(false); });
+  document.getElementById('fabTop').addEventListener('click', scrollToTop);
+  document.getElementById('fabPack').addEventListener('click', () => setPackMode(true));
+  document.getElementById('fabSearch').addEventListener('click', () => {
+    const box = document.getElementById('itemSearch');
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => box.focus(), 350);
+  });
+  document.getElementById('fabAdd').addEventListener('click', () => openSheet());
+})();
+
+// --- חלונית "הוסף פריט" שעולה מלמטה ---
+function openSheet() {
+  if (!state) return;
+  setOpen(document.getElementById('sheetOverlay'), document.getElementById('sheetOverlay'), true);
+  setTimeout(() => document.getElementById('sheetText').focus(), 330);
+}
+function closeSheet() { setOpen(document.getElementById('sheetOverlay'), document.getElementById('sheetOverlay'), false); }
+(function sheet() {
+  const overlay = document.getElementById('sheetOverlay');
+  overlay.addEventListener('click', (ev) => { if (ev.target === overlay) closeSheet(); });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeSheet(); });
+  document.getElementById('sheetForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const text = document.getElementById('sheetText').value.trim();
+    if (!text || !state) return;
+    addCustomItem(text, document.getElementById('sheetQty').value);
+    document.getElementById('sheetText').value = '';
+    document.getElementById('sheetQty').value = 1;
+    closeSheet();
+    toast('נוסף לרשימה: ' + text);
+  });
+})();
+
+// --- כרטיסים שנסגרים ונפתחים בהחלקה: הכותרת תמיד גלויה, השאר מתקפל ---
+function cardState() { try { return JSON.parse(localStorage.getItem('packpal-cards')) || {}; } catch (e) { return {}; } }
+
+function makeCollapsible(box, key, headCount, defaultCollapsed) {
+  if (!box || box.classList.contains('hidden') || !box.firstElementChild) return;
+  const saved = cardState();
+  const collapsed = key in saved ? !!saved[key] : !!defaultCollapsed;
+
+  const head = el('div', { className: 'card-head', role: 'button', tabIndex: 0 });
+  for (let i = 0; i < (headCount || 1) && box.firstChild; i++) head.appendChild(box.firstChild);
+  const chev = el('span', { className: 'chev', 'aria-hidden': 'true' }, '▾');
+  head.appendChild(chev);
+  const inner = el('div', { className: 'card-body-inner' });
+  while (box.firstChild) inner.appendChild(box.firstChild);
+  const body = el('div', { className: 'card-body' });
+  body.appendChild(inner);
+  box.append(head, body);
+
+  const apply = (c) => { box.classList.toggle('collapsed', c); head.setAttribute('aria-expanded', String(!c)); };
+  apply(collapsed);
+  const toggle = () => {
+    const now = !box.classList.contains('collapsed');
+    apply(now);
+    const st = cardState(); st[key] = now;
+    try { localStorage.setItem('packpal-cards', JSON.stringify(st)); } catch (e) {}
+  };
+  head.addEventListener('click', (ev) => { if (!ev.target.closest('a, button, input')) toggle(); });
+  head.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggle(); } });
+}
 
 // כשהאפליקציה רצה בתוך מסגרת של Streamlit – מתאימים את גובה המסגרת לתוכן,
 // כדי שלא תהיה גלילה כפולה (אחת של הדף ואחת של המסגרת)
