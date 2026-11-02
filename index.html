@@ -292,6 +292,18 @@
   /* בטיול משותף הטיול קבוע: מסתירים את מה שקשור לטיולים האישיים */
   .shared-mode #tripForm, .shared-mode #pastSection, .shared-mode #backupSection, .shared-mode #favSection,
   .shared-mode #resetBtn, .shared-mode #inviteBtn, .shared-mode #invitePanel { display: none !important; }
+  /* ===== חשבון והתחברות ===== */
+  .account-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 2px 0 10px; font-size: .95rem; }
+  .account-bar .avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
+  .account-bar .who { font-weight: 700; }
+  .account-bar .hint { color: var(--muted); flex: 1 1 200px; }
+  .account-bar .cloud { color: var(--muted); }
+  .account-bar .cloud.ok { color: var(--ok); }
+  .account-bar .cloud.err { color: var(--danger); }
+  .account-bar button { padding: 8px 14px; }
+  .account-bar .spacer { flex: 1; }
+  .shared-mode #accountBar { display: none !important; }
+
   /* ===== דרישות כניסה ===== */
   .visa-box { border-radius: 16px; padding: 14px 16px; margin: 12px 0; border: 1px solid var(--border); background: var(--soft); }
   .visa-box.ok { border-color: color-mix(in srgb, var(--ok) 50%, transparent); background: color-mix(in srgb, var(--ok) 12%, var(--card)); }
@@ -398,6 +410,8 @@
   </div>
 </div>
 <main>
+  <div id="accountBar" class="account-bar hidden"></div>
+
   <header class="hero">
     <div class="hero-art" aria-hidden="true">
       <span class="sun"></span>
@@ -715,6 +729,7 @@ function save() {
   // בטיול משותף לא נוגעים בטיול המקומי של המשתמשת. רק שולחים את השינויים ל-Firebase.
   if (typeof sharedMode !== 'undefined' && sharedMode) { syncSharedItems(); return; }
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* אם אין אחסון – ממשיכים בלי */ }
+  scheduleCloudPush();
 }
 function load() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) { return null; }
@@ -732,6 +747,7 @@ function loadHistory() {
 }
 function saveHistory(h) {
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, HISTORY_MAX))); } catch (e) {}
+  scheduleCloudPush();
 }
 
 /* =========================================================
@@ -1560,6 +1576,7 @@ function loadFavs() {
 }
 function saveFavs(f) {
   try { localStorage.setItem(FAV_KEY, JSON.stringify(f.slice(0, FAV_MAX))); } catch (e) {}
+  scheduleCloudPush();
 }
 
 // מוסיף פריט קבוע. מחזיר false אם הוא כבר קיים או שהרשימה מלאה.
@@ -2209,6 +2226,7 @@ $('resetBtn').addEventListener('click', () => {
   $('reorderBtn').textContent = '↕️ שנה סדר';
   state = null;
   try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  scheduleCloudPush();
   $('destination').value = '';
   $('startDate').value = '';
   $('endDate').value = '';
@@ -2873,6 +2891,278 @@ function startShared() {
   startStream();
 }
 
+/* =========================================================
+   10. התחברות עם גוגל ושמירה בענן (Firebase Auth + Realtime Database)
+   ========================================================= */
+
+// הגדרות ציבוריות של אפליקציית הווב (לא סודיות). האבטחה נקבעת בכללי Firebase:
+// כל משתמש יכול לקרוא ולכתוב רק את /users/<המזהה שלו>.
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyCpQe4QEFeQV424GJzHuYBZ-qjszgmnFXU',
+  authDomain: 'packpal-8c618.firebaseapp.com',
+  databaseURL: FIREBASE_DB_URL,
+  projectId: 'packpal-8c618',
+  appId: '1:373590852484:web:9832280a7610c6d61ed3d1'
+};
+const FIREBASE_SDK = [
+  'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js'
+];
+const SYNC_META_KEY = STORAGE_KEY + '-sync';
+
+let cloudUser = null;        // המשתמש המחובר (אובייקט של Firebase)
+let cloudReady = false;      // האם ההורדה הראשונית הסתיימה (עד אז לא דורסים את הענן)
+let cloudStatus = 'idle';    // idle | syncing | ok | error
+let cloudTimer = null;
+let cloudApplying = false;   // כשטוענים מהענן לא מחזירים אותו מיד לענן
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const sc = document.createElement('script');
+    sc.src = src;
+    sc.onload = resolve;
+    sc.onerror = () => reject(new Error('לא הצלחתי לטעון את שירות ההתחברות'));
+    document.head.appendChild(sc);
+  });
+}
+
+function setCloudStatus(kind) {
+  cloudStatus = kind;
+  renderAccount();
+}
+
+/* ---------- ממשק: שורת החשבון ---------- */
+
+function renderAccount(msg) {
+  const bar = $('accountBar');
+  if (!bar || sharedMode) return;
+  bar.replaceChildren();
+  bar.classList.remove('hidden');
+
+  if (!cloudUser) {
+    bar.appendChild(el('span', { className: 'hint' }, msg || 'התחברי כדי לשמור את הטיולים בענן ולראות אותם מכל מכשיר.'));
+    const btn = el('button', { type: 'button', className: 'secondary' }, '🔐 התחבר עם גוגל');
+    btn.addEventListener('click', signInWithGoogle);
+    bar.appendChild(btn);
+    return;
+  }
+
+  if (cloudUser.photoURL) {
+    const img = el('img', { className: 'avatar', alt: '', referrerPolicy: 'no-referrer' });
+    img.src = cloudUser.photoURL;
+    bar.appendChild(img);
+  }
+  bar.appendChild(el('span', { className: 'who' }, 'שלום, ' + (cloudUser.displayName || cloudUser.email || 'משתמשת')));
+  const labels = {
+    idle: '☁️ מחובר', syncing: '☁️ שומר...', ok: '☁️ נשמר בענן', error: '⚠️ לא הצלחתי לשמור בענן'
+  };
+  bar.appendChild(el('span', { className: 'cloud ' + (cloudStatus === 'ok' ? 'ok' : cloudStatus === 'error' ? 'err' : '') }, labels[cloudStatus] || ''));
+  bar.appendChild(el('span', { className: 'spacer' }));
+  const out = el('button', { type: 'button', className: 'secondary' }, 'התנתק');
+  out.addEventListener('click', () => signOutUser(false));
+  bar.appendChild(out);
+  const wipe = el('button', { type: 'button', className: 'secondary', title: 'מתנתקת ומוחקת את הנתונים מהמכשיר הזה (הם נשארים בענן)' }, 'התנתק ונקה מכשיר');
+  wipe.addEventListener('click', () => signOutUser(true));
+  bar.appendChild(wipe);
+  if (msg) bar.appendChild(el('div', { className: 'hint', role: 'status' }, msg));
+}
+
+/* ---------- התחברות והתנתקות ---------- */
+
+async function signInWithGoogle() {
+  try {
+    await ensureFirebase();
+    await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+  } catch (e) {
+    const code = e && e.code ? e.code : '';
+    const text =
+      code === 'auth/popup-blocked' ? 'הדפדפן חסם את חלון ההתחברות. אפשרי חלונות קופצים לאתר ונסי שוב.' :
+      code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request' ? 'ההתחברות בוטלה.' :
+      code === 'auth/unauthorized-domain' ? 'הדומיין הזה לא מורשה להתחברות. צריך להוסיף אותו ב-Firebase.' :
+      'ההתחברות נכשלה. נסי שוב.';
+    renderAccount(text);
+  }
+}
+
+async function signOutUser(wipeDevice) {
+  cloudUser = null;
+  cloudReady = false;
+  clearTimeout(cloudTimer);
+  try { await firebase.auth().signOut(); } catch (e) {}
+  if (wipeDevice) {
+    // הנתונים נשארים בענן. מוחקים רק את העותק במכשיר הזה.
+    [STORAGE_KEY, HISTORY_KEY, FAV_KEY, SYNC_META_KEY].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+    state = null;
+    renderWeather();
+    renderList();
+    renderPast();
+    renderFavs();
+  }
+  setCloudStatus('idle');
+  renderAccount(wipeDevice ? 'התנתקת, והנתונים נמחקו מהמכשיר הזה. הם שמורים בחשבון שלך.' : null);
+}
+
+/* ---------- שמירה וטעינה מהענן ---------- */
+
+function cloudUrl(token) {
+  return FIREBASE_DB_URL + '/users/' + cloudUser.uid + '.json?auth=' + encodeURIComponent(token);
+}
+
+function localHasData() {
+  return !!(state || loadHistory().length || loadFavs().length);
+}
+
+function buildCloudPayload() {
+  return {
+    current: state || null,
+    history: loadHistory(),
+    favorites: loadFavs(),
+    updatedAt: Date.now()
+  };
+}
+
+// Firebase מוחק מערכים ריקים ושדות ריקים, אז ממלאים אותם מחדש כדי שהקוד לא יתקל בחסר
+function normalizeTrip(t) {
+  if (!t || typeof t !== 'object' || !t.trip) return null;
+  t.trip.activities = Array.isArray(t.trip.activities) ? t.trip.activities : Object.values(t.trip.activities || {});
+  const items = Array.isArray(t.items) ? t.items : Object.values(t.items || {});
+  t.items = items.filter(Boolean);
+  t.weather = t.weather || { source: 'history', minTemp: 0, maxTemp: 0, rainyDays: 0, maxWind: 0 };
+  if (t.collapsed && !Array.isArray(t.collapsed)) t.collapsed = Object.values(t.collapsed);
+  return t;
+}
+function normalizeCloud(c) {
+  const arr = v => (Array.isArray(v) ? v : Object.values(v || {}));
+  return {
+    current: normalizeTrip(c.current),
+    history: arr(c.history).map(normalizeTrip).filter(Boolean),
+    favorites: arr(c.favorites).filter(f => f && typeof f.text === 'string'),
+    updatedAt: c.updatedAt || 0
+  };
+}
+
+function scheduleCloudPush() {
+  if (!cloudUser || !cloudReady || cloudApplying || sharedMode) return;
+  clearTimeout(cloudTimer);
+  setCloudStatus('syncing');
+  cloudTimer = setTimeout(pushToCloud, 1200);
+}
+
+async function pushToCloud() {
+  if (!cloudUser) return;
+  try {
+    const token = await cloudUser.getIdToken();
+    const payload = buildCloudPayload();
+    const res = await fetch(cloudUrl(token), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!res.ok) throw new Error('push ' + res.status);
+    try { localStorage.setItem(SYNC_META_KEY, JSON.stringify({ uid: cloudUser.uid, at: payload.updatedAt })); } catch (e) {}
+    setCloudStatus('ok');
+  } catch (e) {
+    setCloudStatus('error');
+  }
+}
+
+// מחליף את מה שבמכשיר במה שבענן
+function applyCloudToDevice(c) {
+  cloudApplying = true;
+  try {
+    if (c.current) localStorage.setItem(STORAGE_KEY, JSON.stringify(c.current)); else localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(c.history));
+    localStorage.setItem(FAV_KEY, JSON.stringify(c.favorites));
+    localStorage.setItem(SYNC_META_KEY, JSON.stringify({ uid: cloudUser.uid, at: c.updatedAt }));
+  } catch (e) {}
+  state = c.current;
+  if (state) applyStateToPage();
+  else { renderWeather(); renderList(); renderPast(); }
+  renderFavs();
+  cloudApplying = false;
+}
+
+// מיזוג בפעם הראשונה שמתחברים במכשיר שיש בו כבר נתונים: לא מוחקים כלום משני הצדדים
+function mergeCloudIntoDevice(c) {
+  cloudApplying = true;
+  const hist = loadHistory();
+  const known = new Set(hist.map(tripKey));
+  if (state) known.add(tripKey(state));
+  if (c.current && !known.has(tripKey(c.current))) {
+    if (!state) {
+      state = c.current;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    } else hist.push(c.current);
+    known.add(tripKey(c.current));
+  }
+  c.history.forEach(t => { if (!known.has(tripKey(t))) { known.add(tripKey(t)); hist.push(t); } });
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist.slice(0, HISTORY_MAX))); } catch (e) {}
+  const favs = loadFavs();
+  c.favorites.forEach(f => { if (!favs.some(x => x.text === f.text) && favs.length < FAV_MAX) favs.push({ text: f.text, qty: clampQty(f.qty) }); });
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); } catch (e) {}
+  cloudApplying = false;
+  if (state) applyStateToPage();
+  else { renderWeather(); renderList(); renderPast(); }
+  renderFavs();
+}
+
+// אחרי כניסה: מחליטים מה לעשות מול מה שכבר שמור בענן
+async function syncAfterLogin() {
+  const token = await cloudUser.getIdToken();
+  const res = await fetch(cloudUrl(token));
+  if (!res.ok) throw new Error('get ' + res.status);
+  const raw = await res.json();
+  let meta = null;
+  try { meta = JSON.parse(localStorage.getItem(SYNC_META_KEY)); } catch (e) {}
+  const knownDevice = meta && meta.uid === cloudUser.uid;
+
+  let note = null;
+  if (raw === null) {
+    // אין עדיין נתונים בענן: מעלים את מה שיש במכשיר
+    cloudReady = true;
+    if (localHasData()) { await pushToCloud(); note = 'הטיולים שלך נשמרו בענן.'; }
+    else setCloudStatus('ok');
+  } else {
+    const c = normalizeCloud(raw);
+    if (knownDevice) {
+      if (c.updatedAt > meta.at) { applyCloudToDevice(c); note = 'עודכנו הטיולים שלך מהענן.'; setCloudStatus('ok'); cloudReady = true; }
+      else { cloudReady = true; await pushToCloud(); }
+    } else if (!localHasData()) {
+      applyCloudToDevice(c); note = 'הטיולים שלך נטענו מהענן.'; setCloudStatus('ok'); cloudReady = true;
+    } else {
+      mergeCloudIntoDevice(c); cloudReady = true; await pushToCloud(); note = 'אוחדו הטיולים שבמכשיר עם אלה שבענן.';
+    }
+  }
+  renderAccount(note);
+}
+
+async function handleAuthUser(user) {
+  if (!user) { cloudUser = null; cloudReady = false; setCloudStatus('idle'); return; }
+  cloudUser = user;
+  cloudReady = false;
+  setCloudStatus('syncing');
+  try { await syncAfterLogin(); }
+  catch (e) { cloudReady = true; setCloudStatus('error'); }
+}
+
+let firebasePromise = null;
+function ensureFirebase() {
+  if (!firebasePromise) {
+    firebasePromise = (async () => {
+      for (const src of FIREBASE_SDK) await loadScript(src);
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    })().catch(e => { firebasePromise = null; throw e; });
+  }
+  return firebasePromise;
+}
+
+// בפתיחת האפליקציה: טוענים את שירות ההתחברות ומשחזרים התחברות קודמת
+async function initCloud() {
+  if (sharedMode) return;
+  renderAccount();
+  try {
+    await ensureFirebase();
+    firebase.auth().onAuthStateChanged(handleAuthUser);
+  } catch (e) { /* בלי חיבור לאינטרנט האפליקציה ממשיכה לעבוד מקומית */ }
+}
+
+
 // בטעינת הדף – אם יש טיול שמור, מציגים אותו
 // כרטיס הפריטים הקבועים
 renderFavs();
@@ -2891,6 +3181,7 @@ if (sharedMode) {
     renderPast();
   }
   sweepOldShares();
+  initCloud();
 }
 
 // כפתור "עיצוב": פותח וסוגר את חלונית כפתורי העיצוב
