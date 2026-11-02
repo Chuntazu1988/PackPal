@@ -2916,13 +2916,26 @@ let cloudStatus = 'idle';    // idle | syncing | ok | error
 let cloudTimer = null;
 let cloudApplying = false;   // כשטוענים מהענן לא מחזירים אותו מיד לענן
 
+// Firebase Auth לא עובד בתוך מסגרת srcdoc (הכתובת שלה about:srcdoc), וככה Streamlit מציג את האפליקציה.
+// לכן טוענים ומפעילים אותו בדף שמסביב (אותו אתר, כתובת https רגילה). אם אין דף כזה, בדף הנוכחי.
+function authHost() {
+  try {
+    const w = window.parent;
+    void w.document;                                   // נזרק שגיאה אם זה מקור אחר
+    if (/^https?:$/.test(w.location.protocol)) return w;
+  } catch (e) {}
+  return window;
+}
+function fbSdk() { return authHost().firebase; }
+
 function loadScript(src) {
+  const host = authHost();
   return new Promise((resolve, reject) => {
-    const sc = document.createElement('script');
+    const sc = host.document.createElement('script');
     sc.src = src;
     sc.onload = resolve;
     sc.onerror = () => reject(new Error('לא הצלחתי לטעון את שירות ההתחברות'));
-    document.head.appendChild(sc);
+    host.document.head.appendChild(sc);
   });
 }
 
@@ -2972,7 +2985,8 @@ function renderAccount(msg) {
 async function signInWithGoogle() {
   try {
     await ensureFirebase();
-    await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    const sdk = fbSdk();
+    await sdk.auth().signInWithPopup(new sdk.auth.GoogleAuthProvider());
   } catch (e) {
     const code = e && e.code ? e.code : '';
     const text =
@@ -2988,7 +3002,7 @@ async function signOutUser(wipeDevice) {
   cloudUser = null;
   cloudReady = false;
   clearTimeout(cloudTimer);
-  try { await firebase.auth().signOut(); } catch (e) {}
+  try { await fbSdk().auth().signOut(); } catch (e) {}
   if (wipeDevice) {
     // הנתונים נשארים בענן. מוחקים רק את העותק במכשיר הזה.
     [STORAGE_KEY, HISTORY_KEY, FAV_KEY, SYNC_META_KEY].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
@@ -3145,8 +3159,9 @@ let firebasePromise = null;
 function ensureFirebase() {
   if (!firebasePromise) {
     firebasePromise = (async () => {
-      for (const src of FIREBASE_SDK) await loadScript(src);
-      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      const host = authHost();
+      if (!host.firebase) for (const src of FIREBASE_SDK) await loadScript(src);
+      if (!host.firebase.apps.length) host.firebase.initializeApp(FIREBASE_CONFIG);
     })().catch(e => { firebasePromise = null; throw e; });
   }
   return firebasePromise;
@@ -3158,7 +3173,7 @@ async function initCloud() {
   renderAccount();
   try {
     await ensureFirebase();
-    firebase.auth().onAuthStateChanged(handleAuthUser);
+    fbSdk().auth().onAuthStateChanged(handleAuthUser);
   } catch (e) { /* בלי חיבור לאינטרנט האפליקציה ממשיכה לעבוד מקומית */ }
 }
 
