@@ -622,6 +622,18 @@
   :root[data-theme="dark"] .hero h1 { text-shadow: 0 0 18px var(--glow); }
   :root[data-theme="dark"] .bp-plane { filter: drop-shadow(0 0 6px var(--accent)); }
   :root[data-theme="dark"] .item input[type=checkbox], :root[data-theme="dark"] .task input[type=checkbox] { filter: drop-shadow(0 0 4px var(--glow)); }
+
+  /* ===== לשוניות ===== */
+  .tabbar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 16px 0 4px; padding: 6px; border: 1.5px dashed var(--border); border-radius: 14px; background: var(--card); }
+  .tabbar button { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; background: none; color: var(--muted); border-radius: 10px; font-weight: 600; font-size: .78rem; line-height: 1.2; }
+  .tabbar .ti { font-size: 1.35rem; line-height: 1; }
+  .tabbar button.active { background: var(--accent); color: var(--on-accent); box-shadow: 0 3px 0 color-mix(in srgb, var(--accent) 55%, #000), 0 0 16px var(--glow); }
+  .tabbar .tb { position: absolute; top: 2px; inset-inline-end: 6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--stamp); color: #fff; font-size: .7rem; line-height: 18px; text-align: center; }
+  .tabbar .tb:empty { display: none; }
+  .tab-off { display: none !important; }
+  .shared-mode .tabbar button[data-go="more"] { display: none; }
+  .shared-mode .tabbar { grid-template-columns: repeat(3, 1fr); }
+  .pack-mode .tabbar { display: none; }
 </style>
 </head>
 <body>
@@ -757,20 +769,28 @@
     </div>
   </form>
 
+  <!-- ===== לשוניות: מציגות חלק אחד מהמידע בכל פעם ===== -->
+  <nav id="tabBar" class="tabbar hidden" role="tablist" aria-label="חלקי הטיול">
+    <button type="button" role="tab" data-go="list" id="tabBtn-list"><span class="ti">🧳</span><span class="tl">אריזה</span><b class="tb"></b></button>
+    <button type="button" role="tab" data-go="before" id="tabBtn-before"><span class="ti">✈️</span><span class="tl">לפני הטיסה</span><b class="tb"></b></button>
+    <button type="button" role="tab" data-go="dest" id="tabBtn-dest"><span class="ti">🌍</span><span class="tl">היעד</span><b class="tb"></b></button>
+    <button type="button" role="tab" data-go="more" id="tabBtn-more"><span class="ti">🗂️</span><span class="tl">הטיולים שלי</span><b class="tb"></b></button>
+  </nav>
+
   <!-- ===== מזג אוויר ===== -->
-  <section id="weather" class="card hidden"></section>
+  <section id="weather" class="card hidden" data-tab="dest"></section>
 
   <!-- ===== דרישות כניסה ובטיחות (קישורים רשמיים) ===== -->
-  <section id="entrySection" class="card hidden"></section>
+  <section id="entrySection" class="card hidden" data-tab="before"></section>
 
   <!-- ===== המלצות לאטרקציות (Wikivoyage) ===== -->
-  <section id="attrSection" class="card hidden"></section>
+  <section id="attrSection" class="card hidden" data-tab="dest"></section>
 
   <!-- ===== הרשימה ===== -->
   <!-- ===== משימות לפני הטיסה ===== -->
-  <section id="tasksSection" class="card hidden"></section>
+  <section id="tasksSection" class="card hidden" data-tab="before"></section>
 
-  <section id="listSection" class="card hidden">
+  <section id="listSection" class="card hidden" data-tab="list">
     <div id="packBar" class="pack-bar hidden">
       <strong>🎒 מצב אריזה</strong>
       <div class="pack-actions">
@@ -818,10 +838,10 @@
   </section>
 
   <!-- ===== טיולים קודמים ===== -->
-  <section id="pastSection" class="card hidden"></section>
+  <section id="pastSection" class="card hidden" data-tab="more"></section>
 
   <!-- ===== פריטים קבועים ===== -->
-  <section id="favSection" class="card">
+  <section id="favSection" class="card" data-tab="more">
     <strong>⭐ פריטים קבועים</strong>
     <p class="note">דברים שתמיד אורזים. הם יתווספו אוטומטית לכל טיול חדש, בקטגוריה משלהם.</p>
     <div id="favList"></div>
@@ -1866,6 +1886,7 @@ let tasksShowAll = false;
 function renderTasks() {
   const box = $('tasksSection');
   box.replaceChildren();
+  setTimeout(updateTabs, 0);
   // הכרטיס רלוונטי רק לפני הטיול
   if (!state || sharedMode || daysFromToday(state.trip.end) < 0) { box.classList.add('hidden'); return; }
   ensureTasks();
@@ -2590,6 +2611,7 @@ function renderProgress() {
     if (typeof toast === 'function') toast('הכל ארוז, טיסה נעימה! ✈️');
   }
   wasAllPacked = all;
+  updateTabs();
   $('barFill').style.width = pct + '%';
   $('progressText').textContent = 'ארזת ' + done + ' מתוך ' + total + ' (' + pct + '%)';
   $('packDone').classList.toggle('hidden', !(packMode && total > 0 && done === total));
@@ -2911,7 +2933,8 @@ async function buildTrip(place, start, end, activities) {
   renderWeather();
   renderList();
   setStep(1);
-  $('weather').scrollIntoView({ behavior: 'smooth' });
+  wasAllPacked = null;
+  setTab('list', true);
 
   // טיול משותף מההתחלה: יוצרים מיד את הקישור ופותחים את חלון השיתוף
   if ($('sharedCheck').checked) {
@@ -3011,6 +3034,43 @@ $('destination').addEventListener('keydown', (ev) => {
 $('destination').addEventListener('blur', () => setTimeout(hideSuggest, 150));
 
 /* =========================================================
+   לשוניות: אריזה / לפני הטיסה / היעד / הטיולים שלי
+   ========================================================= */
+
+const TAB_KEY = 'packpal-tab';
+let activeTab = 'list';
+try { const t = sessionStorage.getItem(TAB_KEY); if (['list', 'before', 'dest', 'more'].includes(t)) activeTab = t; } catch (e) {}
+
+function setTab(name, scroll) {
+  activeTab = name;
+  try { sessionStorage.setItem(TAB_KEY, name); } catch (e) {}
+  updateTabs();
+  if (scroll) $('tabBar').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// מציג את הלשונית הפעילה בלבד, כשיש טיול. בלי טיול (או במסך פתיחה) הכל מוצג כרגיל.
+function updateTabs() {
+  const on = !!state && $('welcome').classList.contains('hidden');
+  $('tabBar').classList.toggle('hidden', !on);
+  if (sharedMode && activeTab === 'more') activeTab = 'list';
+  document.querySelectorAll('[data-tab]').forEach(sec => sec.classList.toggle('tab-off', on && sec.dataset.tab !== activeTab));
+  document.querySelectorAll('#tabBar button').forEach(b => {
+    const act = b.dataset.go === activeTab;
+    b.classList.toggle('active', act);
+    b.setAttribute('aria-selected', String(act));
+  });
+  if (!on) return;
+  // מספרים קטנים: כמה נשאר לארוז, וכמה משימות פתוחות
+  const left = state.items.filter(i => !i.checked).length;
+  const tasksLeft = (state.tasks || []).filter(t => !t.done).length;
+  const setBadge = (id, n) => { document.querySelector('#tabBtn-' + id + ' .tb').textContent = n > 0 ? String(n) : ''; };
+  setBadge('list', left);
+  setBadge('before', daysFromToday(state.trip.end) < 0 ? 0 : tasksLeft);
+}
+
+document.querySelectorAll('#tabBar button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.go)));
+
+/* =========================================================
    מסך פתיחה למי שנכנסת בפעם הראשונה
    ========================================================= */
 
@@ -3030,6 +3090,7 @@ function updateWelcome() {
   $('tripForm').classList.toggle('hidden', first);
   // פריטים קבועים: מוצגים רק כשיש טיול או כבר יש פריטים קבועים
   $('favSection').classList.toggle('hidden', !state && loadFavs().length === 0);
+  updateTabs();
 }
 
 function dismissWelcome() {
