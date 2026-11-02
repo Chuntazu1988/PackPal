@@ -289,6 +289,14 @@
   /* בטיול משותף הטיול קבוע: מסתירים את מה שקשור לטיולים האישיים */
   .shared-mode #tripForm, .shared-mode #pastSection, .shared-mode #favSection,
   .shared-mode #resetBtn, .shared-mode #inviteBtn, .shared-mode #invitePanel { display: none !important; }
+  /* ===== ביטול מחיקה ===== */
+  .undo-bar, .item.undo-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--sand); border-radius: 14px; padding: 10px 14px; margin-bottom: 10px; font-weight: 600;
+  }
+  .item.undo-row { margin: 6px 0; border-bottom: none; }
+  .undo-bar button, .item.undo-row button { background: var(--card); color: var(--accent-dark); padding: 6px 14px; font-weight: 700; }
+
   /* ===== אשף הבנייה ===== */
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .wiz-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-weight: 700; }
@@ -541,6 +549,7 @@
 
   <!-- ===== הרשימה ===== -->
   <section id="listSection" class="card hidden">
+    <div id="undoBar" class="undo-bar hidden" role="status"></div>
     <div id="tripTitle" class="trip-title"></div>
     <div id="countdown" class="countdown" role="status"></div>
     <div class="progress-row">
@@ -1723,6 +1732,7 @@ function renderList() {
     const doneInCat = groups[cat].filter(i => i.checked).length;
     const full = doneInCat === groups[cat].length;
     const head = el('h3', { className: 'cat-title' });
+    head.dataset.cat = cat;
     const toggle = el('button', { type: 'button', className: 'cat-toggle' });
     toggle.setAttribute('aria-expanded', String(!isCollapsed));
     toggle.append(
@@ -1736,6 +1746,7 @@ function renderList() {
     if (isCollapsed) return;
     shown.forEach(it => {
       const row = el('div', { className: 'item' + (it.checked ? ' done' : '') });
+      row.dataset.id = it.id;
       const box = el('input', { type: 'checkbox', checked: it.checked });
       box.setAttribute('aria-label', it.text);
       box.addEventListener('change', () => toggleItem(it.id));
@@ -1774,6 +1785,8 @@ function renderList() {
       list.appendChild(row);
     });
   });
+  placeUndoRow(list);
+  renderUndoBar();
   renderProgress();
   $('searchInfo').textContent = !query ? '' : (found ? (found === 1 ? 'נמצא פריט אחד.' : 'נמצאו ' + found + ' פריטים.') : 'לא נמצאו פריטים.');
   if (query && !found) list.appendChild(el('p', { className: 'note' }, 'נסי מילה אחרת.'));
@@ -1807,7 +1820,25 @@ function renderPast() {
   const box = $('pastSection');
   box.replaceChildren();
   const hist = loadHistory();
-  if (!hist.length) { confirmClearAll = false; box.classList.add('hidden'); return; }
+  const pastUndo = undoInfo && undoInfo.kind === 'past' ? undoInfo : null;
+  if (!hist.length && !pastUndo) { confirmClearAll = false; box.classList.add('hidden'); return; }
+
+  if (pastUndo) {
+    const n = pastUndo.entries.length;
+    const bar = el('div', { className: 'undo-bar' });
+    bar.append(el('span', null, n === 1 ? 'הטיול נמחק.' : 'נמחקו ' + n + ' טיולים.'),
+      undoButton(() => {
+        const cur = loadHistory();
+        cur.splice(Math.min(pastUndo.idx, cur.length), 0, ...pastUndo.entries);
+        undoInfo = null;
+        clearTimeout(undoTimer);
+        saveHistory(cur);
+        renderPast();
+      }));
+    box.appendChild(bar);
+    box.classList.remove('hidden');
+    if (!hist.length) return;
+  }
 
   const head = el('div', { className: 'past-head' });
   head.appendChild(el('strong', null, '🗂️ טיולים קודמים'));
@@ -1888,6 +1919,7 @@ function clearAllPast() {
   confirmClearAll = false;
   dupOpenIdx = null;
   renameOpenIdx = null;
+  setUndo({ kind: 'past', entries: loadHistory(), idx: 0 });
   saveHistory([]);
   renderPast();
 }
@@ -2061,8 +2093,9 @@ function renderDupForm(idx) {
 }
 
 function deletePastTrip(idx) {
-  if (!confirm('למחוק את הטיול הזה לצמיתות?')) return;
   const hist = loadHistory();
+  if (!hist[idx]) return;
+  setUndo({ kind: 'past', entries: [hist[idx]], idx: idx });
   hist.splice(idx, 1);
   dupOpenIdx = null;
   renameOpenIdx = null;
@@ -2183,10 +2216,83 @@ function moveItem(id, dir) {
   renderList();
 }
 
+/* =========================================================
+   ביטול מחיקה: שומרים את מה שנמחק ל-15 שניות ומציגים כפתור "בטל" במקום שבו זה קרה
+   ========================================================= */
+
+let undoInfo = null;
+let undoTimer = null;
+const UNDO_MS = 15000;
+
+function setUndo(info) {
+  clearTimeout(undoTimer);
+  undoInfo = info;
+  undoTimer = setTimeout(clearUndo, UNDO_MS);
+}
+
+function clearUndo() {
+  clearTimeout(undoTimer);
+  if (!undoInfo) return;
+  undoInfo = null;
+  if (state) renderList();
+  renderPast();
+}
+
+function undoButton(onClick) {
+  const b = el('button', { type: 'button' }, '↩️ בטל');
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+// מחיקת פריט: נשארת במקומו שורה עם כפתור "בטל"
 function deleteItem(id) {
+  const idx = state.items.findIndex(i => i.id === id);
+  if (idx < 0) return;
+  const item = state.items[idx];
+  const prev = state.items.slice(0, idx).filter(i => i.cat === item.cat).pop();
+  setUndo({ kind: 'item', item: item, index: idx, prevId: prev ? prev.id : null });
   state.items = state.items.filter(i => i.id !== id);
   save();
   renderList();
+}
+
+function undoItem() {
+  if (!undoInfo || undoInfo.kind !== 'item' || !state) return;
+  const info = undoInfo;
+  state.items.splice(Math.min(info.index, state.items.length), 0, info.item);
+  undoInfo = null;
+  clearTimeout(undoTimer);
+  save();
+  renderList();
+}
+
+// השורה שמוצגת במקום הפריט שנמחק (נקראת מ-renderList אחרי שהרשימה נבנתה)
+function placeUndoRow(list) {
+  if (!undoInfo || undoInfo.kind !== 'item') return;
+  const row = el('div', { className: 'item undo-row' });
+  row.appendChild(el('span', null, 'נמחק: ' + undoInfo.item.text));
+  row.appendChild(undoButton(undoItem));
+  const prevRow = undoInfo.prevId !== null ? list.querySelector('[data-id="' + undoInfo.prevId + '"]') : null;
+  if (prevRow) { prevRow.after(row); return; }
+  const head = [...list.querySelectorAll('h3[data-cat]')].find(h => h.dataset.cat === undoInfo.item.cat);
+  if (head) head.after(row); else list.prepend(row);
+}
+
+// סרגל ביטול בראש הרשימה: אחרי שבנו מחדש טיול שכבר היה קיים
+function renderUndoBar() {
+  const bar = $('undoBar');
+  bar.replaceChildren();
+  if (!undoInfo || undoInfo.kind !== 'rebuild') { bar.classList.add('hidden'); return; }
+  bar.classList.remove('hidden');
+  bar.append(el('span', null, 'הרשימה נבנתה מחדש. הרשימה הקודמת (עם הסימונים) נשמרה.'),
+    undoButton(() => {
+      const prev = undoInfo.prev;
+      undoInfo = null;
+      clearTimeout(undoTimer);
+      state = prev;
+      save();
+      applyStateToPage();
+    }));
 }
 
 function addCustomItem(text, qty) {
@@ -2315,8 +2421,10 @@ async function buildTrip(place, start, end, activities) {
   wizOpen = false;
   const trip = { place: place.label, lat: place.lat, lon: place.lon, cc: place.cc, tz: place.tz, start: start, end: end, activities: activities };
   if (state && state.trip.name && state.trip.place === place.label) trip.name = state.trip.name;
+  const previous = state && state.items && state.items.length ? JSON.parse(JSON.stringify(state)) : null;
   nextId = 1;
   state = { trip: trip, weather: weather, items: withFavorites(buildList(trip, weather)) };
+  if (previous) setUndo({ kind: 'rebuild', prev: previous });
   save();
   renderWeather();
   renderList();
