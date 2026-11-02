@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PackPal – רשימת אריזה לטיול</title>
+<link rel="icon" type="image/png" sizes="32x32" href="static/favicon-32.png">
+<link rel="apple-touch-icon" href="static/apple-touch-icon.png">
+<link rel="manifest" href="static/manifest.webmanifest">
+<meta name="theme-color" content="#0b7fb0">
 <style>
   /* ===== צבעים: שמיים, ים וחול ===== */
   :root {
@@ -3941,6 +3945,38 @@ async function initCloud() {
   } catch (e) { /* בלי חיבור לאינטרנט האפליקציה ממשיכה לעבוד מקומית */ }
 }
 
+
+/* =========================================================
+   זהות האפליקציה: אייקון, צבע ו-manifest, כדי שגם התקנה על שולחן העבודה או במסך הבית תקבל את האייקון
+   ========================================================= */
+
+// הדפדפן קורא את האייקון ואת ה-manifest מהדף העליון, לא מתוך המסגרת שבה האפליקציה מוטמעת. אותו אתר, אז אפשר לגשת אליו.
+function installAppIdentity() {
+  let top = window;
+  try { void window.top.document; top = window.top; } catch (e) { return; }
+  const doc = top.document;
+  const embedded = top !== window;
+  // ב-Streamlit הקבצים מוגשים מ-/app/static/. כשמריצים את הקובץ לבד (בפיתוח) מ-/static/.
+  const base = top.location.origin + (embedded ? '/app/static/' : '/static/');
+
+  const setLink = (rel, attrs) => {
+    doc.querySelectorAll('link[rel~="' + rel + '"]').forEach(l => l.remove());
+    const l = doc.createElement('link');
+    l.rel = rel;
+    Object.keys(attrs).forEach(k => l.setAttribute(k, attrs[k]));
+    doc.head.appendChild(l);
+  };
+  setLink('icon', { type: 'image/png', sizes: '32x32', href: base + 'favicon-32.png' });
+  setLink('apple-touch-icon', { href: base + 'apple-touch-icon.png' });
+  setLink('manifest', { href: base + 'manifest.webmanifest' });
+  let theme = doc.querySelector('meta[name="theme-color"]');
+  if (!theme) { theme = doc.createElement('meta'); theme.name = 'theme-color'; doc.head.appendChild(theme); }
+  theme.content = '#0b7fb0';
+  let title = doc.querySelector('meta[name="apple-mobile-web-app-title"]');
+  if (!title) { title = doc.createElement('meta'); title.name = 'apple-mobile-web-app-title'; doc.head.appendChild(title); }
+  title.content = 'PackPal';
+}
+try { installAppIdentity(); } catch (e) { /* לא קריטי: האפליקציה ממשיכה לעבוד גם בלי זה */ }
 
 // בטעינת הדף – אם יש טיול שמור, מציגים אותו
 // כרטיס הפריטים הקבועים

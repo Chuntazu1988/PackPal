@@ -4,7 +4,13 @@ import streamlit as st
 import streamlit.components.v1 as components
 from pathlib import Path
 
-st.set_page_config(page_title="PackPal", layout="wide")
+# אייקון הלשונית: תמונה אם הקובץ קיים, ואחרת אימוג'י
+_icon = Path(__file__).parent / "static" / "icon-192.png"
+st.set_page_config(
+    page_title="PackPal",
+    page_icon=str(_icon) if _icon.exists() else "🧳",
+    layout="wide",
+)
 
 html = (Path(__file__).parent / "index.html").read_text(encoding="utf-8")
 

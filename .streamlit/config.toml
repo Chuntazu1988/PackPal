@@ -1,0 +1,3 @@
+[server]
+# מאפשר להגיש את הקבצים שבתיקיית static (אייקונים ו-manifest) בכתובת /app/static/
+enableStaticServing = true
