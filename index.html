@@ -7,53 +7,58 @@
 <link rel="icon" type="image/png" sizes="32x32" href="static/favicon-32.png">
 <link rel="apple-touch-icon" href="static/apple-touch-icon.png">
 <link rel="manifest" href="static/manifest.webmanifest">
-<meta name="theme-color" content="#0b7fb0">
+<meta name="theme-color" content="#1b2a41">
 <style>
-  /* ===== צבעים: שמיים, ים וחול ===== */
+  /* ===== צבעים: מצב יום = כרטיס טיסה (קרם ונייבי), מצב כהה = לילה ונאון ===== */
   :root {
-    --bg: #eaf6fb;           /* שמיים בהירים */
-    --card: #ffffff;
-    --text: #15324a;         /* כחול עמוק */
-    --muted: #587489;
-    --accent: #0b7fb0;       /* ים */
-    --accent-dark: #075f86;
-    --on-accent: #ffffff;    /* צבע טקסט על כפתור בצבע הראשי */
-    --ok: #22a06b;
-    --danger: #e5484d;
-    --border: #d3e6f0;
-    --soft: #e0f1f9;         /* רקע בהיר לכפתורים משניים */
-    --stat: #e6f4fa;         /* רקע לנתוני מזג האוויר */
-    --track: #d9ebf4;        /* רקע פס ההתקדמות */
-    --sand: #fbefd5;         /* חול: להדגשות חמות */
-    --sun: #ffb347;
-    --hero-top: #8fd3f0;     /* שמיים בכותרת */
-    --hero-bottom: #e6f6fd;
-    --hero-text: #0f2c44;
+    --bg: #f4ebd9;           /* נייר קרם */
+    --card: #fffcf4;
+    --text: #1b2a41;         /* נייבי */
+    --muted: #5e6b7e;
+    --accent: #1b2a41;
+    --accent-dark: #1b2a41;
+    --on-accent: #f4ebd9;    /* צבע טקסט על כפתור בצבע הראשי */
+    --ok: #2e8b57;
+    --danger: #c8452f;
+    --border: #d9cbae;
+    --soft: #ede0c6;         /* רקע בהיר לכפתורים משניים */
+    --stat: #f1e6ce;         /* רקע לנתוני מזג האוויר */
+    --track: #e4d6b8;        /* רקע פס ההתקדמות */
+    --sand: #f8e3b0;        /* ענבר: להדגשות חמות */
+    --sun: #e8a33d;
+    --hero-top: #1b2a41;
+    --hero-bottom: #1b2a41;
+    --hero-text: #f4ebd9;
     --cloud: rgba(255,255,255,.85);
-    --shadow: rgba(18, 82, 120, .12);
+    --shadow: rgba(27, 42, 65, .14);
+    --stamp: #e8a33d;
+    --glow: transparent;
     color-scheme: light;
   }
   /* מצב כהה: מחליפים רק את המשתנים, וכל האתר משתנה לבד */
   :root[data-theme="dark"] {
-    --bg: #0a1823;
-    --card: #11283a;
-    --text: #e6f3fa;
-    --muted: #8db0c5;
-    --accent: #38bdf8;
-    --accent-dark: #86d6fb;
-    --on-accent: #05202f;
-    --ok: #34d399;
-    --border: #22425a;
-    --soft: #19384e;
-    --stat: #16344a;
-    --track: #1d3d55;
-    --sand: #2c2a1d;
-    --sun: #ffc266;
-    --hero-top: #123f5e;
-    --hero-bottom: #0e2a3f;
-    --hero-text: #eaf6fd;
+    --bg: #0e0b1f;
+    --card: #1a1538;
+    --text: #edeaff;
+    --muted: #a39dd4;
+    --accent: #5cf2c8;       /* מנטה זוהרת */
+    --accent-dark: #5cf2c8;
+    --on-accent: #0e0b1f;
+    --ok: #5cf2c8;
+    --danger: #ff5c9e;
+    --border: #3b3380;
+    --soft: #2a2360;
+    --stat: #231d4d;
+    --track: #2a2360;
+    --sand: #2a2050;
+    --sun: #ffd166;
+    --hero-top: #1d1840;
+    --hero-bottom: #1d1840;
+    --hero-text: #edeaff;
     --cloud: rgba(255,255,255,.12);
-    --shadow: rgba(0, 0, 0, .45);
+    --shadow: rgba(0, 0, 0, .5);
+    --stamp: #ff5c9e;
+    --glow: rgba(92, 242, 200, .35);
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -565,6 +570,54 @@
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
   canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+
+  /* =====================================================
+     עיצוב חדש: כרטיס טיסה (יום) ולילה ונאון (כהה)
+     ===================================================== */
+  .hero { border-radius: 16px; padding: 16px 20px 0; border: 1.5px solid color-mix(in srgb, var(--hero-text) 18%, transparent); box-shadow: 0 10px 26px var(--shadow), 0 0 28px var(--glow); background: var(--hero-top); }
+  .bp-top { position: relative; z-index: 2; display: flex; justify-content: space-between; gap: 10px; font: 700 .72rem/1 ui-monospace, "SF Mono", Consolas, monospace; letter-spacing: 2px; color: var(--stamp); margin-bottom: 12px; direction: ltr; }
+  .hero h1 { font-size: 2.2rem; }
+  .hero h1 small { opacity: .8; }
+  .bp-route { position: relative; z-index: 2; display: flex; align-items: center; gap: 12px; margin: 18px -20px 0; padding: 14px 20px; border-top: 2px dashed color-mix(in srgb, var(--hero-text) 35%, transparent); direction: ltr; }
+  .bp-route::before, .bp-route::after { content: ""; position: absolute; top: -11px; width: 20px; height: 20px; border-radius: 50%; background: var(--bg); }
+  .bp-route::before { left: -10px; }
+  .bp-route::after { right: -10px; }
+  .bp-code { font: 700 1.3rem/1 ui-monospace, "SF Mono", Consolas, monospace; letter-spacing: 3px; }
+  .bp-path { position: relative; flex: 1; height: 22px; }
+  .bp-path::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px dotted color-mix(in srgb, var(--hero-text) 45%, transparent); }
+  .bp-plane { position: absolute; top: 0; left: 0; font-style: normal; font-size: 1.3rem; line-height: 22px; animation: bpfly 5s ease-in-out infinite alternate; }
+  @keyframes bpfly { from { left: 0; } to { left: calc(100% - 1.4rem); } }
+
+  .card { position: relative; border: 1.5px solid var(--border); border-radius: 14px; box-shadow: 0 2px 0 var(--border), 0 12px 26px var(--shadow), 0 0 22px var(--glow); }
+  /* "מחורי כרטיס" בצדדים */
+  .card::before, .card::after { content: ""; position: absolute; top: 30px; width: 20px; height: 20px; border-radius: 50%; background: var(--bg); border: 1.5px solid var(--border); pointer-events: none; z-index: 1; }
+  .card::before { left: -10px; clip-path: inset(0 0 0 50%); }
+  .card::after { right: -10px; clip-path: inset(0 50% 0 0); }
+  label { letter-spacing: .2px; }
+  input[type=text], input[type=date], input[type=search], .add-row input[type=number], .task-add input[type=number] { border-radius: 10px; border-width: 1.5px; }
+  button { border-radius: 10px; }
+  .primary { background: var(--accent); border-radius: 12px; letter-spacing: .3px; box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 55%, #000), 0 0 20px var(--glow); }
+  .primary:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 55%, #000), 0 0 20px var(--glow); }
+  .secondary { border: 1.5px solid var(--border); }
+  .chip span { border-radius: 10px; border: 1.5px dashed var(--border); }
+  .chip input:checked + span { border-style: solid; transform: none; box-shadow: 0 3px 0 color-mix(in srgb, var(--accent) 55%, #000), 0 0 16px var(--glow); }
+  .item, .past-row, .fav-row, .task { border-bottom-style: dashed; }
+  .stat { border-radius: 8px; border: 1.5px dashed var(--border); background: transparent; }
+  .bar { border-radius: 8px; height: 14px; }
+  .bar > div { border-radius: 6px; background: var(--ok); box-shadow: 0 0 12px var(--glow); }
+  .cat-title { letter-spacing: .3px; }
+  .countdown, .countdown.big { border-radius: 10px; border: 1.5px dashed var(--stamp); background: var(--sand); }
+  .cd-fill { background: var(--stamp); }
+  .cd-num { color: var(--text); }
+  .welcome-steps li { border-radius: 10px; border: 1.5px dashed var(--border); background: transparent; }
+  .home-link, .tab { border-radius: 10px; }
+  .tab.active { box-shadow: 0 0 14px var(--glow); }
+  .suggest { border-radius: 10px; border-width: 1.5px; }
+  .suggest li { border-radius: 6px; }
+  .overlay { backdrop-filter: blur(2px); }
+  :root[data-theme="dark"] .hero h1 { text-shadow: 0 0 18px var(--glow); }
+  :root[data-theme="dark"] .bp-plane { filter: drop-shadow(0 0 6px var(--accent)); }
+  :root[data-theme="dark"] .item input[type=checkbox], :root[data-theme="dark"] .task input[type=checkbox] { filter: drop-shadow(0 0 4px var(--glow)); }
 </style>
 </head>
 <body>
@@ -596,17 +649,13 @@
   <div id="accountBar" class="account-bar hidden"></div>
 
   <header class="hero">
-    <div class="hero-art" aria-hidden="true">
-      <span class="sun"></span>
-      <span class="cloud c1"></span>
-      <span class="cloud c2"></span>
-      <span class="plane">✈️</span>
-      <svg class="waves" viewBox="0 0 400 42" preserveAspectRatio="none">
-        <path class="back" d="M0 22 C60 8 120 36 200 20 S340 6 400 22 V42 H0 Z"/>
-        <path d="M0 30 C70 18 130 40 210 28 S350 16 400 30 V42 H0 Z"/>
-      </svg>
-    </div>
+    <div class="bp-top" aria-hidden="true"><span>BOARDING PASS</span><span>PACKPAL · חופשה</span></div>
     <h1>🧳 PackPal <small>רשימת אריזה חכמה לפי מזג האוויר והפעילויות שלך</small></h1>
+    <div class="bp-route" aria-hidden="true">
+      <span class="bp-code">TLV</span>
+      <span class="bp-path"><i class="bp-plane">✈️</i></span>
+      <span class="bp-code">YOU</span>
+    </div>
   </header>
 
   <!-- ===== טיול משותף ===== -->
