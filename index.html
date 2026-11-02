@@ -308,6 +308,16 @@
   .wiz-nav .primary { margin-top: 0; width: auto; flex: 1; }
   .wiz-nav .secondary { flex: 0 0 auto; }
 
+  /* ===== המלצות לאטרקציות ===== */
+  .attr-group { margin: 14px 0 6px; font-weight: 700; }
+  .attr-item { padding: 12px 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--soft); margin-bottom: 8px; }
+  .attr-item .name { font-weight: 700; }
+  .attr-item .desc { color: var(--muted); font-size: .92rem; margin: 4px 0 8px; direction: ltr; text-align: left; }
+  .attr-links { display: flex; gap: 8px; flex-wrap: wrap; }
+  .attr-links a { padding: 6px 12px; border-radius: 999px; background: var(--card); color: var(--accent-dark); text-decoration: none; font-weight: 600; font-size: .9rem; border: 1px solid var(--border); }
+  .attr-links a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .attr-src { color: var(--muted); font-size: .85rem; margin-top: 8px; }
+
   /* ===== חשבון והתחברות ===== */
   .account-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 2px 0 10px; font-size: .95rem; }
   .account-bar .avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
@@ -525,6 +535,9 @@
 
   <!-- ===== דרישות כניסה ובטיחות (קישורים רשמיים) ===== -->
   <section id="entrySection" class="card hidden"></section>
+
+  <!-- ===== המלצות לאטרקציות (Wikivoyage) ===== -->
+  <section id="attrSection" class="card hidden"></section>
 
   <!-- ===== הרשימה ===== -->
   <section id="listSection" class="card hidden">
@@ -1190,6 +1203,225 @@ function plugAdvice(types) {
 }
 
 let entryToken = 0;
+/* =========================================================
+   המלצות לאטרקציות ביעד (Wikivoyage: מקור חופשי, בלי מפתח)
+   ========================================================= */
+
+const WV_API = 'https://en.wikivoyage.org/w/api.php';
+const ATTR_CACHE_DAYS = 14;
+
+function sleepMs(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// קריאה ל-API של Wikivoyage. אם השירות עמוס (קורה לפעמים), מנסים שוב פעם אחת.
+async function wvGet(params, attempt) {
+  const q = new URLSearchParams(Object.assign({ format: 'json', origin: '*' }, params));
+  const res = await fetchWithTimeout(WV_API + '?' + q.toString(), 9000);
+  if (res.status === 429 || res.status >= 500) throw new Error('busy');
+  const data = await res.json();
+  if (data.error && /busy|too-busy/.test(data.error.code || '') && !attempt) {
+    await sleepMs(1200);
+    return wvGet(params, 1);
+  }
+  if (data.error) throw new Error(data.error.code || 'wv');
+  return data;
+}
+
+// מנקה סימוני ויקי מטקסט תיאור
+function wvClean(t) {
+  return String(t || '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<ref[\s\S]*?(<\/ref>|\/>)/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\{\{[^{}]*\}\}/g, '')
+    .replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, '$1')
+    .replace(/\[https?:\/\/\S+\s+([^\]]+)\]/g, '$1')
+    .replace(/\[https?:\/\/\S+\]/g, '')
+    .replace(/'{2,}/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function shorten(t, max) {
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  const dot = cut.lastIndexOf('. ');
+  return (dot > max * 0.5 ? cut.slice(0, dot + 1) : cut.replace(/\s+\S*$/, '') + '…');
+}
+
+// מוציא רשימות {{see}} או {{do}} מטקסט של פרק
+function wvParseListings(sectionText, kind) {
+  const out = [];
+  const re = new RegExp('\\{\\{\\s*' + kind + '\\s*\\|((?:[^{}]|\\{\\{[^{}]*\\}\\})*)\\}\\}', 'gi');
+  let m;
+  while ((m = re.exec(sectionText))) {
+    const f = {};
+    ('|' + m[1]).split(/\n?\s*\|\s*(?=[a-zA-Z_]+\s*=)/).forEach(part => {
+      const i = part.indexOf('=');
+      if (i > 0) f[part.slice(0, i).trim().toLowerCase()] = part.slice(i + 1).trim();
+    });
+    const name = wvClean(f.name);
+    if (!name || name.length > 80) continue;
+    // האפליקציה משמשת גם משפחות: מדלגים על מקומות בידור למבוגרים
+    if (/red[- ]?light|brothel|\bsex\b|strip club|escort|love hotel|adult (entertainment|only)/i.test(name + ' ' + (f.content || ''))) continue;
+    const url = /^https?:\/\//i.test(f.url || '') ? f.url.trim() : '';
+    out.push({
+      name: name,
+      desc: shorten(wvClean(f.content), 170),
+      url: url,
+      lat: parseFloat(f.lat), lon: parseFloat(f.long)
+    });
+  }
+  return out;
+}
+
+// מביא את רשימות הצפייה והפעילות מעמוד אחד: קודם רשימת הפרקים, ואז רק את הפרקים הרלוונטיים
+async function wvPageListings(title) {
+  const sec = (await wvGet({ action: 'parse', page: title, prop: 'sections', redirects: 1 })).parse.sections;
+  const find = name => sec.find(x => x.line.trim().toLowerCase() === name && x.level === '2');
+  const result = { see: [], do: [] };
+  for (const [key, name] of [['see', 'see'], ['do', 'do']]) {
+    const sct = find(name);
+    if (!sct) continue;
+    const d = await wvGet({ action: 'parse', page: title, prop: 'wikitext', section: sct.index, redirects: 1 });
+    result[key] = wvParseListings(d.parse.wikitext['*'], key);
+  }
+  return result;
+}
+
+// מחפשים עמודי Wikivoyage ליד הקואורדינטות. בערים גדולות המידע מפוצל לשכונות, אז בודקים כמה עמודים קרובים.
+// השם האנגלי של העיר (לגיבוי כשחיפוש לפי מיקום לא זמין)
+async function englishCityName(lat, lon, city) {
+  try {
+    const res = await fetchWithTimeout('https://geocoding-api.open-meteo.com/v1/search?count=5&language=en&name=' + encodeURIComponent(city), 8000);
+    const data = await res.json();
+    const best = (data.results || []).find(r => Math.abs(r.latitude - lat) < 1 && Math.abs(r.longitude - lon) < 1);
+    return best ? best.name : '';
+  } catch (e) { return ''; }
+}
+
+async function loadAttractions(lat, lon, city) {
+  const key = 'packpal-attr-' + lat.toFixed(2) + ',' + lon.toFixed(2);
+  try {
+    const c = JSON.parse(localStorage.getItem(key));
+    if (c && Date.now() - c.at < ATTR_CACHE_DAYS * 86400000) return c.data;
+  } catch (e) {}
+
+  let pages = [], searchError = null;
+  try {
+    const geo = await wvGet({ action: 'query', list: 'geosearch', gscoord: lat + '|' + lon, gsradius: 10000, gslimit: 8 });
+    pages = (geo.query && geo.query.geosearch ? geo.query.geosearch : []).map(g => g.title);
+  } catch (e) { searchError = e; }
+  if (!pages.length) {
+    // גיבוי: חיפוש המיקום עמוס, אז הולכים לפי שם העיר באנגלית ולפי עמודי השכונות שלה (בלי מנוע החיפוש)
+    const name = await englishCityName(lat, lon, city);
+    if (name) {
+      pages = [name];
+      try {
+        const ap = await wvGet({ action: 'query', list: 'allpages', apprefix: name + '/', aplimit: 12 });
+        pages.push(...((ap.query && ap.query.allpages) || []).map(x => x.title));
+      } catch (e) {}
+    }
+  }
+  if (!pages.length && searchError) throw searchError;
+  pages = pages.slice(0, 7);
+  const see = [], doing = [], seen = new Set();
+  const add = (arr, target, limit) => {
+    let n = 0;
+    for (const it of arr) {
+      if (n >= limit) break;
+      const k = it.name.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k); target.push(it); n++;
+    }
+  };
+  let used = 0, firstTitle = pages[0] || '';
+  for (const title of pages) {
+    if (used >= 3 || (see.length >= 6 && doing.length >= 3)) break;
+    try {
+      const r = await wvPageListings(title);
+      if (r.see.length || r.do.length) {
+        used++;
+        add(r.see, see, used === 1 ? 6 : 3);
+        add(r.do, doing, used === 1 ? 3 : 2);
+      }
+    } catch (e) { if (e.message === 'busy' && !see.length) throw e; }
+    await sleepMs(250);
+  }
+  const data = { page: firstTitle.split('/')[0], see: see.slice(0, 6), do: doing.slice(0, 3) };
+  if (data.see.length || data.do.length) {
+    try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), data: data })); } catch (e) {}
+  }
+  return data;
+}
+
+function mapsUrl(it, city) {
+  const q = Number.isFinite(it.lat) && Number.isFinite(it.lon) ? it.lat + ',' + it.lon : it.name + (city ? ', ' + city : '');
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
+}
+
+let attrToken = 0;
+function renderAttractions() {
+  const box = $('attrSection');
+  box.replaceChildren();
+  const token = ++attrToken;                      // מבטל תשובות ישנות שעוד בדרך
+  if (!state || !Number.isFinite(state.trip.lat) || !Number.isFinite(state.trip.lon)) { box.classList.add('hidden'); return; }
+  const trip = state.trip;
+  const country = placeCountry(trip.place);
+  const city = String(trip.place).split(',')[0].trim();
+
+  box.appendChild(el('strong', null, '🎡 מה אפשר לעשות ב' + city));
+  const body = el('div');
+  box.appendChild(body);
+  body.appendChild(el('div', { className: 'note' }, 'מחפשת המלצות...'));
+  box.classList.remove('hidden');
+
+  const searchLink = () => {
+    const a = el('a', { href: 'https://en.wikivoyage.org/w/index.php?search=' + encodeURIComponent(city), target: '_blank', rel: 'noopener noreferrer' }, 'חיפוש ב-Wikivoyage');
+    const wrap = el('div', { className: 'attr-links' });
+    wrap.appendChild(a);
+    return wrap;
+  };
+
+  loadAttractions(trip.lat, trip.lon, city).then(data => {
+    if (token !== attrToken) return;
+    body.replaceChildren();
+    if (!data.see.length && !data.do.length) {
+      body.appendChild(el('div', { className: 'note' }, 'אין עדיין המלצות מפורטות ליעד הזה ב-Wikivoyage.'));
+      body.appendChild(searchLink());
+      return;
+    }
+    const group = (title, items) => {
+      if (!items.length) return;
+      body.appendChild(el('div', { className: 'attr-group' }, title));
+      items.forEach(it => {
+        const row = el('div', { className: 'attr-item' });
+        row.appendChild(el('div', { className: 'name' }, it.name));
+        if (it.desc) row.appendChild(el('div', { className: 'desc' }, it.desc));
+        const links = el('div', { className: 'attr-links' });
+        links.appendChild(el('a', { href: mapsUrl(it, city), target: '_blank', rel: 'noopener noreferrer' }, '📍 במפות'));
+        if (it.url) links.appendChild(el('a', { href: it.url, target: '_blank', rel: 'noopener noreferrer' }, '🌐 אתר'));
+        row.appendChild(links);
+        body.appendChild(row);
+      });
+    };
+    group('👀 מה לראות', data.see);
+    group('🏃 מה לעשות', data.do);
+    const src = el('div', { className: 'attr-src' });
+    src.append('ההמלצות באנגלית, ממדריך Wikivoyage (אתר שיתופי, לא רשמי). ',
+      el('a', { href: 'https://en.wikivoyage.org/wiki/' + encodeURIComponent((data.page || city).replace(/ /g, '_')), target: '_blank', rel: 'noopener noreferrer' }, 'לעמוד המלא'));
+    body.appendChild(src);
+  }).catch(() => {
+    if (token !== attrToken) return;
+    body.replaceChildren();
+    body.appendChild(el('div', { className: 'note' }, 'לא הצלחתי לטעון המלצות כרגע, כי השירות עמוס או לא זמין.'));
+    const retry = el('button', { type: 'button', className: 'secondary' }, '🔄 נסי שוב');
+    retry.addEventListener('click', renderAttractions);
+    body.appendChild(retry);
+    body.appendChild(searchLink());
+  });
+}
+
 function renderEntry() {
   const box = $('entrySection');
   box.replaceChildren();
@@ -1320,6 +1552,7 @@ function addEntryTodos() {
 
 function renderWeather() {
   renderEntry();
+  renderAttractions();
   updateWizardVisibility();
   const box = $('weather');
   box.replaceChildren();
