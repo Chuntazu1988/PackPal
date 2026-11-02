@@ -289,6 +289,15 @@
   /* בטיול משותף הטיול קבוע: מסתירים את מה שקשור לטיולים האישיים */
   .shared-mode #tripForm, .shared-mode #pastSection, .shared-mode #favSection,
   .shared-mode #resetBtn, .shared-mode #inviteBtn, .shared-mode #invitePanel { display: none !important; }
+  /* ===== מסך פתיחה ===== */
+  .welcome-lead { margin: 0 0 12px; font-size: 1.05rem; }
+  .welcome-steps { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 10px; }
+  .welcome-steps li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 16px; background: var(--soft); }
+  .welcome-steps .ico { font-size: 1.6rem; line-height: 1.2; }
+  .welcome-steps strong { display: block; }
+  .welcome-steps span:not(.ico) { color: var(--muted); font-size: .95rem; }
+  .link-btn { display: block; margin: 10px auto 0; background: none; color: var(--accent-dark); font-weight: 600; text-decoration: underline; padding: 6px; }
+
   /* ===== ביטול מחיקה ===== */
   .undo-bar, .item.undo-row {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -474,6 +483,22 @@
   </section>
 
   <!-- ===== טופס הטיול ===== -->
+  <!-- ===== מסך פתיחה: רק למי שנכנסת בפעם הראשונה ===== -->
+  <section id="welcome" class="card welcome hidden">
+    <h2 class="wiz-q">ברוכה הבאה! 👋</h2>
+    <p class="welcome-lead">רשימת אריזה חכמה לטיול, בשלושה צעדים פשוטים:</p>
+    <ol class="welcome-steps">
+      <li><span class="ico">🧳</span><div><strong>אומרים לאן ומתי</strong><span>ומקבלים רשימה שמתאימה למזג האוויר ולמה שמתכננים לעשות.</span></div></li>
+      <li><span class="ico">✅</span><div><strong>אורזים ומסמנים</strong><span>רואים כמה נשאר, ומוסיפים או מוחקים פריטים איך שנוח.</span></div></li>
+      <li><span class="ico">👥</span><div><strong>אורזים ביחד</strong><span>שולחים קישור לחברים או למשפחה, וכל אחד מקבל לשונית משלו.</span></div></li>
+    </ol>
+    <p class="note">בנוסף: דרישות כניסה ליעד, חשמל והפרש שעות, והמלצות למה לעשות שם.</p>
+    <div class="wiz-nav">
+      <button type="button" class="primary" id="welcomeStart">בואי נתחיל ✈️</button>
+    </div>
+    <button type="button" class="link-btn" id="welcomeLogin">כבר יש לי חשבון, התחברי</button>
+  </section>
+
   <form id="tripForm" class="card wizard" autocomplete="off" novalidate>
     <!-- כשיש טיול פעיל: שורה קטנה במקום הטופס -->
     <div id="wizSummary" class="wiz-summary hidden">
@@ -1560,6 +1585,7 @@ function addEntryTodos() {
 }
 
 function renderWeather() {
+  updateWelcome();
   renderEntry();
   renderAttractions();
   updateWizardVisibility();
@@ -2464,6 +2490,34 @@ function showChoices(places, onPick) {
 $('destination').addEventListener('input', hideChoices);
 
 /* =========================================================
+   מסך פתיחה למי שנכנסת בפעם הראשונה
+   ========================================================= */
+
+const WELCOME_KEY = STORAGE_KEY + '-welcomed';
+
+function isFirstVisit() {
+  let seen = false;
+  try { seen = !!localStorage.getItem(WELCOME_KEY); } catch (e) {}
+  return !seen && !sharedMode && !state && !(typeof cloudUser !== 'undefined' && cloudUser) &&
+    loadHistory().length === 0 && loadFavs().length === 0;
+}
+
+// מציג את מסך הפתיחה (ומסתיר את האשף ואת כרטיס הפריטים הקבועים) רק בביקור ראשון
+function updateWelcome() {
+  const first = isFirstVisit();
+  $('welcome').classList.toggle('hidden', !first);
+  $('tripForm').classList.toggle('hidden', first);
+  // פריטים קבועים: מוצגים רק כשיש טיול או כבר יש פריטים קבועים
+  $('favSection').classList.toggle('hidden', !state && loadFavs().length === 0);
+}
+
+function dismissWelcome() {
+  try { localStorage.setItem(WELCOME_KEY, '1'); } catch (e) {}
+  updateWelcome();
+  $('destination').focus();
+}
+
+/* =========================================================
    אשף הבנייה: שלושה צעדים (לאן, מתי, מה)
    ========================================================= */
 
@@ -2580,6 +2634,9 @@ $('wizBack').addEventListener('click', () => setStep(Math.max(1, wizStep - 1)));
 document.querySelectorAll('.wiz-steps button').forEach(btn => btn.addEventListener('click', () => wizGo(Number(btn.dataset.go))));
 $('destination').addEventListener('input', () => { chosenPlace = null; $('placeFound').textContent = ''; });
 $('wizEditBtn').addEventListener('click', () => { wizOpen = true; setStep(1); updateWizardVisibility(); $('destination').focus(); });
+
+$('welcomeStart').addEventListener('click', dismissWelcome);
+$('welcomeLogin').addEventListener('click', () => { signInWithGoogle(); });
 
 // מאפסים את האשף (אחרי "טיול חדש")
 setStep(1);
@@ -3586,6 +3643,7 @@ async function syncAfterLogin() {
     }
   }
   renderAccount(note);
+  updateWelcome();
 }
 
 async function handleAuthUser(user) {
@@ -3638,6 +3696,7 @@ if (sharedMode) {
     renderPast();
   }
   sweepOldShares();
+  updateWelcome();
   initCloud();
 }
 
