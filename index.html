@@ -281,6 +281,9 @@
   .my-group { background: var(--stat); border-radius: 10px; padding: 8px 12px; margin-bottom: 8px; font-size: .95rem; }
   .item .assignee { max-width: 8.5rem; padding: 4px 6px; font: inherit; font-size: .85rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); }
   .item .assignee.empty { color: var(--muted); }
+  .home-link { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; padding: 8px 14px; border-radius: 999px; background: var(--soft); color: var(--accent-dark); font-weight: 600; text-decoration: none; }
+  .home-link:hover { filter: brightness(.97); }
+  .home-link:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   .join-form, .invite-panel { margin-top: 12px; }
   .join-form input[type=text] { margin-top: 6px; }
   .invite-panel { border-top: 1px solid var(--border); padding-top: 12px; }
@@ -289,6 +292,19 @@
   /* בטיול משותף הטיול קבוע: מסתירים את מה שקשור לטיולים האישיים */
   .shared-mode #tripForm, .shared-mode #pastSection, .shared-mode #backupSection, .shared-mode #favSection,
   .shared-mode #resetBtn, .shared-mode #inviteBtn, .shared-mode #invitePanel { display: none !important; }
+  /* ===== דרישות כניסה ===== */
+  .entry-warn { background: var(--sand); border-radius: 14px; padding: 10px 14px; margin: 10px 0; font-size: .95rem; }
+  .entry-links { display: grid; gap: 8px; margin: 10px 0; }
+  .entry-links a {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 11px 14px; border: 1px solid var(--border); border-radius: 14px;
+    background: var(--soft); color: var(--accent-dark); text-decoration: none; font-weight: 600;
+    transition: transform .12s, filter .15s;
+  }
+  .entry-links a:hover { transform: translateY(-1px); filter: brightness(.97); }
+  .entry-links a small { display: block; font-weight: normal; color: var(--muted); }
+  .entry-links a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  #entryMsg { margin-top: 8px; min-height: 1.2em; color: var(--ok); }
   .dup-form { padding: 6px 4px 14px; border-bottom: 1px solid var(--border); }
   .dup-form .primary { margin-top: 0; }
   .dup-error { color: var(--danger); min-height: 1.2em; margin-top: 6px; }
@@ -387,6 +403,7 @@
 
   <!-- ===== טיול משותף ===== -->
   <section id="sharedBar" class="card hidden">
+    <a id="homeLink" class="home-link" href="#" target="_blank" rel="noopener">🏠 לעמוד הראשי</a>
     <div class="shared-head"><strong>👥 טיול משותף<span id="sharedType"></span></strong><span id="connStatus" role="status"></span></div>
     <div id="memberTabs" class="tabs" role="tablist"></div>
     <div id="tabManage" class="tab-manage"></div>
@@ -431,6 +448,9 @@
 
   <!-- ===== מזג אוויר ===== -->
   <section id="weather" class="card hidden"></section>
+
+  <!-- ===== דרישות כניסה ובטיחות (קישורים רשמיים) ===== -->
+  <section id="entrySection" class="card hidden"></section>
 
   <!-- ===== הרשימה ===== -->
   <section id="listSection" class="card hidden">
@@ -975,7 +995,106 @@ function el(tag, props, text) {
   return e;
 }
 
+/* =========================================================
+   דרישות כניסה ובטיחות: קישורים רשמיים בלבד, בלי לטעון מה נדרש
+   ========================================================= */
+
+const ENTRY_CAT = '🛂 דרישות כניסה';
+
+// כתובות רשמיות של ממשלת ישראל. מרוכזות כאן כדי שיהיה קל לעדכן אם אחת תשתנה.
+const ENTRY_LINKS = [
+  {
+    title: 'אזהרות מסע (המטה לביטחון לאומי)',
+    note: 'כדאי לבדוק את הרמה ליעד לפני שקונים כרטיסים',
+    url: 'https://www.gov.il/he/departments/dynamiccollectors/travel-warnings-nsc'
+  },
+  {
+    title: 'טבלת ויזות לישראלים (משרד החוץ)',
+    note: 'קובץ PDF לפי מדינות: האם נדרשת ויזה, והערות על אישורי כניסה מקוונים',
+    url: 'https://www.gov.il/BlobFolder/reports/examption_visa-israeli-heb/en/ISR_Visa_Abroad_Eng.pdf'
+  },
+  {
+    title: 'משרד החוץ: מידע לנוסעים',
+    note: 'שירותים קונסולריים והנחיות לישראלים בחו"ל',
+    url: 'https://www.gov.il/he/departments/ministry_of_foreign_affairs'
+  },
+  {
+    title: 'חיסונים והמלצות בריאות לנוסעים (משרד הבריאות)',
+    note: 'מומלץ להתייעץ במרפאת מטיילים כמה שבועות לפני הנסיעה',
+    url: 'https://www.gov.il/he/service/vaccination_abroad'
+  }
+];
+
+// שם המדינה לפי תווית המקום ("עיר, אזור, מדינה"): החלק האחרון
+function placeCountry(place) {
+  const parts = String(place || '').split(',').map(x => x.trim()).filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : '';
+}
+
+// תזכורות "לבדוק": משימות לבדיקה בעצמך, לא קביעות לגבי מה נדרש
+const ENTRY_TODOS = [
+  'לבדוק מהו תוקף הדרכון הנדרש ליעד',
+  'לבדוק אם נדרשת ויזה או אישור כניסה מקוון',
+  'לבדוק את אזהרת המסע ליעד',
+  'לבדוק חיסונים והמלצות בריאות ליעד',
+  'לשמור או להדפיס אישורי כניסה והזמנות'
+];
+
+function renderEntry() {
+  const box = $('entrySection');
+  box.replaceChildren();
+  if (!state) { box.classList.add('hidden'); return; }
+  const country = placeCountry(state.trip.place);
+
+  box.appendChild(el('strong', null, '🛂 לפני שנוסעים' + (country ? ' ל' + country : '') + ': כניסה ובטיחות'));
+  box.appendChild(el('div', { className: 'entry-warn' },
+    'המידע המלא נמצא רק במקורות הרשמיים. דרישות כניסה משתנות, ולכן בדקי אותן שם לפני שמזמינים טיסה.'));
+
+  const links = el('div', { className: 'entry-links' });
+  ENTRY_LINKS.forEach(l => {
+    const a = el('a', { href: l.url, target: '_blank', rel: 'noopener noreferrer' });
+    const text = el('span', null, l.title);
+    text.appendChild(el('small', null, l.note));
+    a.append(text, el('span', { 'aria-hidden': 'true' }, '↗'));
+    links.appendChild(a);
+  });
+  if (country) {
+    // זה חיפוש בגוגל ולא אתר רשמי, ומסומן כך
+    const q = 'שגרירות ' + country + ' בישראל אשרת כניסה';
+    const a = el('a', { href: 'https://www.google.com/search?q=' + encodeURIComponent(q), target: '_blank', rel: 'noopener noreferrer' });
+    const text = el('span', null, 'חיפוש: שגרירות ' + country + ' בישראל');
+    text.appendChild(el('small', null, 'חיפוש בגוגל, לא אתר רשמי. חפשי את אתר השגרירות הרשמי'));
+    a.append(text, el('span', { 'aria-hidden': 'true' }, '↗'));
+    links.appendChild(a);
+  }
+  box.appendChild(links);
+
+  const btn = el('button', { type: 'button', className: 'secondary' }, '➕ הוסף לרשימה תזכורות לבדיקה');
+  btn.addEventListener('click', addEntryTodos);
+  box.appendChild(btn);
+  box.appendChild(el('div', { id: 'entryMsg', role: 'status' }));
+  box.classList.remove('hidden');
+}
+
+function addEntryTodos() {
+  if (!state) return;
+  const have = new Set(state.items.map(i => i.text));
+  let added = 0;
+  ENTRY_TODOS.forEach(text => {
+    if (have.has(text)) return;
+    state.items.push(makeItem(text, ENTRY_CAT));
+    added++;
+  });
+  if (added) {
+    state.collapsed = (state.collapsed || []).filter(c => c !== ENTRY_CAT);
+    save();
+    renderList();
+  }
+  $('entryMsg').textContent = added ? (added === 1 ? 'נוספה תזכורת אחת לרשימה.' : 'נוספו ' + added + ' תזכורות לרשימה.') : 'התזכורות כבר ברשימה.';
+}
+
 function renderWeather() {
+  renderEntry();
   const box = $('weather');
   box.replaceChildren();
   if (!state) { box.classList.add('hidden'); return; }
@@ -2236,10 +2355,12 @@ function renderShared() {
     tabs.replaceChildren();
     $('tabManage').replaceChildren();
     $('expiryNote').textContent = '';
+    document.querySelector('.shared-link').classList.add('hidden');   // אין טעם בקישור לטיול שלא קיים
     $('joinBox').replaceChildren(el('p', { className: 'note' }, expiredGone ? 'הטיול הסתיים לפני יותר משבוע, ולכן הוא נמחק אוטומטית מהשרת.' : 'לא מצאתי את הטיול הזה. ייתכן שהקישור לא נכון או שהטיול נמחק.'));
     return;
   }
 
+  document.querySelector('.shared-link').classList.remove('hidden');
   const members = membersList();
   if (!viewMemberId || !(remote.members || {})[viewMemberId]) {
     viewMemberId = myMemberExists() ? myMemberId : (members[0] && members[0].id) || null;
@@ -2438,11 +2559,14 @@ async function joinTrip(name, withList) {
   renderShared();
 }
 
+// כתובת האפליקציה בלי מזהה טיול: זה העמוד הראשי
+function appHomeUrl() {
+  try { return window.top.location.origin + window.top.location.pathname; }
+  catch (e) { return location.origin + location.pathname; }
+}
+
 function sharedLink(id) {
-  let base;
-  try { base = window.top.location.origin + window.top.location.pathname; }
-  catch (e) { base = location.origin + location.pathname; }
-  return base + '?trip=' + id;
+  return appHomeUrl() + '?trip=' + id;
 }
 
 async function copyText(text, inputEl) {
@@ -2598,6 +2722,7 @@ function startShared() {
   try { myMemberId = localStorage.getItem(MEMBER_KEY(SHARED_ID)); } catch (e) {}
   document.body.classList.add('shared-mode');
   $('sharedBar').classList.remove('hidden');
+  $('homeLink').href = appHomeUrl();
   $('sharedLinkBox').replaceChildren(linkBox(sharedLink(SHARED_ID)));
   setConn('connecting');
   startStream();
