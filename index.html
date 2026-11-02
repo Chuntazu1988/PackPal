@@ -289,6 +289,25 @@
   /* בטיול משותף הטיול קבוע: מסתירים את מה שקשור לטיולים האישיים */
   .shared-mode #tripForm, .shared-mode #pastSection, .shared-mode #favSection,
   .shared-mode #resetBtn, .shared-mode #inviteBtn, .shared-mode #invitePanel { display: none !important; }
+  /* ===== אשף הבנייה ===== */
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .wiz-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-weight: 700; }
+  .wiz-steps { display: flex; gap: 8px; list-style: none; margin: 0 0 16px; padding: 0; }
+  .wiz-steps li { flex: 1; }
+  .wiz-steps button { width: 100%; padding: 8px 6px; border-radius: 999px; background: var(--soft); color: var(--muted); font-weight: 600; font-size: .9rem; }
+  .wiz-steps button .num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--card); margin-inline-end: 4px; font-size: .8rem; }
+  .wiz-steps button.active { background: var(--accent); color: var(--on-accent); }
+  .wiz-steps button.active .num { background: var(--on-accent); color: var(--accent); }
+  .wiz-steps button.done { color: var(--accent-dark); }
+  .wiz-q { margin: 4px 0 12px; font-size: 1.35rem; }
+  .step .note.found { color: var(--ok); font-weight: 600; }
+  .durations { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .durations button { padding: 8px 14px; border-radius: 999px; background: var(--soft); color: var(--accent-dark); font-weight: 600; }
+  .durations button:disabled { opacity: .45; cursor: default; }
+  .wiz-nav { display: flex; gap: 10px; margin-top: 18px; }
+  .wiz-nav .primary { margin-top: 0; width: auto; flex: 1; }
+  .wiz-nav .secondary { flex: 0 0 auto; }
+
   /* ===== חשבון והתחברות ===== */
   .account-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 2px 0 10px; font-size: .95rem; }
   .account-bar .avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
@@ -437,35 +456,68 @@
   </section>
 
   <!-- ===== טופס הטיול ===== -->
-  <form id="tripForm" class="card" autocomplete="off">
-    <label for="destination">לאן נוסעים?</label>
-    <input type="text" id="destination" placeholder="עיר או מדינה, למשל: פריז או ספרינגפילד, אילינוי" required>
-    <div id="placeChoices" class="choices hidden" role="group" aria-label="בחרי את המקום הנכון"></div>
-
-    <div class="row">
-      <div>
-        <label for="startDate">מתאריך</label>
-        <input type="date" id="startDate" required>
-      </div>
-      <div>
-        <label for="endDate">עד תאריך</label>
-        <input type="date" id="endDate" required>
-      </div>
+  <form id="tripForm" class="card wizard" autocomplete="off" novalidate>
+    <!-- כשיש טיול פעיל: שורה קטנה במקום הטופס -->
+    <div id="wizSummary" class="wiz-summary hidden">
+      <span id="wizSummaryText"></span>
+      <button type="button" class="secondary" id="wizEditBtn">✏️ שינוי פרטים</button>
     </div>
 
-    <label>מה מתכננים לעשות?</label>
-    <div class="chips" id="activities"></div>
+    <div id="wizBody">
+      <ol class="wiz-steps" aria-label="שלבי הבנייה">
+        <li><button type="button" data-go="1"><span class="num">1</span> לאן</button></li>
+        <li><button type="button" data-go="2"><span class="num">2</span> מתי</button></li>
+        <li><button type="button" data-go="3"><span class="num">3</span> מה</button></li>
+      </ol>
 
-    <label class="check-label"><input type="checkbox" id="sharedCheck"> 👥 טיול משותף (כמה אנשים אורזים יחד)</label>
-    <div id="sharedOptions" class="hidden">
-      <label for="ownerName">השם שלך (שם הלשונית שלך)</label>
-      <input type="text" id="ownerName" maxlength="30" placeholder="למשל: נטע">
-      <label>סוג הטיול</label>
-      <div class="chips three" id="tripTypes"></div>
+      <!-- שלב 1: יעד -->
+      <div class="step" data-step="1">
+        <h2 class="wiz-q">לאן טסים? ✈️</h2>
+        <label for="destination" class="sr-only">יעד</label>
+        <input type="text" id="destination" placeholder="עיר או מדינה, למשל: פריז או ספרינגפילד, אילינוי">
+        <div id="placeChoices" class="choices hidden" role="group" aria-label="בחרי את המקום הנכון"></div>
+        <div id="placeFound" class="note" role="status"></div>
+      </div>
+
+      <!-- שלב 2: תאריכים -->
+      <div class="step hidden" data-step="2">
+        <h2 class="wiz-q">מתי? 📅</h2>
+        <div class="row">
+          <div>
+            <label for="startDate">יוצאים ב-</label>
+            <input type="date" id="startDate">
+          </div>
+          <div>
+            <label for="endDate">חוזרים ב-</label>
+            <input type="date" id="endDate">
+          </div>
+        </div>
+        <div class="note" style="margin-top:10px">או בחרי כמה ימים (מתחילים מתאריך היציאה):</div>
+        <div class="durations" id="durations"></div>
+      </div>
+
+      <!-- שלב 3: פעילויות -->
+      <div class="step hidden" data-step="3">
+        <h2 class="wiz-q">מה עושים שם? 🎒</h2>
+        <div class="note" id="wizRecap"></div>
+        <div class="chips" id="activities"></div>
+
+        <label class="check-label"><input type="checkbox" id="sharedCheck"> 👥 טיול משותף (כמה אנשים אורזים יחד)</label>
+        <div id="sharedOptions" class="hidden">
+          <label for="ownerName">השם שלך (שם הלשונית שלך)</label>
+          <input type="text" id="ownerName" maxlength="30" placeholder="למשל: נטע">
+          <label>סוג הטיול</label>
+          <div class="chips three" id="tripTypes"></div>
+        </div>
+      </div>
+
+      <div id="error" role="alert"></div>
+      <div class="wiz-nav">
+        <button type="button" class="secondary hidden" id="wizBack">→ חזרה</button>
+        <button type="button" class="primary" id="wizNext">הבא ←</button>
+        <button type="submit" class="primary hidden" id="goBtn">בנה לי רשימה</button>
+      </div>
     </div>
-
-    <button type="submit" class="primary" id="goBtn">בנה לי רשימה</button>
-    <div id="error" role="alert"></div>
   </form>
 
   <!-- ===== מזג אוויר ===== -->
@@ -1240,6 +1292,7 @@ function addEntryTodos() {
 
 function renderWeather() {
   renderEntry();
+  updateWizardVisibility();
   const box = $('weather');
   box.replaceChildren();
   if (!state) { box.classList.add('hidden'); return; }
@@ -1724,6 +1777,10 @@ function applyStateToPage() {
   $('reorderBtn').textContent = '↕️ שנה סדר';
   nextId = state.items.reduce((m, i) => Math.max(m, i.id), 0) + 1;
   $('destination').value = state.trip.place;
+  chosenPlace = { lat: state.trip.lat, lon: state.trip.lon, label: state.trip.place, cc: state.trip.cc, tz: state.trip.tz };
+  chosenText = state.trip.place;
+  $('placeFound').className = 'note found';
+  $('placeFound').textContent = '✔ ' + state.trip.place;
   $('startDate').value = state.trip.start;
   $('endDate').value = state.trip.end;
   document.querySelectorAll('#activities input').forEach(i => { i.checked = state.trip.activities.includes(i.value); });
@@ -1955,6 +2012,7 @@ $('sharedCheck').addEventListener('change', () => {
 
 async function buildTrip(place, start, end, activities) {
   const weather = await getWeather(place, start, end);
+  wizOpen = false;
   const trip = { place: place.label, lat: place.lat, lon: place.lon, cc: place.cc, tz: place.tz, start: start, end: end, activities: activities };
   if (state && state.trip.name && state.trip.place === place.label) trip.name = state.trip.name;
   nextId = 1;
@@ -1962,6 +2020,7 @@ async function buildTrip(place, start, end, activities) {
   save();
   renderWeather();
   renderList();
+  setStep(1);
   $('weather').scrollIntoView({ behavior: 'smooth' });
 
   // טיול משותף מההתחלה: יוצרים מיד את הקישור ופותחים את חלון השיתוף
@@ -1996,14 +2055,147 @@ function showChoices(places, onPick) {
 
 $('destination').addEventListener('input', hideChoices);
 
+/* =========================================================
+   אשף הבנייה: שלושה צעדים (לאן, מתי, מה)
+   ========================================================= */
+
+let wizStep = 1;
+let wizOpen = false;        // האם המשתמשת פתחה את הטופס כשיש כבר טיול פעיל
+let chosenPlace = null;     // המקום שנבחר בצעד 1 (כדי לא לחפש אותו שוב)
+
+function setStep(n) {
+  wizStep = n;
+  document.querySelectorAll('#tripForm .step').forEach(st => st.classList.toggle('hidden', Number(st.dataset.step) !== n));
+  document.querySelectorAll('.wiz-steps button').forEach(btn => {
+    const k = Number(btn.dataset.go);
+    btn.classList.toggle('active', k === n);
+    btn.classList.toggle('done', k < n);
+    btn.setAttribute('aria-current', k === n ? 'step' : 'false');
+  });
+  $('wizBack').classList.toggle('hidden', n === 1);
+  $('wizNext').classList.toggle('hidden', n === 3);
+  $('goBtn').classList.toggle('hidden', n !== 3);
+  $('error').textContent = '';
+  if (n === 3) {
+    const s2 = $('startDate').value, e2 = $('endDate').value;
+    $('wizRecap').textContent = (chosenPlace ? chosenPlace.label : '') + (s2 && e2 ? ' · ' + fmtDate(s2) + ' – ' + fmtDate(e2) : '');
+  }
+}
+
+// כשיש טיול פעיל מציגים שורה קטנה במקום הטופס
+function updateWizardVisibility() {
+  const collapsed = !!state && !wizOpen && !sharedMode;
+  $('wizBody').classList.toggle('hidden', collapsed);
+  $('wizSummary').classList.toggle('hidden', !collapsed);
+  if (collapsed) {
+    $('wizSummaryText').textContent = '🧳 ' + tripName(state.trip) + ' · ' + fmtDate(state.trip.start) + ' – ' + fmtDate(state.trip.end);
+  }
+}
+
+function wizError(msg, focusId) {
+  $('error').textContent = msg;
+  if (focusId) $(focusId).focus();
+  return false;
+}
+
+// צעד 1: מוצאים את היעד. אם יש כמה מקומות בשם הזה, נותנים לבחור.
+async function validateStep1() {
+  const name = $('destination').value.trim();
+  if (!name) return wizError('כתבי לאן נוסעים.', 'destination');
+  if (chosenPlace && $('destination').value.trim() === chosenText) return true;
+  const btn = $('wizNext');
+  btn.disabled = true;
+  try {
+    const places = await geocodeAll(name);
+    if (places.length === 1) { pickPlace(places[0]); return true; }
+    showChoices(places, (place) => { pickPlace(place); setStep(2); });
+    return false;
+  } catch (err) {
+    return wizError(err.message || 'משהו השתבש, נסי שוב.');
+  } finally { btn.disabled = false; }
+}
+
+let chosenText = '';
+function pickPlace(place) {
+  hideChoices();
+  chosenPlace = place;
+  chosenText = $('destination').value.trim();
+  $('placeFound').className = 'note found';
+  $('placeFound').textContent = '✔ ' + place.label;
+}
+
+function validateStep2() {
+  const start = $('startDate').value, end = $('endDate').value;
+  if (!start) return wizError('בחרי תאריך יציאה.', 'startDate');
+  if (!end) return wizError('בחרי תאריך חזרה, או כמה ימים.', 'endDate');
+  if (end < start) return wizError('תאריך החזרה חייב להיות אחרי תאריך היציאה.', 'endDate');
+  if (start < toISO(new Date())) return wizError('תאריך היציאה כבר עבר.', 'startDate');
+  return true;
+}
+
+async function wizNext() {
+  $('error').textContent = '';
+  if (wizStep === 1) { if (await validateStep1()) setStep(2); }
+  else if (wizStep === 2) { if (validateStep2()) setStep(3); }
+}
+
+// מעבר לצעד שנלחץ במחוונים: קדימה רק אם הצעדים שלפניו תקינים
+async function wizGo(n) {
+  if (n <= wizStep) { setStep(n); return; }
+  if (wizStep === 1 && n >= 2) { if (!(await validateStep1())) return; }
+  if (n === 3 && !validateStep2()) { setStep(2); return; }
+  setStep(n);
+}
+
+function buildDurations() {
+  const box = $('durations');
+  [['סוף שבוע', 3], ['שבוע', 7], ['שבועיים', 14], ['חודש', 30]].forEach(([label, days]) => {
+    const b = el('button', { type: 'button' }, label);
+    b.addEventListener('click', () => {
+      const start = $('startDate').value;
+      if (!start) { wizError('בחרי קודם תאריך יציאה.', 'startDate'); return; }
+      const d = parseISO(start);
+      d.setDate(d.getDate() + days - 1);
+      $('endDate').value = toISO(d);
+      $('error').textContent = '';
+    });
+    box.appendChild(b);
+  });
+}
+buildDurations();
+const todayForWizard = toISO(new Date());
+$('startDate').min = todayForWizard;
+$('endDate').min = todayForWizard;
+
+$('wizNext').addEventListener('click', wizNext);
+$('wizBack').addEventListener('click', () => setStep(Math.max(1, wizStep - 1)));
+document.querySelectorAll('.wiz-steps button').forEach(btn => btn.addEventListener('click', () => wizGo(Number(btn.dataset.go))));
+$('destination').addEventListener('input', () => { chosenPlace = null; $('placeFound').textContent = ''; });
+$('wizEditBtn').addEventListener('click', () => { wizOpen = true; setStep(1); updateWizardVisibility(); $('destination').focus(); });
+
+// מאפסים את האשף (אחרי "טיול חדש")
+setStep(1);
+
+function resetWizard() {
+  wizOpen = false;
+  chosenPlace = null;
+  chosenText = '';
+  $('placeFound').textContent = '';
+  setStep(1);
+  updateWizardVisibility();
+}
+
 $('tripForm').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   $('error').textContent = '';
   hideChoices();
-  const name = $('destination').value.trim();
+  // Enter בצעדים 1 ו-2 מקדם לצעד הבא, ורק בצעד 3 בונים
+  if (wizStep < 3) { wizNext(); return; }
+  if (!validateStep2()) { setStep(2); return; }
+  if (!chosenPlace && !(await validateStep1())) { setStep(1); return; }
+
   const start = $('startDate').value;
   const end = $('endDate').value;
-  if (end < start) { $('error').textContent = 'תאריך החזרה חייב להיות אחרי תאריך היציאה.'; return; }
   if ($('sharedCheck').checked && !$('ownerName').value.trim()) {
     $('error').textContent = 'בטיול משותף צריך לכתוב את השם שלך.';
     $('ownerName').focus();
@@ -2015,21 +2207,7 @@ $('tripForm').addEventListener('submit', async (ev) => {
   const setBusy = (busy) => { btn.disabled = busy; btn.textContent = busy ? 'בודק מזג אוויר...' : 'בנה לי רשימה'; };
   setBusy(true);
   try {
-    const places = await geocodeAll(name);
-    if (places.length === 1) {
-      await buildTrip(places[0], start, end, activities);
-    } else {
-      showChoices(places, async (place) => {
-        hideChoices();
-        $('error').textContent = '';
-        setBusy(true);
-        try {
-          await buildTrip(place, $('startDate').value, $('endDate').value, activities);
-        } catch (err) {
-          $('error').textContent = err.message || 'משהו השתבש, נסי שוב.';
-        } finally { setBusy(false); }
-      });
-    }
+    await buildTrip(chosenPlace, start, end, activities);
   } catch (err) {
     $('error').textContent = err.message || 'משהו השתבש, נסי שוב.';
   } finally {
@@ -2082,6 +2260,7 @@ $('resetBtn').addEventListener('click', () => {
   state = null;
   try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
   scheduleCloudPush();
+  resetWizard();
   $('destination').value = '';
   $('startDate').value = '';
   $('endDate').value = '';
