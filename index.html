@@ -298,6 +298,21 @@
   .welcome-steps span:not(.ico) { color: var(--muted); font-size: .95rem; }
   .link-btn { display: block; margin: 10px auto 0; background: none; color: var(--accent-dark); font-weight: 600; text-decoration: underline; padding: 6px; }
 
+  /* ===== מצב אריזה: מסך נקי עם הרשימה בלבד, בכפתורים גדולים ===== */
+  .pack-bar { display: none; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; font-size: 1.15rem; }
+  .pack-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pack-done { background: color-mix(in srgb, var(--ok) 18%, var(--card)); border: 2px solid var(--ok); border-radius: 16px; padding: 14px; text-align: center; font-size: 1.3rem; font-weight: 800; margin: 10px 0; }
+  .pack-only { display: none; width: 100%; margin-top: 16px; padding: 14px; }
+  .pack-mode .pack-bar:not(.hidden) { display: flex; }
+  .pack-mode .pack-only { display: block; }
+  .pack-mode .hero, .pack-mode #accountBar, .pack-mode #welcome, .pack-mode #tripForm, .pack-mode #weather,
+  .pack-mode #entrySection, .pack-mode #attrSection, .pack-mode #pastSection, .pack-mode #favSection,
+  .pack-mode #listSection > .actions, .pack-mode #addForm, .pack-mode .search-row, .pack-mode #invitePanel,
+  .pack-mode .item .del, .pack-mode .item .qty-btn, .pack-mode .item .move, .pack-mode #collapseAllBtn, .pack-mode .trip-title .rename-btn { display: none !important; }
+  .pack-mode .item { padding: 14px 6px; font-size: 1.2rem; cursor: pointer; }
+  .pack-mode .item input[type=checkbox] { width: 32px; height: 32px; }
+  .pack-mode .cat-toggle { padding: 10px 0; font-size: 1.1rem; }
+
   /* ===== ביטול מחיקה ===== */
   .undo-bar, .item.undo-row {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -574,6 +589,13 @@
 
   <!-- ===== הרשימה ===== -->
   <section id="listSection" class="card hidden">
+    <div id="packBar" class="pack-bar hidden">
+      <strong>🎒 מצב אריזה</strong>
+      <div class="pack-actions">
+        <button type="button" class="secondary" id="packOnlyLeftBtn"></button>
+        <button type="button" class="secondary" id="packExitBtn">יציאה ✕</button>
+      </div>
+    </div>
     <div id="undoBar" class="undo-bar hidden" role="status"></div>
     <div id="tripTitle" class="trip-title"></div>
     <div id="countdown" class="countdown" role="status"></div>
@@ -582,11 +604,13 @@
       <button type="button" class="secondary" id="collapseAllBtn"></button>
     </div>
     <div class="bar"><div id="barFill"></div></div>
+    <div id="packDone" class="pack-done hidden" role="status">🎉 הכל ארוז! נסיעה טובה ✈️</div>
     <div class="search-row">
       <input type="search" id="itemSearch" placeholder="🔍 חיפוש ברשימה..." aria-label="חיפוש ברשימה" autocomplete="off">
       <div id="searchInfo" class="note" role="status"></div>
     </div>
     <div id="list"></div>
+    <button type="button" class="secondary pack-only" id="packExitBottom">יציאה ממצב אריזה</button>
 
     <form class="add-row" id="addForm" autocomplete="off">
       <input type="text" id="newItem" placeholder="הוסף פריט משלך...">
@@ -597,6 +621,7 @@
 
     <div class="actions">
       <button type="button" class="whatsapp" id="shareBtn">שתף בוואטסאפ</button>
+      <button type="button" class="secondary" id="packBtn">🎒 מצב אריזה</button>
       <button type="button" class="secondary" id="printBtn">🖨️ הדפס</button>
       <button type="button" class="secondary" id="reorderBtn">↕️ שנה סדר</button>
       <button type="button" class="secondary" id="inviteBtn">👥 שתף טיול</button>
@@ -1731,7 +1756,7 @@ function setTripName(trip, name) {
 
 function renderList() {
   const section = $('listSection');
-  if (!state) { section.classList.add('hidden'); renderFavs(); return; }
+  if (!state) { section.classList.add('hidden'); if (packMode) setPackMode(false); renderFavs(); return; }
   section.classList.remove('hidden');
   renderFavs();
   renderTitle();
@@ -1746,13 +1771,15 @@ function renderList() {
 
   // חיפוש: מציגים רק פריטים שהטקסט שלהם מכיל את מה שהוקלד. בזמן שינוי סדר לא מסננים.
   const query = reorderMode ? '' : searchQuery.trim().toLowerCase();
-  const matchesOf = cat => query ? groups[cat].filter(it => it.text.toLowerCase().includes(query)) : groups[cat];
+  const onlyLeft = packMode && packOnlyLeft;   // במצב אריזה אפשר להציג רק מה שעוד לא נארז
+  const filtered = !!query || onlyLeft;
+  const matchesOf = cat => filtered ? groups[cat].filter(it => (!query || it.text.toLowerCase().includes(query)) && (!onlyLeft || !it.checked)) : groups[cat];
   let found = 0;
 
   const collapsed = state.collapsed || [];
   Object.keys(groups).forEach(cat => {
     const shown = matchesOf(cat);
-    if (query && !shown.length) return;      // קטגוריה בלי תוצאות לא מוצגת
+    if (filtered && !shown.length) return;   // קטגוריה בלי תוצאות לא מוצגת
     found += shown.length;
     const isCollapsed = !query && collapsed.includes(cat);   // בחיפוש פותחים הכל, כדי לראות את התוצאות
     const doneInCat = groups[cat].filter(i => i.checked).length;
@@ -1773,6 +1800,7 @@ function renderList() {
     shown.forEach(it => {
       const row = el('div', { className: 'item' + (it.checked ? ' done' : '') });
       row.dataset.id = it.id;
+      if (packMode) row.addEventListener('click', (ev) => { if (!ev.target.closest('input, button, select, a')) toggleItem(it.id); });
       const box = el('input', { type: 'checkbox', checked: it.checked });
       box.setAttribute('aria-label', it.text);
       box.addEventListener('change', () => toggleItem(it.id));
@@ -2154,6 +2182,8 @@ function renderProgress() {
   const pct = total ? Math.round(done / total * 100) : 0;
   $('barFill').style.width = pct + '%';
   $('progressText').textContent = 'ארזת ' + done + ' מתוך ' + total + ' (' + pct + '%)';
+  $('packDone').classList.toggle('hidden', !(packMode && total > 0 && done === total));
+  $('packOnlyLeftBtn').textContent = packOnlyLeft ? 'הצג הכל' : 'הצג רק מה שנשאר (' + (total - done) + ')';
 }
 
 /* =========================================================
@@ -2211,6 +2241,21 @@ function toggleItem(id) {
 }
 
 // מצב שינוי סדר: מציג ▲▼ ליד כל פריט (לא נשמר, תמיד מתחילים בלי)
+// מצב אריזה: מסך נקי עם הרשימה בלבד. נשמר רק בלשונית הנוכחית (נשאר אחרי רענון, ונעלם כשסוגרים).
+const PACK_KEY = 'packpal-packmode';
+let packMode = false;
+let packOnlyLeft = false;
+
+function setPackMode(on) {
+  if (on && !state) return;
+  packMode = on;
+  document.body.classList.toggle('pack-mode', on);
+  $('packBar').classList.toggle('hidden', !on);
+  try { sessionStorage.setItem(PACK_KEY, on ? '1' : ''); } catch (e) {}
+  if (state) renderList();
+  window.scrollTo(0, 0);
+}
+
 let reorderMode = false;
 
 // מה שהוקלד בחיפוש (לא נשמר, תמיד מתחילים בלי)
@@ -2692,6 +2737,10 @@ $('addForm').addEventListener('submit', (ev) => {
 
 $('shareBtn').addEventListener('click', shareWhatsApp);
 $('printBtn').addEventListener('click', printList);
+$('packBtn').addEventListener('click', () => setPackMode(true));
+$('packExitBtn').addEventListener('click', () => setPackMode(false));
+$('packExitBottom').addEventListener('click', () => setPackMode(false));
+$('packOnlyLeftBtn').addEventListener('click', () => { packOnlyLeft = !packOnlyLeft; renderList(); });
 $('itemSearch').addEventListener('input', (ev) => {
   searchQuery = ev.target.value;
   if (state) renderList();
@@ -3698,6 +3747,7 @@ if (sharedMode) {
   sweepOldShares();
   updateWelcome();
   initCloud();
+  try { if (sessionStorage.getItem(PACK_KEY) && state) setPackMode(true); } catch (e) {}
 }
 
 // כפתור "עיצוב": פותח וסוגר את חלונית כפתורי העיצוב
