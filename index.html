@@ -293,6 +293,17 @@
   .shared-mode #tripForm, .shared-mode #pastSection, .shared-mode #backupSection, .shared-mode #favSection,
   .shared-mode #resetBtn, .shared-mode #inviteBtn, .shared-mode #invitePanel { display: none !important; }
   /* ===== דרישות כניסה ===== */
+  .visa-box { border-radius: 16px; padding: 14px 16px; margin: 12px 0; border: 1px solid var(--border); background: var(--soft); }
+  .visa-box.ok { border-color: color-mix(in srgb, var(--ok) 50%, transparent); background: color-mix(in srgb, var(--ok) 12%, var(--card)); }
+  .visa-box.need { border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: color-mix(in srgb, var(--danger) 9%, var(--card)); }
+  .visa-box .status { font-size: 1.15rem; font-weight: 700; margin-bottom: 4px; }
+  .visa-box .vnote { margin-top: 6px; }
+  .visa-box small { display: block; margin-top: 8px; color: var(--muted); }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 12px 0; }
+  .fact { background: var(--stat); border-radius: 14px; padding: 10px 12px; }
+  .fact .k { font-size: .85rem; color: var(--muted); }
+  .fact .v { font-weight: 700; }
+  .entry-sub { margin: 14px 0 4px; font-weight: 700; }
   .entry-warn { background: var(--sand); border-radius: 14px; padding: 10px 14px; margin: 10px 0; font-size: .95rem; }
   .entry-links { display: grid; gap: 8px; margin: 10px 0; }
   .entry-links a {
@@ -764,7 +775,7 @@ async function geocodeAll(text) {
   if (!results.length) throw new Error('לא מצאתי את היעד "' + text + '". נסי שם אחר או באנגלית.');
   // הגדולים קודם – בדרך כלל זה מה שהתכוונו אליו
   results.sort((x, y) => (y.population || 0) - (x.population || 0));
-  return results.map(p => ({ lat: p.latitude, lon: p.longitude, label: placeLabel(p), country: p.country, admin1: p.admin1, population: p.population }));
+  return results.map(p => ({ lat: p.latitude, lon: p.longitude, label: placeLabel(p), cc: p.country_code, tz: p.timezone, country: p.country, admin1: p.admin1, population: p.population }));
 }
 
 // מוצא קואורדינטות של היעד (התוצאה הראשונה)
@@ -1040,32 +1051,97 @@ const ENTRY_TODOS = [
   'לשמור או להדפיס אישורי כניסה והזמנות'
 ];
 
+// טבלת הוויזות הרשמית של משרד החוץ, כפי שהייתה ב-31.08.2026. ממירים מהקובץ הרשמי ומעדכנים ידנית כשהוא מתעדכן.
+// e = ישראלים פטורים מוויזה לתיירות, r = נדרשת ויזה. t = הערה מהטבלה (תרגום).
+const VISA_DATE = '31.08.2026';
+const VISA_TABLE = {"AF":{"n":"Afghanistan","s":"r"},"AL":{"n":"Albania","s":"e"},"DZ":{"n":"Algeria","s":"r"},"AD":{"n":"Andorra","s":"e"},"AO":{"n":"Angola","s":"r"},"AG":{"n":"Antigua & Barbuda","s":"r"},"AR":{"n":"Argentina","s":"e"},"AM":{"n":"Armenia","s":"r","t":"אפשר לקבל ויזה בשדה התעופה."},"AU":{"n":"Australia","s":"r"},"AT":{"n":"Austria","s":"e"},"AZ":{"n":"Azerbaijan","s":"r","t":"אפשר לקבל ויזה בשדה התעופה."},"BS":{"n":"Bahamas","s":"e"},"BH":{"n":"Bahrain","s":"r"},"BD":{"n":"Bangladesh","s":"r"},"BB":{"n":"Barbados","s":"e"},"BY":{"n":"Belarus","s":"e"},"BE":{"n":"Belgium","s":"e"},"BZ":{"n":"Belize","s":"e"},"BJ":{"n":"Benin","s":"r"},"BM":{"n":"Bermuda","s":"r"},"BT":{"n":"Bhutan","s":"r"},"BO":{"n":"Bolivia","s":"e"},"BA":{"n":"Bosnia Herzegovina","s":"e"},"BW":{"n":"Botswana","s":"e"},"BR":{"n":"Brazil","s":"e"},"BN":{"n":"Brunei","s":"r"},"BG":{"n":"Bulgaria","s":"e"},"BF":{"n":"Burkina Faso","s":"r"},"BI":{"n":"Burundi","s":"r"},"KH":{"n":"Cambodia","s":"r","t":"אפשר לקבל ויזה בשדה התעופה."},"CM":{"n":"Cameroon","s":"r"},"CA":{"n":"Canada","s":"e","t":"נדרש רישום מקוון בתשלום מראש (eTA) לכל התיירים שמגיעים בטיסה."},"CV":{"n":"Cape Verde Islands","s":"r"},"CF":{"n":"Central African Republic","s":"r"},"TD":{"n":"Chad","s":"r"},"CL":{"n":"Chile","s":"e"},"CN":{"n":"China","s":"r"},"CO":{"n":"Colombia","s":"e"},"KM":{"n":"Comoros islands","s":"r"},"CG":{"n":"Congo (rep. of the) (Brazzaville)","s":"r"},"CD":{"n":"Congo Democratic rep. (Zaire)","s":"r"},"CK":{"n":"Cook Islands","s":"e"},"CR":{"n":"Costa Rica","s":"e"},"CI":{"n":"Cote d’Ivoire","s":"r"},"HR":{"n":"Croatia","s":"e"},"CU":{"n":"Cuba","s":"r"},"CY":{"n":"Cyprus","s":"e"},"CZ":{"n":"Czech republic","s":"e"},"DK":{"n":"Denmark","s":"e"},"DJ":{"n":"Djibouti","s":"r"},"DM":{"n":"Dominica","s":"e"},"DO":{"n":"Dominican republic","s":"e"},"EC":{"n":"Ecuador","s":"e"},"EG":{"n":"Egypt","s":"r","t":"פטור לשהייה של עד 14 יום דרך טאבה בלבד, ליעד שארם א-שייח׳ בלבד."},"SV":{"n":"El Salvador","s":"e"},"GQ":{"n":"Equatorial Guinea","s":"r"},"ER":{"n":"Eritrea","s":"r"},"EE":{"n":"Estonia","s":"e"},"SZ":{"n":"Eswatini","s":"e"},"ET":{"n":"Ethiopia","s":"r","t":"אפשר לקבל ויזה בשדה התעופה."},"FJ":{"n":"Fiji islands","s":"e"},"FI":{"n":"Finland","s":"e"},"FR":{"n":"France","s":"e"},"GA":{"n":"Gabon","s":"r"},"GM":{"n":"Gambia","s":"r"},"GE":{"n":"Georgia","s":"e"},"DE":{"n":"Germany","s":"e"},"GH":{"n":"Ghana","s":"r"},"GR":{"n":"Greece","s":"e"},"GD":{"n":"Grenada","s":"e"},"GT":{"n":"Guatemala","s":"e"},"GN":{"n":"Guinea","s":"r"},"GW":{"n":"Guinea Bissau","s":"r"},"GY":{"n":"Guyana","s":"r"},"HT":{"n":"Haiti","s":"e"},"VA":{"n":"Holy See (Vatican)","s":"e"},"HN":{"n":"Honduras","s":"e"},"HK":{"n":"Hong Kong","s":"e"},"HU":{"n":"Hungary","s":"e"},"IS":{"n":"Iceland","s":"e"},"IN":{"n":"India","s":"r"},"ID":{"n":"Indonesia","s":"r"},"IR":{"n":"Iran","s":"r"},"IQ":{"n":"Iraq","s":"r"},"IE":{"n":"Ireland","s":"e"},"IT":{"n":"Italy","s":"e"},"JM":{"n":"Jamaica","s":"e"},"JP":{"n":"Japan","s":"e"},"JO":{"n":"Jordan","s":"r"},"KZ":{"n":"Kazakhstan","s":"e","t":"פטור לשלושה חודשים. כל 30 יום צריך לצאת מהמדינה ולחזור."},"KE":{"n":"Kenya","s":"r","t":"נדרש רישום מקוון בתשלום מראש (eTA)."},"KI":{"n":"Kiribati","s":"r"},"XK":{"n":"Kosovo","s":"e"},"KW":{"n":"Kuwait","s":"r"},"KG":{"n":"Kyrgyzstan","s":"e","t":"פטור ל-30 יום."},"LA":{"n":"Laos","s":"r"},"LV":{"n":"Latvia","s":"e"},"LB":{"n":"Lebanon","s":"r"},"LS":{"n":"Lesotho","s":"e"},"LR":{"n":"Liberia","s":"r"},"LY":{"n":"Libya","s":"r"},"LI":{"n":"Liechtenstein","s":"e"},"LT":{"n":"Lithuania","s":"e"},"LU":{"n":"Luxemburg","s":"e"},"MO":{"n":"Macau","s":"e"},"MK":{"n":"Macedonia","s":"e"},"MG":{"n":"Madagascar","s":"r"},"MW":{"n":"Malawi","s":"e"},"MY":{"n":"Malaysia","s":"r"},"MV":{"n":"Maldives","s":"r"},"ML":{"n":"Mali","s":"r"},"MT":{"n":"Malta","s":"e"},"IM":{"n":"Man & Canal Islands","s":"e"},"MH":{"n":"Marshall islands","s":"e"},"MR":{"n":"Mauritania","s":"r"},"MU":{"n":"Mauritius","s":"e"},"MX":{"n":"Mexico","s":"e"},"FM":{"n":"Micronesia","s":"e"},"MD":{"n":"Moldova","s":"e"},"MC":{"n":"Monaco","s":"e"},"MN":{"n":"Mongolia","s":"e"},"ME":{"n":"Montenegro","s":"e"},"MA":{"n":"Morocco","s":"r"},"MZ":{"n":"Mozambique","s":"r","t":"את הוויזה אפשר להנפיק אצל הקונסול הכבוד בתל אביב."},"MM":{"n":"Myanmar","s":"r","t":"אפשר לקבל ויזה בשדה התעופה."},"NA":{"n":"Namibia","s":"r","t":"הוויזה תונפק בהגעה."},"NR":{"n":"Nauru","s":"e"},"NP":{"n":"Nepal","s":"r"},"NL":{"n":"Netherlands","s":"e"},"NZ":{"n":"New Zealand","s":"e","t":"נדרש רישום מקוון בתשלום מראש (NZeTA)."},"NI":{"n":"Nicaragua","s":"e"},"NE":{"n":"Niger","s":"r"},"NG":{"n":"Nigeria","s":"r"},"NU":{"n":"Niue","s":"e"},"NO":{"n":"Norway","s":"e"},"OM":{"n":"Oman","s":"r"},"PK":{"n":"Pakistan","s":"r"},"PW":{"n":"Palau","s":"e"},"PA":{"n":"Panama","s":"e"},"PG":{"n":"Papua New Guinea","s":"e"},"PY":{"n":"Paraguay","s":"e"},"PE":{"n":"Peru","s":"e"},"PH":{"n":"Philippines","s":"e"},"PL":{"n":"Poland","s":"e"},"PT":{"n":"Portugal","s":"e"},"QA":{"n":"Qatar","s":"r"},"RO":{"n":"Romania","s":"e"},"RU":{"n":"Russian Federation","s":"e"},"RW":{"n":"Rwanda","s":"r"},"WS":{"n":"Samoa","s":"e"},"SM":{"n":"San Marino","s":"e"},"ST":{"n":"Sao Tome & Principe","s":"r"},"SA":{"n":"Saudi Arabia","s":"r"},"SN":{"n":"Senegal","s":"r"},"RS":{"n":"Serbia","s":"e"},"SC":{"n":"Seychelles islands","s":"r"},"SL":{"n":"Sierra Leone","s":"r"},"SG":{"n":"Singapore","s":"e"},"SK":{"n":"Slovakia","s":"e"},"SI":{"n":"Slovenia","s":"e"},"SB":{"n":"Solomon islands","s":"e"},"SO":{"n":"Somalia","s":"r"},"ZA":{"n":"South Africa","s":"e"},"SS":{"n":"South Sudan","s":"r"},"ES":{"n":"Spain","s":"e"},"LK":{"n":"Sri Lanka","s":"e","t":"הערה בטבלה: ייתכן שתידרש ויזה בהגעה בשדה התעופה."},"KN":{"n":"St. Kitts & Nevis","s":"e"},"LC":{"n":"St. Lucia","s":"e"},"VC":{"n":"St. Vincent and the Grenadines","s":"e"},"SD":{"n":"Sudan","s":"r"},"SR":{"n":"Surinam","s":"e"},"SE":{"n":"Sweden","s":"e"},"CH":{"n":"Switzerland","s":"e"},"SY":{"n":"Syria","s":"r"},"TW":{"n":"Taiwan","s":"e"},"TJ":{"n":"Tajikistan","s":"r"},"TZ":{"n":"Tanzania","s":"r","t":"אפשר לקבל ויזה בשדה התעופה."},"TH":{"n":"Thailand","s":"e","t":"פטור ל-60 יום. אפשר לקבל ויזה בשדה התעופה. נדרש רישום מקוון מראש (TDAC)."},"TL":{"n":"Timor Leste","s":"r"},"TG":{"n":"Togo","s":"r"},"TO":{"n":"Tonga","s":"e"},"TT":{"n":"Trinidad & Tobago","s":"e"},"TN":{"n":"Tunisia","s":"r"},"TR":{"n":"Turkey","s":"e"},"TM":{"n":"Turkmenistan","s":"r"},"TV":{"n":"Tuvalu","s":"e"},"UG":{"n":"Uganda","s":"r"},"UA":{"n":"Ukraine","s":"e"},"AE":{"n":"United Arab Emirates","s":"e"},"GB":{"n":"United Kingdom","s":"e","t":"נדרש רישום מקוון בתשלום מראש (ETA UK)."},"US":{"n":"United States of America","s":"e","t":"נדרש רישום מקוון מראש (ESTA) במקום ויזה, לתיירים שמחזיקים דרכון ביומטרי תקף (מבוגרים: דרכון ביומטרי ל-10 שנים; קטינים: ל-5 שנים)."},"UY":{"n":"Uruguay","s":"e"},"UZ":{"n":"Uzbekistan","s":"e","t":"פטור רק ל-30 יום."},"VU":{"n":"Vanuatu","s":"e"},"VE":{"n":"Venezuela","s":"r"},"VN":{"n":"Vietnam","s":"r","t":"פטור ל-30 יום לתיירים שנכנסים לאי פו קוק."},"YE":{"n":"Yemen","s":"r"},"ZM":{"n":"Zambia","s":"e","t":"הערה בטבלה: צריך להחזיק כרטיס טיסה חוזר תקף."},"ZW":{"n":"Zimbabwe","s":"r"},"KP":{"n":"North Korea","s":"r"},"KR":{"n":"South Korea","s":"e","t":"נדרש רישום מקוון בתשלום מראש (K-ETA)."}};
+
+function visaSnapshotAgeDays() {
+  const [d, m, y] = VISA_DATE.split('.').map(Number);
+  return Math.round((Date.now() - new Date(y, m - 1, d).getTime()) / 86400000);
+}
+
+// תקעים ומתחים לפי מדינה. מקור: worldstandards.eu (מבוסס על תקני IEC). ישראל: תקע C/H, 230V, 50Hz.
+const PLUG_TABLE = {"AF":{"p":"C, F","v":"230V","f":"50Hz"},"AL":{"p":"C, F","v":"230V","f":"50Hz"},"DZ":{"p":"C, F","v":"230V","f":"50Hz"},"AD":{"p":"C, F","v":"230V","f":"50Hz"},"AO":{"p":"C, F","v":"230V","f":"50Hz"},"AG":{"p":"A, B","v":"110V / 220V","f":"60Hz"},"AR":{"p":"I","v":"230V","f":"50Hz"},"AM":{"p":"C, F","v":"230V","f":"50Hz"},"AU":{"p":"I","v":"230V","f":"50Hz"},"AT":{"p":"C, F","v":"230V","f":"50Hz"},"AZ":{"p":"C, F","v":"230V","f":"50Hz"},"BS":{"p":"A, B","v":"120V","f":"60Hz"},"BH":{"p":"G","v":"230V","f":"50Hz"},"BD":{"p":"A, C, D, M, G","v":"230V","f":"50Hz"},"BB":{"p":"A, B","v":"115V","f":"50Hz"},"BY":{"p":"C, F","v":"230V","f":"50Hz"},"BE":{"p":"C, E","v":"230V","f":"50Hz"},"BZ":{"p":"A, B","v":"110V","f":"60Hz"},"BJ":{"p":"C, E","v":"230V","f":"50Hz"},"BM":{"p":"A, B","v":"120V","f":"60Hz"},"BT":{"p":"C, D, M","v":"230V","f":"50Hz"},"BO":{"p":"A, B, C","v":"230V","f":"50Hz"},"BW":{"p":"M","v":"230V","f":"50Hz"},"BR":{"p":"C, N","v":"127V / 220V","f":"60Hz"},"BN":{"p":"G","v":"240V","f":"50Hz"},"BG":{"p":"C, F","v":"230V","f":"50Hz"},"BF":{"p":"C, E","v":"230V","f":"50Hz"},"MM":{"p":"A, B, C, D, E, F, G, I","v":"230V","f":"50Hz"},"BI":{"p":"C, E","v":"230V","f":"50Hz"},"KH":{"p":"A, B, C, F, G","v":"230V","f":"50Hz"},"CM":{"p":"C, E","v":"230V","f":"50Hz"},"CA":{"p":"A, B","v":"120V","f":"60Hz"},"CV":{"p":"C, F","v":"230V","f":"50Hz"},"CF":{"p":"C, E","v":"230V","f":"50Hz"},"TD":{"p":"C, E, F","v":"230V","f":"50Hz"},"CL":{"p":"C, L","v":"230V","f":"50Hz"},"CN":{"p":"A, I","v":"230V","f":"50Hz"},"CO":{"p":"A, B","v":"110V","f":"60Hz"},"KM":{"p":"C, E","v":"230V","f":"50Hz"},"CK":{"p":"I","v":"240V","f":"50Hz"},"CR":{"p":"A, B","v":"120V","f":"60Hz"},"HR":{"p":"C, F","v":"230V","f":"50Hz"},"CU":{"p":"A, B","v":"120V","f":"60Hz"},"CY":{"p":"G","v":"230V","f":"50Hz"},"CZ":{"p":"C, E","v":"230V","f":"50Hz"},"DK":{"p":"C, F, K","v":"230V","f":"50Hz"},"DJ":{"p":"C, E","v":"230V","f":"50Hz"},"DM":{"p":"G","v":"230V","f":"50Hz"},"DO":{"p":"A, B","v":"120V","f":"60Hz"},"TL":{"p":"C, E, F, I","v":"230V","f":"50Hz"},"EC":{"p":"A, B","v":"120V","f":"60Hz"},"EG":{"p":"C, F","v":"230V","f":"50Hz"},"SV":{"p":"A, B","v":"120V","f":"60Hz"},"GQ":{"p":"C, E","v":"230V","f":"50Hz"},"ER":{"p":"C, E, L","v":"230V","f":"50Hz"},"EE":{"p":"C, F","v":"230V","f":"50Hz"},"SZ":{"p":"C, M, N","v":"230V","f":"50Hz"},"ET":{"p":"C, F, G","v":"230V","f":"50Hz"},"FJ":{"p":"I","v":"240V","f":"50Hz"},"FI":{"p":"C, F","v":"230V","f":"50Hz"},"FR":{"p":"C, E","v":"230V","f":"50Hz"},"GA":{"p":"C, E","v":"230V","f":"50Hz"},"GM":{"p":"G","v":"230V","f":"50Hz"},"GE":{"p":"C, F","v":"230V","f":"50Hz"},"DE":{"p":"C, F","v":"230V","f":"50Hz"},"GH":{"p":"G","v":"230V","f":"50Hz"},"GR":{"p":"C, F","v":"230V","f":"50Hz"},"GD":{"p":"G","v":"230V","f":"50Hz"},"GT":{"p":"A, B","v":"120V","f":"60Hz"},"GW":{"p":"C, F","v":"230V","f":"50Hz"},"GN":{"p":"C, F","v":"230V","f":"50Hz"},"GY":{"p":"A, B","v":"110V / 220V","f":"50Hz / 60Hz"},"HT":{"p":"A, B","v":"110V","f":"60Hz"},"HN":{"p":"A, B","v":"120V","f":"60Hz"},"HK":{"p":"G","v":"230V","f":"50Hz"},"HU":{"p":"C, F","v":"230V","f":"50Hz"},"IS":{"p":"C, F","v":"230V","f":"50Hz"},"IN":{"p":"D, M","v":"230V","f":"50Hz"},"ID":{"p":"C, F","v":"230V","f":"50Hz"},"IR":{"p":"C, F","v":"230V","f":"50Hz"},"IQ":{"p":"C, G","v":"230V","f":"50Hz"},"IE":{"p":"G","v":"230V","f":"50Hz"},"IL":{"p":"C, H","v":"230V","f":"50Hz"},"IT":{"p":"C, F, L","v":"230V","f":"50Hz"},"JM":{"p":"A, B","v":"110V","f":"50Hz"},"JP":{"p":"A, B","v":"100V","f":"50Hz / 60Hz"},"JO":{"p":"C, F, G","v":"230V","f":"50Hz"},"KZ":{"p":"C, F","v":"230V","f":"50Hz"},"KE":{"p":"G","v":"240V","f":"50Hz"},"KI":{"p":"I","v":"240V","f":"50Hz"},"XK":{"p":"C, F","v":"230V","f":"50Hz"},"KW":{"p":"G","v":"230V","f":"50Hz"},"KG":{"p":"C, F","v":"230V","f":"50Hz"},"LA":{"p":"A, B, C","v":"230V","f":"50Hz"},"LV":{"p":"C, F","v":"230V","f":"50Hz"},"LB":{"p":"C, F","v":"230V","f":"50Hz"},"LS":{"p":"M","v":"230V","f":"50Hz"},"LR":{"p":"C, D, F, G","v":"230V","f":"50Hz"},"LY":{"p":"C, F, L","v":"230V","f":"50Hz"},"LI":{"p":"C, J","v":"230V","f":"50Hz"},"LT":{"p":"C, F","v":"230V","f":"50Hz"},"LU":{"p":"C, F","v":"230V","f":"50Hz"},"MO":{"p":"G","v":"230V","f":"50Hz"},"MG":{"p":"C, E","v":"230V","f":"50Hz"},"MW":{"p":"G","v":"230V","f":"50Hz"},"MY":{"p":"G","v":"230V","f":"50Hz"},"MV":{"p":"C, D, G","v":"230V","f":"50Hz"},"ML":{"p":"C, E","v":"230V","f":"50Hz"},"MT":{"p":"G","v":"230V","f":"50Hz"},"MH":{"p":"A, B","v":"120V","f":"60Hz"},"MR":{"p":"C, E","v":"230V","f":"50Hz"},"MU":{"p":"C, E, G","v":"230V","f":"50Hz"},"MX":{"p":"A, B","v":"127V","f":"60Hz"},"MD":{"p":"C, F","v":"230V","f":"50Hz"},"MC":{"p":"C, E","v":"230V","f":"50Hz"},"MN":{"p":"C, F","v":"230V","f":"50Hz"},"ME":{"p":"C, F","v":"230V","f":"50Hz"},"MA":{"p":"C, E","v":"230V","f":"50Hz"},"MZ":{"p":"C, F, M, N","v":"230V","f":"50Hz"},"NA":{"p":"C, M, N","v":"230V","f":"50Hz"},"NR":{"p":"I","v":"240V","f":"50Hz"},"NP":{"p":"C, D, M","v":"230V","f":"50Hz"},"NL":{"p":"C, F","v":"230V","f":"50Hz"},"NZ":{"p":"I","v":"230V","f":"50Hz"},"NI":{"p":"A, B","v":"120V","f":"60Hz"},"NE":{"p":"C, E","v":"230V","f":"50Hz"},"NG":{"p":"G","v":"230V","f":"50Hz"},"NU":{"p":"I","v":"230V","f":"50Hz"},"KP":{"p":"C, F","v":"230V","f":"50Hz"},"MK":{"p":"C, F","v":"230V","f":"50Hz"},"NO":{"p":"C, F","v":"230V","f":"50Hz"},"OM":{"p":"G","v":"230V","f":"50Hz"},"PK":{"p":"C, D","v":"230V","f":"50Hz"},"PW":{"p":"A, B","v":"120V","f":"60Hz"},"PS":{"p":"C, H","v":"230V","f":"50Hz"},"PA":{"p":"A, B","v":"120V","f":"60Hz"},"PG":{"p":"I","v":"240V","f":"50Hz"},"PY":{"p":"A, B, C, N","v":"230V","f":"50Hz"},"PE":{"p":"A, B, C","v":"230V","f":"60Hz"},"PH":{"p":"A, B, C","v":"230V","f":"60Hz"},"PL":{"p":"C, E","v":"230V","f":"50Hz"},"PT":{"p":"C, F","v":"230V","f":"50Hz"},"QA":{"p":"G","v":"240V","f":"50Hz"},"RO":{"p":"C, F","v":"230V","f":"50Hz"},"RU":{"p":"C, F","v":"230V","f":"50Hz"},"RW":{"p":"C, E, F, G","v":"230V","f":"50Hz"},"KN":{"p":"A, B, G","v":"230V","f":"60Hz"},"LC":{"p":"G","v":"230V","f":"50Hz"},"WS":{"p":"I","v":"230V","f":"50Hz"},"SM":{"p":"C, F, L","v":"230V","f":"50Hz"},"SA":{"p":"G","v":"230V","f":"60Hz"},"SN":{"p":"C, E","v":"230V","f":"50Hz"},"RS":{"p":"C, F","v":"230V","f":"50Hz"},"SC":{"p":"G","v":"240V","f":"50Hz"},"SL":{"p":"G","v":"230V","f":"50Hz"},"SG":{"p":"G","v":"230V","f":"50Hz"},"SK":{"p":"C, E","v":"230V","f":"50Hz"},"SI":{"p":"C, F","v":"230V","f":"50Hz"},"SB":{"p":"I","v":"230V","f":"50Hz"},"SO":{"p":"C, G","v":"230V","f":"50Hz"},"ZA":{"p":"C, M, N","v":"230V","f":"50Hz"},"KR":{"p":"C, F","v":"230V","f":"60Hz"},"SS":{"p":"C, D, G","v":"230V","f":"50Hz"},"ES":{"p":"C, F","v":"230V","f":"50Hz"},"LK":{"p":"G","v":"230V","f":"50Hz"},"SD":{"p":"C, D, G","v":"230V","f":"50Hz"},"SR":{"p":"A, B","v":"110V","f":"60Hz"},"SE":{"p":"C, F","v":"230V","f":"50Hz"},"CH":{"p":"C, J","v":"230V","f":"50Hz"},"SY":{"p":"C, E, F, L","v":"230V","f":"50Hz"},"TW":{"p":"A, B","v":"110V","f":"60Hz"},"TJ":{"p":"C, F","v":"230V","f":"50Hz"},"TZ":{"p":"G","v":"230V","f":"50Hz"},"TH":{"p":"A, B, C, O","v":"230V","f":"50Hz"},"TG":{"p":"C, E","v":"230V","f":"50Hz"},"TO":{"p":"I","v":"240V","f":"50Hz"},"TN":{"p":"C, E","v":"230V","f":"50Hz"},"TR":{"p":"C, F","v":"230V","f":"50Hz"},"TM":{"p":"C, F","v":"230V","f":"50Hz"},"TV":{"p":"I","v":"230V","f":"50Hz"},"UG":{"p":"G","v":"240V","f":"50Hz"},"UA":{"p":"C, F","v":"230V","f":"50Hz"},"AE":{"p":"G","v":"230V","f":"50Hz"},"GB":{"p":"G","v":"230V","f":"50Hz"},"US":{"p":"A, B","v":"120V","f":"60Hz"},"UY":{"p":"C, F, L","v":"230V","f":"50Hz"},"UZ":{"p":"C, F","v":"230V","f":"50Hz"},"VU":{"p":"I","v":"230V","f":"50Hz"},"VA":{"p":"C, F, L","v":"230V","f":"50Hz"},"VE":{"p":"A, B","v":"120V","f":"60Hz"},"VN":{"p":"A, B, C","v":"230V","f":"50Hz"},"YE":{"p":"C, D, G","v":"230V","f":"50Hz"},"ZM":{"p":"G","v":"230V","f":"50Hz"},"ZW":{"p":"G","v":"230V","f":"50Hz"},"BA":{"p":"C, F","v":"230V","f":"50Hz"},"CG":{"p":"C, E","v":"230V","f":"50Hz"},"CD":{"p":"C, E","v":"230V","f":"50Hz"},"CI":{"p":"C, E","v":"230V","f":"50Hz"},"ST":{"p":"C, F","v":"230V","f":"50Hz"},"VC":{"p":"A, B, G","v":"230V","f":"50Hz"},"TT":{"p":"A, B","v":"115V","f":"60Hz"},"PR":{"p":"A, B","v":"120V","f":"60Hz"},"IM":{"p":"G","v":"230V","f":"50Hz"},"GL":{"p":"C, F, K","v":"230V","f":"50Hz"},"GI":{"p":"G","v":"230V","f":"50Hz"},"GU":{"p":"A, B","v":"110V","f":"60Hz"},"AW":{"p":"A, B","v":"120V","f":"60Hz"},"CW":{"p":"A, B","v":"127V","f":"50Hz"},"KY":{"p":"A, B","v":"120V","f":"60Hz"}};
+
+// מוצאים קוד מדינה ואזור זמן: מהטיול עצמו, ואם חסרים (טיול ישן) לפי שם היעד
+const metaCache = {};
+async function resolvePlaceMeta(trip) {
+  if (trip.cc && trip.tz) return { cc: trip.cc, tz: trip.tz };
+  const key = trip.place;
+  if (metaCache[key] === undefined) {
+    try {
+      const place = await geocode(String(trip.place).split(',')[0].trim());
+      metaCache[key] = { cc: place.cc || '', tz: place.tz || '' };
+    } catch (e) { metaCache[key] = { cc: '', tz: '' }; }
+  }
+  return { cc: trip.cc || metaCache[key].cc, tz: trip.tz || metaCache[key].tz };
+}
+
+// הפרש שעות בין היעד לישראל בתאריך נתון (כולל שעון קיץ)
+function tzOffsetMinutes(tz, date) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' }).formatToParts(date);
+  const name = (parts.find(x => x.type === 'timeZoneName') || {}).value || 'GMT';
+  const m = /GMT([+-])(\d{1,2}):?(\d{2})?/.exec(name);
+  return m ? (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3] || 0)) : 0;
+}
+function timeDiffText(tz, startISO) {
+  try {
+    const date = parseISO(startISO);
+    const diff = (tzOffsetMinutes(tz, date) - tzOffsetMinutes('Asia/Jerusalem', date)) / 60;
+    if (diff === 0) return 'אותה שעה כמו בישראל';
+    const n = Math.abs(diff);
+    return (diff > 0 ? '+' : '-') + n + (n === 1 ? ' שעה' : ' שעות') + ' (' + (diff > 0 ? 'מקדים את ישראל' : 'מאחר אחרי ישראל') + ')';
+  } catch (e) { return ''; }
+}
+
+// מה אומר מתח היעד לגבי המכשירים שלך
+function voltageAdvice(volt) {
+  const n = parseInt(volt, 10);
+  if (!n) return '';
+  if (n >= 200) return 'אותו מתח כמו בישראל, אז מכשירים ישראליים יעבדו כרגיל.';
+  return 'המתח נמוך מבישראל. בדקי שכתוב על המטען "100-240V" (רוב מטעני הטלפון והמחשב כך). מייבש שיער ומכשירי חימום מישראל עלולים לא לעבוד טוב או להינזק.';
+}
+function plugAdvice(types) {
+  const list = String(types).split(',').map(x => x.trim());
+  if (list.includes('C') || list.includes('E') || list.includes('F')) return 'תקע אירופי (C) של מכשירים ישראליים בדרך כלל נכנס בלי מתאם.';
+  return 'צריך מתאם. בדקי שיש לך מתאם לסוג התקע של היעד.';
+}
+
+let entryToken = 0;
 function renderEntry() {
   const box = $('entrySection');
   box.replaceChildren();
   if (!state) { box.classList.add('hidden'); return; }
+  const token = ++entryToken;
   const country = placeCountry(state.trip.place);
 
   box.appendChild(el('strong', null, '🛂 לפני שנוסעים' + (country ? ' ל' + country : '') + ': כניסה ובטיחות'));
-  box.appendChild(el('div', { className: 'entry-warn' },
-    'המידע המלא נמצא רק במקורות הרשמיים. דרישות כניסה משתנות, ולכן בדקי אותן שם לפני שמזמינים טיסה.'));
 
+  // 1. ויזה: מידע מהטבלה הרשמית
+  const visaBox = el('div', { className: 'visa-box' });
+  box.appendChild(visaBox);
+  visaBox.appendChild(el('div', null, 'בודקת את הדרישות...'));
+
+  // 2. פרטים מהירים (מתמלא כשהנתונים מגיעים)
+  const factsBox = el('div');
+  box.appendChild(factsBox);
+
+  // 3. קישורים והמשך
+  box.appendChild(el('div', { className: 'entry-sub' }, 'קישורים רשמיים ומועילים'));
   const links = el('div', { className: 'entry-links' });
-  ENTRY_LINKS.forEach(l => {
-    const a = el('a', { href: l.url, target: '_blank', rel: 'noopener noreferrer' });
-    const text = el('span', null, l.title);
-    text.appendChild(el('small', null, l.note));
+  const addLink = (title, note, url) => {
+    const a = el('a', { href: url, target: '_blank', rel: 'noopener noreferrer' });
+    const text = el('span', null, title);
+    text.appendChild(el('small', null, note));
     a.append(text, el('span', { 'aria-hidden': 'true' }, '↗'));
     links.appendChild(a);
-  });
+  };
+  ENTRY_LINKS.forEach(l => addLink(l.title, l.note, l.url));
   if (country) {
-    // זה חיפוש בגוגל ולא אתר רשמי, ומסומן כך
+    // חיפוש בגוגל ולא אתר רשמי, ומסומן כך
     const q = 'שגרירות ' + country + ' בישראל אשרת כניסה';
-    const a = el('a', { href: 'https://www.google.com/search?q=' + encodeURIComponent(q), target: '_blank', rel: 'noopener noreferrer' });
-    const text = el('span', null, 'חיפוש: שגרירות ' + country + ' בישראל');
-    text.appendChild(el('small', null, 'חיפוש בגוגל, לא אתר רשמי. חפשי את אתר השגרירות הרשמי'));
-    a.append(text, el('span', { 'aria-hidden': 'true' }, '↗'));
-    links.appendChild(a);
+    addLink('חיפוש: שגרירות ' + country + ' בישראל', 'חיפוש בגוגל, לא אתר רשמי. חפשי את אתר השגרירות הרשמי', 'https://www.google.com/search?q=' + encodeURIComponent(q));
   }
   box.appendChild(links);
 
@@ -1074,6 +1150,73 @@ function renderEntry() {
   box.appendChild(btn);
   box.appendChild(el('div', { id: 'entryMsg', role: 'status' }));
   box.classList.remove('hidden');
+
+  resolvePlaceMeta(state.trip).then((meta) => {
+    if (token !== entryToken) return;
+    const cc = meta.cc;
+    fillVisa(visaBox, cc, country);
+    if (!cc) return;
+
+    const items = [];
+    const plug = PLUG_TABLE[cc];
+    if (plug) {
+      items.push(['תקע חשמל', 'סוג ' + plug.p + ' (בישראל: C/H)']);
+      items.push(['מתח', plug.v + ', ' + plug.f + ' (בישראל: 230V, 50Hz)']);
+    }
+    if (meta.tz && state.trip.start) {
+      const diff = timeDiffText(meta.tz, state.trip.start);
+      if (diff) items.push(['הפרש שעות מישראל', diff]);
+    }
+    if (items.length) {
+      factsBox.appendChild(el('div', { className: 'entry-sub' }, 'חשמל ושעון: מה כדאי לדעת לפני האריזה'));
+      const grid = el('div', { className: 'facts' });
+      items.forEach(([k, v]) => {
+        const cell = el('div', { className: 'fact' });
+        cell.append(el('div', { className: 'k' }, k), el('div', { className: 'v' }, v));
+        grid.appendChild(cell);
+      });
+      factsBox.appendChild(grid);
+      if (plug) {
+        factsBox.appendChild(el('div', { className: 'note' }, plugAdvice(plug.p) + ' ' + voltageAdvice(plug.v)));
+        factsBox.appendChild(el('div', { className: 'note' }, 'מקור התקעים והמתחים: worldstandards.eu. בדקי שוב לפני הנסיעה.'));
+      }
+    }
+
+    // מדריך למטייל (Wikivoyage): לפי השם באנגלית מהטבלה, רק כשהשם פשוט
+    const row = VISA_TABLE[cc];
+    if (row && /^[A-Za-z ]+$/.test(row.n)) {
+      const a = el('a', { href: 'https://en.wikivoyage.org/wiki/' + encodeURIComponent(row.n.replace(/ /g, '_')), target: '_blank', rel: 'noopener noreferrer' });
+      const text = el('span', null, 'מדריך למטייל: ' + row.n + ' (Wikivoyage)');
+      text.appendChild(el('small', null, 'תחבורה, בטיחות ומה לראות. אתר שיתופי באנגלית, לא רשמי'));
+      a.append(text, el('span', { 'aria-hidden': 'true' }, '↗'));
+      links.appendChild(a);
+    }
+  });
+}
+
+function fillVisa(visaBox, cc, country) {
+  visaBox.replaceChildren();
+  const row = cc ? VISA_TABLE[cc] : null;
+  if (cc === 'IL') {
+    visaBox.appendChild(el('div', null, 'היעד הוא ישראל, אין דרישות כניסה לאזרחים.'));
+    return;
+  }
+  if (!row) {
+    visaBox.appendChild(el('div', { className: 'status' }, 'לא מצאתי את היעד בטבלת הוויזות'));
+    visaBox.appendChild(el('div', null, 'בדקי בטבלה הרשמית של משרד החוץ (בקישורים למטה) מה נדרש.'));
+    return;
+  }
+  const ok = row.s === 'e';
+  visaBox.classList.add(ok ? 'ok' : 'need');
+  visaBox.appendChild(el('div', { className: 'status' }, ok ? '✅ ישראלים פטורים מוויזה לתיירות' : '⚠️ נדרשת ויזה לתיירות'));
+  if (row.t) visaBox.appendChild(el('div', { className: 'vnote' }, row.t));
+  visaBox.appendChild(el('div', { className: 'vnote' }, ok
+    ? 'פטור מוויזה לא אומר שאין דרישות נוספות. ייתכנו אישור כניסה מקוון, תוקף דרכון מינימלי, כרטיס חוזר ועוד.'
+    : 'את הוויזה צריך להסדיר לפני הנסיעה, אלא אם כתוב למעלה שאפשר לקבל אותה בהגעה.'));
+  const age = visaSnapshotAgeDays();
+  visaBox.appendChild(el('small', null,
+    'מקור: טבלת הוויזות של משרד החוץ, כפי שעודכנה ב-' + VISA_DATE + '. ' +
+    (age > 150 ? 'הנתונים כבר ישנים, חובה לבדוק בטבלה הרשמית. ' : 'ודאי תמיד מול הטבלה העדכנית בקישור למטה. ')));
 }
 
 function addEntryTodos() {
@@ -1619,14 +1762,14 @@ async function duplicatePastTrip(idx, start, end) {
   if (!source) return;
 
   const old = source.trip;
-  let place = { lat: old.lat, lon: old.lon, label: old.place };
+  let place = { lat: old.lat, lon: old.lon, label: old.place, cc: old.cc, tz: old.tz };
   if (place.lat === undefined || place.lon === undefined) {
     // טיול ישן שנשמר בלי קואורדינטות – מחפשים לפי שם היעד (בלי שם המדינה)
     place = await geocode(old.place.split(', ')[0]);
     place.label = old.place;
   }
   const weather = await getWeather(place, start, end);
-  const trip = { place: old.place, lat: place.lat, lon: place.lon, start: start, end: end, activities: old.activities };
+  const trip = { place: old.place, lat: place.lat, lon: place.lon, cc: place.cc || old.cc, tz: place.tz || old.tz, start: start, end: end, activities: old.activities };
 
   nextId = 1;
   const items = buildList(trip, weather);
@@ -1931,7 +2074,7 @@ $('sharedCheck').addEventListener('change', () => {
 
 async function buildTrip(place, start, end, activities) {
   const weather = await getWeather(place, start, end);
-  const trip = { place: place.label, lat: place.lat, lon: place.lon, start: start, end: end, activities: activities };
+  const trip = { place: place.label, lat: place.lat, lon: place.lon, cc: place.cc, tz: place.tz, start: start, end: end, activities: activities };
   if (state && state.trip.name && state.trip.place === place.label) trip.name = state.trip.name;
   nextId = 1;
   state = { trip: trip, weather: weather, items: withFavorites(buildList(trip, weather)) };
@@ -2332,7 +2475,7 @@ function buildViewState() {
   lastSynced[viewMemberId] = itemsToRecords(itemsFromRemote(m));
   state = {
     trip: {
-      place: t.place || '', lat: t.lat, lon: t.lon, start: t.start, end: t.end,
+      place: t.place || '', lat: t.lat, lon: t.lon, cc: t.cc, tz: t.tz, start: t.start, end: t.end,
       activities: t.activities || [], name: t.name
     },
     weather: remote.weather || { source: 'history', minTemp: 0, maxTemp: 0, rainyDays: 0, maxWind: 0 },
@@ -2608,6 +2751,8 @@ async function createSharedTrip(name, type) {
   const t = state.trip;
   const trip = { place: t.place, start: t.start, end: t.end, activities: t.activities || [] };
   if (t.lat !== undefined) { trip.lat = t.lat; trip.lon = t.lon; }
+  if (t.cc) trip.cc = t.cc;
+  if (t.tz) trip.tz = t.tz;
   if (t.name) trip.name = t.name;
   trip.type = TRIP_TYPES[type] ? type : 'friends';
   await fb('PUT', id, '', {
