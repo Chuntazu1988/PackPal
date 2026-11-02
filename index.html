@@ -634,6 +634,35 @@
   .shared-mode .tabbar button[data-go="more"] { display: none; }
   .shared-mode .tabbar { grid-template-columns: repeat(3, 1fr); }
   .pack-mode .tabbar { display: none; }
+
+  /* ===== ליטושים ===== */
+  .card { animation: rise .45s cubic-bezier(.2,.8,.25,1) both; }
+  .card[data-tab]:nth-of-type(2) { animation-delay: .05s; }
+  .item input[type=checkbox]:checked { animation: tick .35s cubic-bezier(.3,1.6,.5,1); }
+  @keyframes tick { 0% { transform: scale(.7); } 60% { transform: scale(1.3); } 100% { transform: scale(1); } }
+  .item { transition: background .2s; border-radius: 6px; }
+  .item:hover { background: color-mix(in srgb, var(--soft) 55%, transparent); }
+  .item.done { opacity: .75; }
+  .tabbar button { transition: background .2s, color .2s, transform .15s, box-shadow .2s; }
+  .tabbar button:not(.active):hover { background: var(--soft); color: var(--text); }
+  .tabbar button.active .ti { animation: hop .45s cubic-bezier(.3,1.6,.5,1); }
+  @keyframes hop { 0% { transform: translateY(0) scale(1); } 40% { transform: translateY(-4px) scale(1.2); } 100% { transform: translateY(0) scale(1); } }
+  .welcome { padding-top: 26px; border-style: solid; }
+  .welcome::marker { content: none; }
+  .welcome .wiz-q::before { content: "ADMIT ONE"; display: block; margin-bottom: 6px; font: 700 .7rem/1 ui-monospace, "SF Mono", Consolas, monospace; letter-spacing: 3px; color: var(--stamp); direction: ltr; text-align: start; }
+  .welcome-steps { counter-reset: st; }
+  .welcome-steps li { counter-increment: st; position: relative; }
+  .welcome-steps li::after { content: counter(st, decimal-leading-zero); position: absolute; top: 8px; inset-inline-end: 12px; font: 700 .75rem/1 ui-monospace, Consolas, monospace; color: var(--muted); letter-spacing: 1px; }
+  .welcome-steps .ico { filter: saturate(1.1); }
+  .welcome .primary { animation: nudge 2.4s ease-in-out 1.5s infinite; }
+  @keyframes nudge { 0%, 88%, 100% { transform: none; } 92% { transform: translateY(-3px); } 96% { transform: translateY(0); } }
+  .wiz-steps button.active { box-shadow: 0 0 14px var(--glow); }
+  ::selection { background: var(--stamp); color: #fff; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    .card, .item input[type=checkbox]:checked, .tabbar button.active .ti, .welcome .primary, .bp-plane { animation: none !important; }
+    html { scroll-behavior: auto; }
+  }
 </style>
 </head>
 <body>
