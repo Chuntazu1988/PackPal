@@ -3959,6 +3959,13 @@ function installAppIdentity() {
   // ב-Streamlit הקבצים מוגשים מ-/app/static/. כשמריצים את הקובץ לבד (בפיתוח) מ-/static/.
   const base = top.location.origin + (embedded ? '/app/static/' : '/static/');
 
+  // מחליפים את האייקון רק אם הקובץ באמת מוגש (אחרת משאירים את מה שיש, ולא מקבלים אייקון שבור)
+  const probe = new Image();
+  probe.onload = () => applyIdentity(doc, base);
+  probe.src = base + 'favicon-32.png?v=1';
+}
+
+function applyIdentity(doc, base) {
   const setLink = (rel, attrs) => {
     doc.querySelectorAll('link[rel~="' + rel + '"]').forEach(l => l.remove());
     const l = doc.createElement('link');
