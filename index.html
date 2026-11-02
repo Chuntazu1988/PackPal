@@ -836,6 +836,22 @@ async function geocode(name) {
   return (await geocodeAll(name))[0];
 }
 
+// בקשה עם הגבלת זמן: שירות שנתקע לא יתקע את האפליקציה
+async function fetchWithTimeout(url, ms) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms || 8000);
+  try { return await fetch(url, { signal: ctrl.signal }); }
+  finally { clearTimeout(timer); }
+}
+
+const NO_WEATHER = { source: 'none', minTemp: null, maxTemp: null, rainyDays: 0, maxWind: 0 };
+
+// כמו getWeather, אבל אם השירות החיצוני נפל או איטי מחזיר "אין מזג אוויר" במקום לזרוק שגיאה
+async function getWeatherSafe(place, startISO, endISO) {
+  try { return await getWeather(place, startISO, endISO); }
+  catch (e) { return Object.assign({}, NO_WEATHER); }
+}
+
 // מקבל תחזית (עד 16 יום קדימה) או ממוצע משנה שעברה
 async function getWeather(place, startISO, endISO) {
   const today = new Date();
@@ -848,7 +864,7 @@ async function getWeather(place, startISO, endISO) {
     const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + place.lat + '&longitude=' + place.lon +
       '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max' +
       '&timezone=auto&start_date=' + startISO + '&end_date=' + endISO;
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     if (!res.ok) throw new Error('שגיאה בקבלת התחזית');
     daily = (await res.json()).daily;
     source = 'forecast';
@@ -859,7 +875,7 @@ async function getWeather(place, startISO, endISO) {
     const url = 'https://archive-api.open-meteo.com/v1/archive?latitude=' + place.lat + '&longitude=' + place.lon +
       '&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max' +
       '&timezone=auto&start_date=' + toISO(s) + '&end_date=' + toISO(e);
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     if (!res.ok) throw new Error('שגיאה בקבלת נתוני מזג אוויר היסטוריים');
     daily = (await res.json()).daily;
     source = 'history';
@@ -903,6 +919,9 @@ function makeItem(text, cat) {
   return { id: id, text: text, cat: cat, checked: false, qty: 1 };
 }
 
+const GENERIC_WEATHER_CAT = '🌦️ לכל מזג אוויר';
+const WEATHER_CATS = ['🧥 קור', '☀️ חום', '🌧️ גשם ורוח'];
+
 function buildList(trip, w) {
   const items = [];
   const add = (cat, text) => items.push(makeItem(text, cat));
@@ -937,27 +956,36 @@ function buildList(trip, w) {
   add('👕 בגדים', 'פיג\'מה');
   add('👕 בגדים', 'נעליים נוחות');
 
+  // --- אם אין מזג אוויר (השירות לא זמין): פריטים כלליים שמתאימים לכל מזג אוויר ---
+  const hasWeather = w.source !== 'none';
+  if (!hasWeather) {
+    add(GENERIC_WEATHER_CAT, 'שכבות לבוש: משהו חם ומשהו קל');
+    add(GENERIC_WEATHER_CAT, 'מעיל או ג\'קט');
+    add(GENERIC_WEATHER_CAT, 'מטרייה מתקפלת');
+    add(GENERIC_WEATHER_CAT, 'משקפי שמש וקרם הגנה');
+  }
+
   // --- לפי טמפרטורה ---
-  if (w.minTemp < 0) {
+  if (hasWeather && w.minTemp < 0) {
     add('🧥 קור', 'מעיל חם מאוד');
     add('🧥 קור', 'תחתוניות תרמיות');
     add('🧥 קור', 'כפפות, כובע צמר וצעיף');
-  } else if (w.minTemp < 10) {
+  } else if (hasWeather && w.minTemp < 10) {
     add('🧥 קור', 'מעיל חם');
     add('🧥 קור', 'כובע צמר וצעיף');
     add('🧥 קור', 'סוודר / פליז');
-  } else if (w.minTemp < 18) {
+  } else if (hasWeather && w.minTemp < 18) {
     add('🧥 קור', 'ג\'קט קל');
     add('🧥 קור', 'סוודר דק');
   }
-  if (w.maxTemp >= 28) {
+  if (hasWeather && w.maxTemp >= 28) {
     add('☀️ חום', 'מכנסיים קצרים');
     add('☀️ חום', 'בגדים קלים ונושמים');
     add('☀️ חום', 'כובע מצחייה');
     add('☀️ חום', 'משקפי שמש');
     add('☀️ חום', 'קרם הגנה');
     add('☀️ חום', 'בקבוק מים');
-  } else if (w.maxTemp >= 22) {
+  } else if (hasWeather && w.maxTemp >= 22) {
     add('☀️ חום', 'משקפי שמש');
     add('☀️ חום', 'קרם הגנה');
   }
@@ -1299,6 +1327,16 @@ function renderWeather() {
   const w = state.weather, t = state.trip;
 
   box.appendChild(el('strong', null, '🌤️ מזג האוויר ב' + t.place));
+  if (w.source === 'none') {
+    box.appendChild(el('div', { className: 'note' },
+      'לא הצלחתי להשיג מזג אוויר כרגע, כי השירות החיצוני לא זמין. בניתי רשימה כללית שמתאימה לכל מזג אוויר, ואפשר לעדכן אותה כשהשירות חוזר.'));
+    const retry = el('button', { type: 'button', className: 'secondary' }, '🔄 נסי שוב להשיג מזג אוויר');
+    retry.addEventListener('click', () => retryWeather(retry));
+    box.appendChild(retry);
+    box.appendChild(el('div', { id: 'weatherMsg', className: 'note', role: 'status' }));
+    box.classList.remove('hidden');
+    return;
+  }
   const stats = el('div', { className: 'stats' });
   stats.appendChild(el('span', { className: 'stat' }, '🌡️ ' + w.minTemp + '° עד ' + w.maxTemp + '°'));
   stats.appendChild(el('span', { className: 'stat' }, '🌧️ ' + w.rainyDays + ' ימי גשם'));
@@ -1309,6 +1347,35 @@ function renderWeather() {
       ? 'תחזית אמיתית לתאריכי הטיול.'
       : 'הטיול רחוק, אז זה ממוצע של אותם תאריכים בשנה שעברה.'));
   box.classList.remove('hidden');
+}
+
+// מנסה שוב להשיג מזג אוויר. אם הצליח: מחליף את הפריטים הכלליים בפריטים לפי מזג האוויר, בלי לגעת בסימונים אחרים.
+async function retryWeather(btn) {
+  if (!state) return;
+  const t = state.trip;
+  btn.disabled = true;
+  btn.textContent = 'בודק...';
+  const place = { lat: t.lat, lon: t.lon };
+  let w = null;
+  if (place.lat !== undefined) {
+    try { w = await getWeather(place, t.start, t.end); } catch (e) { w = null; }
+  }
+  if (!w) {
+    btn.disabled = false;
+    btn.textContent = '🔄 נסי שוב להשיג מזג אוויר';
+    const m = $('weatherMsg');
+    if (m) m.textContent = 'עדיין לא זמין. נסי שוב בעוד כמה דקות.';
+    return;
+  }
+  state.weather = w;
+  // מסירים את הפריטים הכלליים, ומוסיפים את הפריטים של מזג האוויר שעוד לא ברשימה
+  state.items = state.items.filter(i => i.cat !== GENERIC_WEATHER_CAT);
+  const have = new Set(state.items.map(i => i.text));
+  const fresh = buildList(t, w).filter(i => WEATHER_CATS.includes(i.cat) && !have.has(i.text));
+  fresh.forEach(i => { i.id = sharedMode ? uid() : nextId++; state.items.push(i); });
+  save();
+  renderWeather();
+  renderList();
 }
 
 // השם שמוצג לטיול: שם שהמשתמשת נתנה, ואם אין – שם היעד
@@ -1702,7 +1769,7 @@ async function duplicatePastTrip(idx, start, end) {
     place = await geocode(old.place.split(', ')[0]);
     place.label = old.place;
   }
-  const weather = await getWeather(place, start, end);
+  const weather = await getWeatherSafe(place, start, end);
   const trip = { place: old.place, lat: place.lat, lon: place.lon, cc: place.cc || old.cc, tz: place.tz || old.tz, start: start, end: end, activities: old.activities };
 
   nextId = 1;
@@ -1911,7 +1978,7 @@ function buildPrintHtml() {
 
   let body = '<h1>🧳 ' + escapeHtml(tripName(t)) + '</h1>';
   body += '<p class="meta">' + escapeHtml(t.place) + ' · ' + fmtDate(t.start) + ' – ' + fmtDate(t.end) +
-    '<br>🌡️ ' + w.minTemp + '° עד ' + w.maxTemp + '° · 🌧️ ' + w.rainyDays + ' ימי גשם · 💨 רוח עד ' + w.maxWind + ' קמ"ש</p>';
+    (w.source === 'none' ? '' : '<br>🌡️ ' + w.minTemp + '° עד ' + w.maxTemp + '° · 🌧️ ' + w.rainyDays + ' ימי גשם · 💨 רוח עד ' + w.maxWind + ' קמ"ש') + '</p>';
   Object.keys(groups).forEach(cat => {
     body += '<div class="cat"><h2>' + escapeHtml(cat) + '</h2><ul>';
     groups[cat].forEach(it => {
@@ -2011,7 +2078,7 @@ $('sharedCheck').addEventListener('change', () => {
 });
 
 async function buildTrip(place, start, end, activities) {
-  const weather = await getWeather(place, start, end);
+  const weather = await getWeatherSafe(place, start, end);
   wizOpen = false;
   const trip = { place: place.label, lat: place.lat, lon: place.lon, cc: place.cc, tz: place.tz, start: start, end: end, activities: activities };
   if (state && state.trip.name && state.trip.place === place.label) trip.name = state.trip.name;
