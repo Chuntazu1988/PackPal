@@ -277,6 +277,12 @@
   .past-head strong { flex: 1; }
   .past-head button { padding: 6px 12px; font-size: .9rem; }
   .danger-btn { background: var(--danger); color: #fff; }
+  .suggest { list-style: none; margin: 6px 0 0; padding: 4px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+  .suggest li { padding: 10px 12px; border-radius: 10px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .suggest li small { color: var(--muted); white-space: nowrap; }
+  .suggest li:hover, .suggest li.active { background: var(--soft); }
+  .suggest li.msg { cursor: default; color: var(--muted); }
+  .suggest li.msg:hover { background: none; }
   .choices { margin-top: 8px; }
   .choices .hint { color: var(--muted); font-size: .9rem; margin-bottom: 6px; }
   .choices button { display: block; width: 100%; text-align: start; margin-top: 6px; background: var(--soft); color: var(--text); border: 1px solid var(--border); }
@@ -651,7 +657,8 @@
       <div class="step" data-step="1">
         <h2 class="wiz-q">לאן טסים? ✈️</h2>
         <label for="destination" class="sr-only">יעד</label>
-        <input type="text" id="destination" placeholder="עיר או מדינה, למשל: פריז או ספרינגפילד, אילינוי">
+        <input type="text" id="destination" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="placeSuggest" aria-autocomplete="list" placeholder="עיר או מדינה, למשל: פריז או ספרינגפילד, אילינוי">
+        <ul id="placeSuggest" class="suggest hidden" role="listbox" aria-label="הצעות ליעד"></ul>
         <div id="placeChoices" class="choices hidden" role="group" aria-label="בחרי את המקום הנכון"></div>
         <div id="placeFound" class="note" role="status"></div>
       </div>
@@ -2868,6 +2875,71 @@ function showChoices(places, onPick) {
 }
 
 $('destination').addEventListener('input', hideChoices);
+
+/* הצעות תוך כדי הקלדה (עברית או אנגלית) */
+let suggestTimer = null, suggestSeq = 0, suggestItems = [], suggestIdx = -1;
+
+function hideSuggest() {
+  suggestSeq++;
+  suggestItems = []; suggestIdx = -1;
+  $('placeSuggest').classList.add('hidden');
+  $('placeSuggest').replaceChildren();
+  $('destination').setAttribute('aria-expanded', 'false');
+}
+
+function markSuggest() {
+  [...$('placeSuggest').children].forEach((li, i) => li.classList.toggle('active', i === suggestIdx));
+}
+
+function chooseSuggest(p) {
+  hideSuggest();
+  $('destination').value = p.label;
+  pickPlace(p);
+  setStep(2);
+}
+
+function showSuggest(items, msg) {
+  const box = $('placeSuggest');
+  box.replaceChildren();
+  suggestItems = items; suggestIdx = -1;
+  if (msg) box.appendChild(el('li', { className: 'msg' }, msg));
+  items.forEach(p => {
+    const li = el('li', { role: 'option' });
+    li.appendChild(el('span', null, p.label));
+    if (p.population) li.appendChild(el('small', null, p.population.toLocaleString('he-IL') + ' תושבים'));
+    // mousedown ולא click: כדי שההצעה תיבחר לפני שהשדה מאבד פוקוס
+    li.addEventListener('mousedown', (ev) => { ev.preventDefault(); chooseSuggest(p); });
+    box.appendChild(li);
+  });
+  box.classList.toggle('hidden', !items.length && !msg);
+  $('destination').setAttribute('aria-expanded', String(items.length > 0));
+}
+
+$('destination').addEventListener('input', () => {
+  clearTimeout(suggestTimer);
+  const q = $('destination').value.trim();
+  const name = q.split(',')[0].trim();
+  if (name.length < 2) { hideSuggest(); return; }
+  const mySeq = ++suggestSeq;
+  suggestTimer = setTimeout(async () => {
+    try {
+      const places = (await geocodeAll(q)).slice(0, 6);
+      if (mySeq === suggestSeq) showSuggest(places);
+    } catch (e) {
+      // אין תוצאות (או שהשירות איטי): לא מפריעים, ההקלדה ממשיכה
+      if (mySeq === suggestSeq) showSuggest([], /לא מצאתי/.test(e.message || '') ? 'אין הצעות, אפשר לנסות שם אחר או באנגלית' : '');
+    }
+  }, 250);
+});
+
+$('destination').addEventListener('keydown', (ev) => {
+  if (!suggestItems.length) return;
+  if (ev.key === 'ArrowDown') { ev.preventDefault(); suggestIdx = (suggestIdx + 1) % suggestItems.length; markSuggest(); }
+  else if (ev.key === 'ArrowUp') { ev.preventDefault(); suggestIdx = (suggestIdx - 1 + suggestItems.length) % suggestItems.length; markSuggest(); }
+  else if (ev.key === 'Enter' && suggestIdx >= 0) { ev.preventDefault(); chooseSuggest(suggestItems[suggestIdx]); }
+  else if (ev.key === 'Escape') hideSuggest();
+});
+$('destination').addEventListener('blur', () => setTimeout(hideSuggest, 150));
 
 /* =========================================================
    מסך פתיחה למי שנכנסת בפעם הראשונה
