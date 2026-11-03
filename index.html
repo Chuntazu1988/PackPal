@@ -682,6 +682,16 @@
   .conv-cell { margin: 0; font-weight: 800; min-width: 2.2rem; text-align: center; }
   .conv-eq { color: var(--muted); }
   @media (max-width: 420px) { .quick-grid { grid-template-columns: 1fr 1fr; } .quick-tile:first-child { grid-column: 1 / -1; } }
+
+  /* ===== משקל משוער ===== */
+  .weight-box { margin: 2px 0 10px; }
+  .weight-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: .95rem; }
+  .weight-limit { padding: 4px 8px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); font: inherit; font-size: .9rem; }
+  .weight-bar { height: 8px; margin: 8px 0 4px; border-radius: 6px; background: var(--track); overflow: hidden; }
+  .weight-bar > div { height: 100%; border-radius: 6px; background: var(--ok); transition: width .4s; }
+  .weight-bar > div.near { background: var(--stamp); }
+  .weight-bar > div.over { background: var(--danger); }
+  .pack-mode .weight-box { display: none; }
 </style>
 </head>
 <body>
@@ -856,6 +866,7 @@
       <button type="button" class="secondary" id="collapseAllBtn"></button>
     </div>
     <div class="bar"><div id="barFill"></div></div>
+    <div id="weightBox" class="weight-box"></div>
     <div id="packDone" class="pack-done hidden" role="status">🎉 הכל ארוז! נסיעה טובה ✈️</div>
     <div class="search-row">
       <input type="search" id="itemSearch" placeholder="🔍 חיפוש ברשימה..." aria-label="חיפוש ברשימה" autocomplete="off">
@@ -2840,6 +2851,82 @@ function applyStateToPage() {
   renderPast();
 }
 
+/* =========================================================
+   הערכת משקל המזוודה (הערכה גסה לפי משקל טיפוסי של כל פריט)
+   ========================================================= */
+
+// [ביטוי בטקסט הפריט, גרם ליחידה]. הראשון שמתאים קובע. פריט שלא מוכר = WEIGHT_DEFAULT.
+const WEIGHT_RULES = [
+  [/דרכון|כרטיסי טיסה|כרטיס אשראי|ביטוח|רישיון נהיגה|כרטיסי ביקור|מפות להורדה/, 20],
+  [/תחתונים/, 40], [/גרביים לטיולים/, 120], [/גרביים/, 60], [/חולצות/, 180],
+  [/מכנסיים ארוכים/, 500], [/פיג'מה/, 300], [/נעלי הליכה נוחות/, 800], [/נעלי הליכה/, 1000],
+  [/נעליים עמידות/, 900], [/נעלי ריצה/, 700], [/נעליים אלגנטיות/, 700], [/נעלי מים/, 400], [/נעליים נוחות/, 800],
+  [/כפכפים/, 300], [/מעיל חם מאוד/, 1500], [/מעיל חם/, 1200], [/תחתוניות תרמיות/, 400],
+  [/כפפות, כובע צמר/, 400], [/כובע צמר/, 300], [/סוודר \/ פליז/, 500], [/סוודר דק/, 350], [/ג'קט קל/, 500],
+  [/מעיל גשם/, 400], [/מעיל רוח/, 350], [/מעיל או ג'קט/, 700], [/שכבות לבוש/, 600], [/מטרייה/, 250],
+  [/משקפי שמש וקרם/, 200], [/משקפי סקי/, 500], [/משקפי שמש/, 60], [/קרם הגנה/, 150], [/כובע מצחייה/, 80],
+  [/בקבוק מים/, 150], [/מכנסיים קצרים/, 250], [/בגדים קלים/, 500], [/בגד ים/, 150], [/מגבת חוף/, 500],
+  [/ציוד סקי/, 5000], [/מכנסי סקי/, 2500], [/תרמיל יום/, 600], [/תיק צד/, 300], [/בגדים מכובדים/, 1200],
+  [/מחשב נייד/, 1800], [/אוהל ושק שינה/, 4500], [/פנס ראש/, 100], [/ספריי/, 150], [/בגדים לערב/, 600],
+  [/מסכה ושנורקל/, 600], [/חולצת הגנה/, 200], [/קסדה/, 400], [/מכנסי רכיבה/, 400], [/בגדי ספורט/, 400],
+  [/שעון|רצועת יד/, 100], [/חלוק/, 1000], [/ספר לקריאה/, 400], [/מצלמה/, 800], [/סוללות|מטען למצלמה/, 200],
+  [/חצובה/, 500], [/חיתולים/, 1500], [/צעצועים/, 600], [/חטיפים ובקבוק/, 500], [/עגלה|מנשא/, 5000],
+  [/חטיפים ומים/, 1000], [/מטען לרכב/, 150], [/טלפון \+ מטען/, 350], [/מטען נייד/, 350], [/מתאם/, 80], [/אוזניות/, 100],
+  [/מברשת ומשחת/, 100], [/דאודורנט/, 400], [/תרופות אישיות/, 200], [/תרופות בסיסיות/, 150], [/מזומן/, 20]
+];
+const WEIGHT_DEFAULT = 200;
+const WEIGHT_LIMITS = [7, 8, 10, 15, 20, 23, 32];
+const WLIMIT_KEY = 'packpal-wlimit';
+
+// כמה יחידות יש בפריט: "5 זוגות" = 5, "(2-3)" = 2.5, "(2)" = 2, אחרת 1
+function itemUnits(text) {
+  let m = /^(\d+)\s/.exec(text);
+  if (m) return Number(m[1]);
+  m = /\((\d+)-(\d+)/.exec(text);
+  if (m) return (Number(m[1]) + Number(m[2])) / 2;
+  m = /\((\d+)\)/.exec(text);
+  if (m) return Number(m[1]);
+  return 1;
+}
+
+function itemGrams(it) {
+  const rule = WEIGHT_RULES.find(r => r[0].test(it.text));
+  const unit = rule ? rule[1] : WEIGHT_DEFAULT;
+  return unit * itemUnits(it.text) * (it.qty || 1);
+}
+
+function renderWeight() {
+  const box = $('weightBox');
+  if (!box) return;
+  box.replaceChildren();
+  if (!state || !state.items.length) return;
+  let limit = 20;
+  try { const v = Number(localStorage.getItem(WLIMIT_KEY)); if (WEIGHT_LIMITS.includes(v)) limit = v; } catch (e) {}
+  const kg = state.items.reduce((sum, it) => sum + itemGrams(it), 0) / 1000;
+  const ratio = kg / limit;
+
+  const head = el('div', { className: 'weight-head' });
+  head.appendChild(el('span', null, '⚖️ משקל משוער: '));
+  head.appendChild(el('strong', null, kg.toLocaleString('he-IL', { maximumFractionDigits: 1 }) + ' ק"ג'));
+  head.appendChild(el('span', null, ' מתוך '));
+  const sel = el('select', { className: 'weight-limit' });
+  sel.setAttribute('aria-label', 'מגבלת משקל');
+  WEIGHT_LIMITS.forEach(v => { const o = el('option', { value: String(v) }, v + ' ק"ג'); if (v === limit) o.selected = true; sel.appendChild(o); });
+  sel.addEventListener('change', () => { try { localStorage.setItem(WLIMIT_KEY, sel.value); } catch (e) {} renderWeight(); });
+  head.appendChild(sel);
+  box.appendChild(head);
+
+  const bar = el('div', { className: 'weight-bar' });
+  const fill = el('div', { className: ratio > 1 ? 'over' : ratio > 0.85 ? 'near' : '' });
+  fill.style.width = Math.min(100, Math.round(ratio * 100)) + '%';
+  bar.appendChild(fill);
+  box.appendChild(bar);
+  const msg = ratio > 1 ? 'עברת את המגבלה ב-' + (kg - limit).toLocaleString('he-IL', { maximumFractionDigits: 1 }) + ' ק"ג. אפשר להוריד פריטים או לבדוק מזוודה גדולה יותר.'
+    : ratio > 0.85 ? 'קרוב למגבלה, כדאי להשאיר מקום לקניות.'
+    : 'יש עוד מקום.';
+  box.appendChild(el('div', { className: 'note' }, msg + ' הערכה גסה לפי משקל טיפוסי של פריטים, לא כולל משקל המזוודה עצמה ומה שלובשים בטיסה.'));
+}
+
 // חותמת "נארז!" כשהרשימה הושלמה עכשיו (לא בכל טעינה של רשימה שכבר הושלמה)
 let wasAllPacked = null;
 function stampPacked() {
@@ -2861,6 +2948,7 @@ function renderProgress() {
   }
   wasAllPacked = all;
   updateTabs();
+  renderWeight();
   $('barFill').style.width = pct + '%';
   $('progressText').textContent = 'ארזת ' + done + ' מתוך ' + total + ' (' + pct + '%)';
   $('packDone').classList.toggle('hidden', !(packMode && total > 0 && done === total));
