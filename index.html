@@ -693,6 +693,20 @@
   .weight-bar > div.near { background: var(--stamp); }
   .weight-bar > div.over { background: var(--danger); }
   .pack-mode .weight-box { display: none; }
+
+  /* ===== טיימר מרגש יותר ===== */
+  .cd-num { font-size: 3.4rem; letter-spacing: -1px; text-shadow: 0 2px 0 color-mix(in srgb, var(--stamp) 45%, transparent), 0 0 24px var(--glow); }
+  .cd-tomorrow { font-size: 1.6rem; font-weight: 900; }
+  .cd-caption { margin-top: 2px; font-size: .95rem; font-weight: 700; color: var(--muted); }
+  .cd-clock { display: flex; gap: 8px; margin-top: 12px; direction: ltr; justify-content: center; }
+  .cd-cell { min-width: 74px; padding: 8px 6px 6px; border-radius: 10px; text-align: center; background: var(--hero-top); color: var(--hero-text); box-shadow: 0 3px 0 color-mix(in srgb, var(--hero-top) 55%, #000), 0 0 18px var(--glow); }
+  .cd-cell b { display: block; font: 800 1.9rem/1 ui-monospace, "SF Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
+  .cd-cell span { display: block; margin-top: 4px; font-size: .7rem; letter-spacing: 1px; opacity: .8; }
+  .cd-cell b.flip { animation: cdflip .35s ease; }
+  @keyframes cdflip { 0% { transform: translateY(-6px) scale(1.08); opacity: .4; } 100% { transform: none; opacity: 1; } }
+  .countdown.big.soon .cd-cell { box-shadow: 0 3px 0 color-mix(in srgb, var(--hero-top) 55%, #000), 0 0 22px var(--stamp); }
+  .cd-plane { filter: drop-shadow(0 3px 3px rgba(0,0,0,.25)); }
+  @media (prefers-reduced-motion: reduce) { .cd-cell b.flip { animation: none; } }
 </style>
 </head>
 <body>
@@ -2365,6 +2379,7 @@ function countUp(node, to, ms) {
 }
 
 let lastCountdownKey = '';
+let cdTimer = null;
 
 function renderCountdown() {
   const box = $('countdown');
@@ -2380,6 +2395,7 @@ function renderCountdown() {
   const animate = key !== lastCountdownKey;
   lastCountdownKey = key;
 
+  clearInterval(cdTimer);
   box.className = 'countdown';
   box.replaceChildren();
 
@@ -2406,10 +2422,54 @@ function renderCountdown() {
   const soon = toStart <= 3 && !allPacked;
   if (soon) box.classList.add('soon');
 
+  // היעד: חצות בתחילת יום היציאה. הימים והשעות נספרים בזמן אמת.
+  const target = parseISO(t.start);
+  target.setHours(0, 0, 0, 0);
+  const clockDays = Math.max(0, Math.floor((target - Date.now()) / 86400000));
+
   const main = el('div', { className: 'cd-main' });
-  const num = el('span', { className: 'cd-num' }, animate ? '0' : String(toStart));
-  main.append(num, el('span', { className: 'cd-unit' }, toStart === 1 ? 'יום אחד לטיול, מחר!' : 'ימים לטיול'));
+  const num = el('span', { className: 'cd-num' }, animate ? '0' : String(clockDays));
+  if (clockDays >= 1) {
+    main.append(num, el('span', { className: 'cd-unit' }, clockDays === 1 ? 'יום אחד לטיול!' : 'ימים לטיול'));
+  } else {
+    main.append(el('span', { className: 'cd-unit cd-tomorrow' }, 'הטיול מתחיל מחר! 🎉'));
+  }
   box.appendChild(main);
+
+  const caption = clockDays > 30 ? 'יש זמן, אפשר להתחיל לארוז בנחת 🧳'
+    : clockDays > 7 ? 'הספירה לאחור התחילה ✨'
+    : clockDays > 3 ? 'עוד שבוע! הגיע הזמן לארוז 🎒'
+    : 'כמעט שם! ✈️';
+  box.appendChild(el('div', { className: 'cd-caption' }, caption));
+
+  // שעון חי: שעות, דקות ושניות
+  const clock = el('div', { className: 'cd-clock', 'aria-hidden': 'true' });
+  const cells = ['שעות', 'דקות', 'שניות'].map(label => {
+    const n = el('b', null, '00');
+    const c = el('div', { className: 'cd-cell' });
+    c.appendChild(n);
+    c.appendChild(el('span', null, label));
+    clock.appendChild(c);
+    return n;
+  });
+  box.appendChild(clock);
+  const tick = () => {
+    if (!clock.isConnected) { clearInterval(cdTimer); return; }
+    let ms = Math.max(0, target - Date.now());
+    ms %= 86400000;
+    const h = Math.floor(ms / 3600000); ms -= h * 3600000;
+    const m = Math.floor(ms / 60000); ms -= m * 60000;
+    const sec = Math.floor(ms / 1000);
+    [h, m, sec].forEach((v, i) => {
+      const txt = String(v).padStart(2, '0');
+      if (cells[i].textContent !== txt) {
+        cells[i].textContent = txt;
+        cells[i].classList.remove('flip'); void cells[i].offsetWidth; cells[i].classList.add('flip');
+      }
+    });
+  };
+  tick();
+  cdTimer = setInterval(tick, 1000);
 
   const progress = Math.max(0.04, Math.min(1, 1 - Math.min(toStart, 60) / 60));
   const track = el('div', { className: 'cd-track', 'aria-hidden': 'true' });
@@ -2417,15 +2477,16 @@ function renderCountdown() {
   const plane = el('span', { className: 'cd-plane' }, '✈️');
   track.append(el('div', { className: 'cd-line' }), fill, plane, el('span', { className: 'cd-dest' }, '📍'));
   box.appendChild(track);
+  // המטוס נשאר בתוך המסלול: 22 פיקסלים מכל קצה, כדי שהקצה שלו לא ייחתך
   const place = () => {
-    const w = track.clientWidth - 20;
+    const w = track.clientWidth - 44;
+    fill.style.insetInlineStart = '22px';
     fill.style.width = Math.round(w * progress) + 'px';
-    plane.style.insetInlineStart = (10 + Math.round(w * progress)) + 'px';
+    plane.style.insetInlineStart = (22 + Math.round(w * progress)) + 'px';
   };
   if (animate) {
-    // המטוס יוצא מתחילת המסלול ומגיע למקומו
     requestAnimationFrame(() => requestAnimationFrame(place));
-    countUp(num, toStart, 1100);
+    if (clockDays >= 1) countUp(num, clockDays, 1100);
   } else {
     fill.style.transition = plane.style.transition = 'none';
     requestAnimationFrame(place);
