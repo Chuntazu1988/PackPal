@@ -669,6 +669,19 @@
   #devBanner small { display: inline; font-size: .8rem; font-weight: 600; margin-inline-start: 8px; }
 
   .attr-item .desc-he { color: var(--muted); font-size: .9rem; margin: 4px 0 8px; }
+
+  /* ===== מידע מהיר ===== */
+  .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .quick-tile { padding: 10px; border: 1.5px dashed var(--border); border-radius: 10px; text-align: center; }
+  .quick-tile .q-label { font-size: .78rem; color: var(--muted); }
+  .quick-tile .q-value { margin-top: 4px; font-weight: 800; font-size: .95rem; line-height: 1.3; }
+  .quick-conv { margin-top: 12px; }
+  .q-rate { font-weight: 700; margin-bottom: 8px; direction: ltr; text-align: center; unicode-bidi: isolate; }
+  .conv-row { display: flex; align-items: center; gap: 6px; }
+  .conv-row input { flex: 1; min-width: 0; text-align: center; direction: ltr; }
+  .conv-cell { margin: 0; font-weight: 800; min-width: 2.2rem; text-align: center; }
+  .conv-eq { color: var(--muted); }
+  @media (max-width: 420px) { .quick-grid { grid-template-columns: 1fr 1fr; } .quick-tile:first-child { grid-column: 1 / -1; } }
 </style>
 </head>
 <body>
@@ -819,6 +832,7 @@
   <section id="entrySection" class="card hidden" data-tab="before"></section>
 
   <!-- ===== המלצות לאטרקציות (Wikivoyage) ===== -->
+  <section id="quickSection" class="card hidden" data-tab="dest"></section>
   <section id="transSection" class="card hidden" data-tab="dest"></section>
   <section id="attrSection" class="card hidden" data-tab="dest"></section>
 
@@ -2021,6 +2035,133 @@ const RIDE_APPS = [
   { name: 'Yandex Go', url: 'https://go.yandex/', cc: 'RU KZ GE AM AZ UZ BY' }
 ];
 
+/* =========================================================
+   מידע מהיר ליעד: מטבע ושער, מספר חירום, צד נהיגה
+   ========================================================= */
+
+// קוד מדינה -> [מטבע, מספר חירום]. מספרי חירום כלליים; בחלק מהמדינות יש מספרים נפרדים למשטרה ולאמבולנס.
+const QUICK_INFO = {};
+(function () {
+  const add = (ccs, cur, em) => ccs.split(' ').forEach(c => { QUICK_INFO[c] = [cur, em]; });
+  add('AT BE HR CY EE FI FR DE GR IT LV LT LU MT NL PT SK SI ES BG', 'EUR', '112');
+  add('IE', 'EUR', '112 או 999');
+  add('ME', 'EUR', '112');
+  add('GB', 'GBP', '999 או 112');
+  add('CH', 'CHF', '112 (משטרה 117, אמבולנס 144)');
+  add('NO', 'NOK', 'משטרה 112, אמבולנס 113');
+  add('SE', 'SEK', '112'); add('DK', 'DKK', '112'); add('PL', 'PLN', '112'); add('CZ', 'CZK', '112');
+  add('HU', 'HUF', '112'); add('RO', 'RON', '112'); add('IS', 'ISK', '112'); add('TR', 'TRY', '112');
+  add('RS', 'RSD', 'משטרה 192, אמבולנס 194'); add('AL', 'ALL', '112'); add('MK', 'MKD', '112'); add('BA', 'BAM', '112');
+  add('UA', 'UAH', '112'); add('GE', 'GEL', '112'); add('AM', 'AMD', '112'); add('RU', 'RUB', '112');
+  add('US', 'USD', '911'); add('CA', 'CAD', '911'); add('MX', 'MXN', '911');
+  add('BR', 'BRL', 'משטרה 190, אמבולנס 192'); add('AR', 'ARS', '911'); add('CL', 'CLP', 'משטרה 133, אמבולנס 131');
+  add('CO', 'COP', '123'); add('PE', 'PEN', 'משטרה 105, אמבולנס 116'); add('EC', 'USD', '911'); add('UY', 'UYU', '911');
+  add('CR', 'CRC', '911'); add('PA', 'USD', '911'); add('DO', 'DOP', '911');
+  add('AU', 'AUD', '000'); add('NZ', 'NZD', '111');
+  add('JP', 'JPY', 'משטרה 110, אמבולנס וכיבוי 119'); add('KR', 'KRW', 'משטרה 112, אמבולנס 119');
+  add('CN', 'CNY', 'משטרה 110, אמבולנס 120'); add('HK', 'HKD', '999'); add('TW', 'TWD', 'משטרה 110, אמבולנס 119');
+  add('SG', 'SGD', 'משטרה 999, אמבולנס 995'); add('MY', 'MYR', '999'); add('TH', 'THB', 'משטרה 191, אמבולנס 1669');
+  add('VN', 'VND', 'משטרה 113, אמבולנס 115'); add('PH', 'PHP', '911'); add('ID', 'IDR', 'משטרה 110, אמבולנס 118 או 119');
+  add('IN', 'INR', '112'); add('LK', 'LKR', 'משטרה 119, אמבולנס 1990'); add('NP', 'NPR', 'משטרה 100, אמבולנס 102');
+  add('KH', 'KHR', 'משטרה 117, אמבולנס 119'); add('LA', 'LAK', 'משטרה 191, אמבולנס 195'); add('MV', 'MVR', 'משטרה 119, אמבולנס 102');
+  add('AE', 'AED', 'משטרה 999, אמבולנס 998'); add('SA', 'SAR', 'משטרה 911, אמבולנס 997'); add('QA', 'QAR', '999');
+  add('KW', 'KWD', '112'); add('BH', 'BHD', '999'); add('OM', 'OMR', '9999'); add('JO', 'JOD', 'משטרה 911, אמבולנס 193');
+  add('EG', 'EGP', 'משטרה 122, אמבולנס 123'); add('MA', 'MAD', 'משטרה 19, אמבולנס 15'); add('TN', 'TND', 'משטרה 197, אמבולנס 190');
+  add('ZA', 'ZAR', 'משטרה 10111, אמבולנס 10177'); add('KE', 'KES', '999 או 112'); add('TZ', 'TZS', '112');
+  add('NG', 'NGN', '112'); add('GH', 'GHS', '112'); add('MU', 'MUR', '999');
+})();
+
+const LEFT_DRIVE = 'GB IE MT CY AU NZ JP TH IN LK NP ID MY SG HK MO ZA KE TZ BD PK BN FJ JM BS BB TT MU MZ ZM ZW BW NA UG MV'.split(' ');
+
+const RATES_KEY = 'packpal-rates';
+let ratesToken = 0;
+
+// שערי המרה לשקל (ExchangeRate-API, חינמי). שומרים במכשיר: ככה יש שער גם בלי אינטרנט (בטיסה).
+async function loadRates() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(RATES_KEY)); } catch (e) {}
+  const fresh = saved && saved.rates && Date.now() - saved.at < 12 * 3600 * 1000;
+  if (fresh) return { rates: saved.rates, at: saved.at, stale: false };
+  try {
+    const res = await fetchWithTimeout('https://open.er-api.com/v6/latest/ILS', 8000);
+    if (!res.ok) throw new Error('rates ' + res.status);
+    const data = await res.json();
+    if (data.result !== 'success' || !data.rates) throw new Error('rates data');
+    const out = { rates: data.rates, at: Date.now() };
+    try { localStorage.setItem(RATES_KEY, JSON.stringify(out)); } catch (e) {}
+    return { rates: out.rates, at: out.at, stale: false };
+  } catch (e) {
+    if (saved && saved.rates) return { rates: saved.rates, at: saved.at, stale: true };
+    throw e;
+  }
+}
+
+function fmtNum(n) {
+  const abs = Math.abs(n);
+  const d = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
+  return n.toLocaleString('he-IL', { maximumFractionDigits: d });
+}
+
+function renderQuick() {
+  const box = $('quickSection');
+  box.replaceChildren();
+  const token = ++ratesToken;
+  const cc = state ? String(state.trip.cc || '').toUpperCase() : '';
+  const info = QUICK_INFO[cc];
+  if (!state || !cc || cc === 'IL' || !info) { box.classList.add('hidden'); return; }
+  const city = String(state.trip.place).split(',')[0].trim();
+  const [cur, emergency] = info;
+
+  box.appendChild(el('strong', null, '⚡ מידע מהיר על ' + (placeCountry(state.trip.place) || city)));
+  box.classList.remove('hidden');
+
+  const grid = el('div', { className: 'quick-grid' });
+  const tile = (icon, label, value) => {
+    const t = el('div', { className: 'quick-tile' });
+    t.appendChild(el('div', { className: 'q-label' }, icon + ' ' + label));
+    t.appendChild(el('div', { className: 'q-value' }, value));
+    return t;
+  };
+  grid.appendChild(tile('🚨', 'מספר חירום', emergency));
+  grid.appendChild(tile('🚗', 'נהיגה', LEFT_DRIVE.includes(cc) ? 'בצד שמאל' : 'בצד ימין'));
+  grid.appendChild(tile('💱', 'מטבע', cur));
+  box.appendChild(grid);
+
+  // מחשבון המרה
+  const conv = el('div', { className: 'quick-conv' });
+  conv.appendChild(el('div', { className: 'note' }, 'טוענת שער...'));
+  box.appendChild(conv);
+
+  loadRates().then(r => {
+    if (token !== ratesToken) return;
+    const perIls = r.rates[cur];
+    if (!perIls) { conv.replaceChildren(el('div', { className: 'note' }, 'אין שער זמין למטבע הזה.')); return; }
+    conv.replaceChildren();
+    conv.appendChild(el('div', { className: 'q-rate' }, '1 ₪ = ' + fmtNum(perIls) + ' ' + cur + '  ·  1 ' + cur + ' = ' + fmtNum(1 / perIls) + ' ₪'));
+    const row = el('div', { className: 'conv-row' });
+    const ils = el('input', { type: 'text', inputMode: 'decimal', autocomplete: 'off' });
+    ils.setAttribute('aria-label', 'סכום בשקלים');
+    ils.placeholder = '₪';
+    const foreign = el('input', { type: 'text', inputMode: 'decimal', autocomplete: 'off' });
+    foreign.setAttribute('aria-label', 'סכום ב' + cur);
+    foreign.placeholder = cur;
+    const num = (v) => parseFloat(String(v).replace(/,/g, '.'));
+    ils.addEventListener('input', () => { const v = num(ils.value); foreign.value = Number.isFinite(v) ? fmtNum(v * perIls).replace(/,/g, '') : ''; });
+    foreign.addEventListener('input', () => { const v = num(foreign.value); ils.value = Number.isFinite(v) ? fmtNum(v / perIls).replace(/,/g, '') : ''; });
+    row.append(el('label', { className: 'conv-cell' }, '₪'), ils, el('span', { className: 'conv-eq' }, '⇄'), foreign, el('label', { className: 'conv-cell' }, cur));
+    conv.appendChild(row);
+    const when = new Date(r.at).toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' });
+    const src = el('div', { className: 'attr-src' });
+    src.append('שער לפי ' + when + (r.stale ? ' (שמור במכשיר, אין חיבור כרגע)' : '') + ', הערכה בלבד: בבנק או בכרטיס האשראי השער שונה ויש עמלות. ',
+      el('a', { href: 'https://www.exchangerate-api.com', target: '_blank', rel: 'noopener noreferrer' }, 'ExchangeRate-API'));
+    conv.appendChild(src);
+  }).catch(() => {
+    if (token !== ratesToken) return;
+    conv.replaceChildren(el('div', { className: 'note' }, 'לא הצלחתי לטעון שער המרה כרגע, ואין שער שמור במכשיר.'));
+  });
+  makeCollapsible(box, 'quick', 1, false);
+}
+
 function renderTransport() {
   const box = $('transSection');
   box.replaceChildren();
@@ -2073,6 +2214,7 @@ function renderWeather() {
   updateWelcome();
   renderTasks();
   renderEntry();
+  renderQuick();
   renderTransport();
   renderAttractions();
   updateWizardVisibility();
