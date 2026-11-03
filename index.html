@@ -3265,7 +3265,7 @@ async function shareListImage() {
     if (!blob) throw new Error('no blob');
     const file = new File([blob], 'packpal-list.png', { type: 'image/png' });
     // חלון השיתוף של המערכת רק בטלפון: ב-Windows בכרום הוא נתקע לפעמים, ולכן במחשב מורידים קובץ
-    const phone = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
+    const phone = isPhoneDevice();
     if (phone && navigator.canShare && navigator.canShare({ files: [file] })) {
       try { await navigator.share({ files: [file], title: 'רשימת אריזה – ' + tripName(state.trip) }); return; }
       catch (e) { if (e && e.name === 'AbortError') return; }   // ביטלת: לא עושים כלום. שגיאה אחרת: מורידים כקובץ
@@ -3281,14 +3281,23 @@ async function shareListImage() {
   }
 }
 
+// טלפון (אנדרואיד / אייפון) או מחשב. במחשב כמה דברים צריכים לעבוד אחרת (ראו בהערות למטה)
+function isPhoneDevice() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
+}
+
 function shareWhatsApp() {
   const t = state.trip;
-  let msg = '🧳 רשימת אריזה לטיול ל' + t.place + '\n';
+  // בוואטסאפ במחשב אימוג'י מתקלקלים בדרך (נראים כסימן שאלה) (הם מתקלקלים בדרך),
+  // ולכן במחשב שולחים בלי אימוג'י. בטלפון אימוג'י עובדים מצוין.
+  const plain = !isPhoneDevice();
+  const noEmoji = (str) => str.replace(/^[^\u0590-\u05FFA-Za-z0-9]+/, '').trim();
+  let msg = (plain ? '' : '🧳 ') + 'רשימת אריזה לטיול ל' + t.place + '\n';
   const groups = {};
   state.items.forEach(it => { (groups[it.cat] = groups[it.cat] || []).push(it); });
   Object.keys(groups).forEach(cat => {
-    msg += '\n' + cat + '\n';
-    groups[cat].forEach(it => { msg += (it.checked ? '✅ ' : '⬜ ') + itemLabel(it) + '\n'; });
+    msg += '\n' + (plain ? '*' + noEmoji(cat) + '*' : cat) + '\n';
+    groups[cat].forEach(it => { msg += (plain ? (it.checked ? '[x] ' : '[ ] ') : (it.checked ? '✅ ' : '⬜ ')) + itemLabel(it) + '\n'; });
   });
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
