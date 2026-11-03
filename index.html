@@ -2139,6 +2139,7 @@ function renderQuick() {
   grid.appendChild(tile('🚗', 'נהיגה', LEFT_DRIVE.includes(cc) ? 'בצד שמאל' : 'בצד ימין'));
   grid.appendChild(tile('💱', 'מטבע', cur));
   box.appendChild(grid);
+  box.appendChild(el('div', { className: 'attr-src' }, 'מספרי החירום כלליים ועלולים להשתנות. מומלץ לוודא לפני הנסיעה (למשל באתר משרד החוץ או בחיפוש "emergency number" + שם המדינה).'));
 
   // מחשבון המרה
   const conv = el('div', { className: 'quick-conv' });
