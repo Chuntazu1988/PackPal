@@ -888,6 +888,7 @@
       <div class="more-wrap">
         <button type="button" class="secondary" id="moreBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="moreMenu">⋯ עוד</button>
         <div id="moreMenu" class="popover" role="menu" aria-hidden="true">
+          <button type="button" role="menuitem" id="imageBtn">🖼️ שתף כתמונה</button>
           <button type="button" role="menuitem" id="printBtn">🖨️ הדפס</button>
           <button type="button" role="menuitem" id="reorderBtn">↕️ שנה סדר</button>
           <button type="button" role="menuitem" id="inviteBtn">👥 שתף טיול</button>
@@ -3186,6 +3187,97 @@ function printList() {
   win.document.close();
 }
 
+// רשימה כתמונה (בסגנון כרטיס טיסה), לשליחה בוואטסאפ או לשמירה בגלריה
+function drawListImage() {
+  const t = state.trip, w = state.weather;
+  const W = 1080, PAD = 56, COL_GAP = 24, ROW = 54, FONT = 'system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
+  const colW = (W - PAD * 2 - COL_GAP) / 2;
+  const groups = {};
+  state.items.forEach(it => { (groups[it.cat] = groups[it.cat] || []).push(it); });
+  const cats = Object.keys(groups);
+
+  const HEAD = 300;
+  let H = HEAD + PAD;
+  cats.forEach(c => { H += 84 + Math.ceil(groups[c].length / 2) * ROW + 20; });
+  H += 70;
+
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.direction = 'rtl';
+  ctx.textBaseline = 'middle';
+
+  ctx.fillStyle = '#f4ebd9'; ctx.fillRect(0, 0, W, H);
+  // כותרת נייבי
+  ctx.fillStyle = '#1b2a41'; ctx.fillRect(0, 0, W, HEAD - 30);
+  ctx.fillStyle = '#e8a33d'; ctx.font = '700 24px ui-monospace, Consolas, monospace'; ctx.textAlign = 'left';
+  ctx.direction = 'ltr'; ctx.fillText('BOARDING PASS  ·  PACKPAL', PAD, 56); ctx.direction = 'rtl';
+  ctx.fillStyle = '#f4ebd9'; ctx.textAlign = 'right';
+  ctx.font = '800 64px ' + FONT;
+  ctx.fillText('🧳 ' + tripName(t), W - PAD, 130, W - PAD * 2);
+  ctx.font = '500 32px ' + FONT;
+  ctx.fillText(t.place + ' · ' + fmtDate(t.start) + ' – ' + fmtDate(t.end), W - PAD, 192, W - PAD * 2);
+  if (w.source !== 'none') {
+    ctx.fillStyle = '#e8d9b8'; ctx.font = '500 28px ' + FONT;
+    ctx.fillText('🌡️ ' + w.minTemp + ' עד ' + w.maxTemp + ' מעלות  ·  🌧️ ' + w.rainyDays + ' ימי גשם  ·  💨 רוח עד ' + w.maxWind + ' קמ"ש', W - PAD, 238, W - PAD * 2);
+  }
+  // קו קרע מקווקו
+  ctx.strokeStyle = '#f4ebd9'; ctx.setLineDash([14, 12]); ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(0, HEAD - 30); ctx.lineTo(W, HEAD - 30); ctx.stroke(); ctx.setLineDash([]);
+
+  let y = HEAD + 10;
+  cats.forEach(c => {
+    ctx.fillStyle = '#1b2a41'; ctx.textAlign = 'right'; ctx.font = '800 36px ' + FONT;
+    ctx.fillText(c, W - PAD, y + 36, W - PAD * 2);
+    ctx.strokeStyle = '#d9cbae'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(PAD, y + 66); ctx.lineTo(W - PAD, y + 66); ctx.stroke();
+    y += 84;
+    const items = groups[c];
+    const perCol = Math.ceil(items.length / 2);
+    items.forEach((it, i) => {
+      const col = Math.floor(i / perCol), row = i % perCol;
+      const right = W - PAD - col * (colW + COL_GAP);
+      const cy = y + row * ROW + ROW / 2;
+      // תיבת סימון
+      const bx = right - 30;
+      ctx.lineWidth = 3; ctx.strokeStyle = '#1b2a41'; ctx.fillStyle = it.checked ? '#2e8b57' : '#fffcf4';
+      ctx.beginPath(); ctx.roundRect(bx, cy - 15, 30, 30, 6); ctx.fill(); ctx.stroke();
+      if (it.checked) {
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath();
+        ctx.moveTo(bx + 7, cy); ctx.lineTo(bx + 13, cy + 7); ctx.lineTo(bx + 24, cy - 7); ctx.stroke();
+      }
+      ctx.fillStyle = it.checked ? '#7a8596' : '#1b2a41';
+      ctx.font = '500 29px ' + FONT; ctx.textAlign = 'right';
+      ctx.fillText(itemLabel(it), bx - 14, cy + 1, colW - 50);
+    });
+    y += perCol * ROW + 20;
+  });
+  ctx.fillStyle = '#7a8596'; ctx.font = '500 24px ' + FONT; ctx.textAlign = 'center';
+  ctx.fillText('נוצר ב-PackPal', W / 2, H - 36);
+  return cv;
+}
+
+async function shareListImage() {
+  if (!state) return;
+  try {
+    const cv = drawListImage();
+    const blob = await new Promise(res => cv.toBlob(res, 'image/png'));
+    if (!blob) throw new Error('no blob');
+    const file = new File([blob], 'packpal-list.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'רשימת אריזה – ' + tripName(state.trip) }); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }   // ביטלת: לא עושים כלום. שגיאה אחרת: מורידים כקובץ
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'packpal-list.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    if (typeof toast === 'function') toast('התמונה נשמרה');
+  } catch (e) {
+    $('error').textContent = 'לא הצלחתי ליצור תמונה. אפשר להשתמש ב"שתף בוואטסאפ" או ב"הדפס".';
+  }
+}
+
 function shareWhatsApp() {
   const t = state.trip;
   let msg = '🧳 רשימת אריזה לטיול ל' + t.place + '\n';
@@ -3611,6 +3703,7 @@ $('addForm').addEventListener('submit', (ev) => {
 
 $('shareBtn').addEventListener('click', shareWhatsApp);
 $('printBtn').addEventListener('click', printList);
+$('imageBtn').addEventListener('click', shareListImage);
 $('packBtn').addEventListener('click', () => setPackMode(true));
 $('packExitBtn').addEventListener('click', () => setPackMode(false));
 $('packExitBottom').addEventListener('click', () => setPackMode(false));
