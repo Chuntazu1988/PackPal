@@ -667,6 +667,8 @@
   /* באנר פיתוח: דק, אבל עדיין ברור שזו גרסת הפיתוח */
   #devBanner { font-size: .8rem; padding: 6px 12px; text-shadow: none; border-bottom: 3px solid #d90429; letter-spacing: .5px; background: repeating-linear-gradient(45deg, #ff7a1a, #ff7a1a 14px, #ffb300 14px, #ffb300 28px); }
   #devBanner small { display: inline; font-size: .8rem; font-weight: 600; margin-inline-start: 8px; }
+
+  .attr-item .desc-he { color: var(--muted); font-size: .9rem; margin: 4px 0 8px; }
 </style>
 </head>
 <body>
@@ -817,6 +819,7 @@
   <section id="entrySection" class="card hidden" data-tab="before"></section>
 
   <!-- ===== המלצות לאטרקציות (Wikivoyage) ===== -->
+  <section id="transSection" class="card hidden" data-tab="dest"></section>
   <section id="attrSection" class="card hidden" data-tab="dest"></section>
 
   <!-- ===== הרשימה ===== -->
@@ -1996,10 +1999,81 @@ function renderTasks() {
   makeCollapsible(box, 'tasks', 2, false);
 }
 
+/* =========================================================
+   תחבורה ביעד: קישורים כלליים (חיפושים באינטרנט ובמפות) ואפליקציות מוניות נפוצות לפי מדינה
+   ========================================================= */
+
+// אפליקציות הסעה נפוצות לפי קוד מדינה. זו רשימה כללית: זמינות משתנה לפי עיר, ולכן כתוב "בדקי זמינות".
+const RIDE_APPS = [
+  { name: 'Uber', url: 'https://www.uber.com/', cc: 'US CA GB FR DE ES IT NL PT MX BR CO AR CL PE AU NZ JP TH IN ZA AE EG SA TR GR IE AT BE CH DK SE NO FI PL CZ HR HU RO CR PA DO EC' },
+  { name: 'Lyft', url: 'https://www.lyft.com/', cc: 'US CA' },
+  { name: 'Bolt', url: 'https://bolt.eu/', cc: 'EE LV LT PL PT ES FR DE GB IE SE FI NO CZ HR GR RO BG HU SK SI AT CY ZA KE NG GH GE' },
+  { name: 'FREE NOW', url: 'https://www.free-now.com/', cc: 'DE FR ES IT GB IE AT PL PT GR' },
+  { name: 'Cabify', url: 'https://cabify.com/', cc: 'ES MX CO PE CL AR UY BR' },
+  { name: 'Grab', url: 'https://www.grab.com/', cc: 'SG MY TH VN PH ID KH MM' },
+  { name: 'Gojek', url: 'https://www.gojek.com/', cc: 'ID' },
+  { name: 'Careem', url: 'https://www.careem.com/', cc: 'AE SA EG JO QA KW BH OM MA PK' },
+  { name: 'DiDi', url: 'https://www.didiglobal.com/', cc: 'CN MX BR CO CL PE AU NZ CR DO' },
+  { name: 'Ola', url: 'https://www.olacabs.com/', cc: 'IN' },
+  { name: 'GO (יפן)', url: 'https://go.mo-t.com/', cc: 'JP' },
+  { name: 'Kakao T (קוריאה)', url: 'https://www.kakaomobility.com/', cc: 'KR' },
+  { name: 'Gett', url: 'https://www.gett.com/', cc: 'GB IL' },
+  { name: 'Yandex Go', url: 'https://go.yandex/', cc: 'RU KZ GE AM AZ UZ BY' }
+];
+
+function renderTransport() {
+  const box = $('transSection');
+  box.replaceChildren();
+  if (!state) { box.classList.add('hidden'); return; }
+  const trip = state.trip;
+  const city = String(trip.place).split(',')[0].trim();
+  const country = placeCountry(trip.place) || '';
+  const where = (city + (country && country !== city ? ' ' + country : '')).trim();
+  const g = (q) => 'https://www.google.com/search?q=' + encodeURIComponent(q);
+  const maps = (q) => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
+  const link = (text, href) => el('a', { href: href, target: '_blank', rel: 'noopener noreferrer' }, text);
+
+  box.appendChild(el('strong', null, '🚇 איך מסתובבים ב' + city));
+  box.classList.remove('hidden');
+
+  const row = (title, desc, links) => {
+    const item = el('div', { className: 'attr-item' });
+    item.appendChild(el('div', { className: 'name' }, title));
+    if (desc) item.appendChild(el('div', { className: 'desc-he' }, desc));
+    const wrap = el('div', { className: 'attr-links' });
+    links.forEach(l => wrap.appendChild(l));
+    item.appendChild(wrap);
+    box.appendChild(item);
+  };
+
+  row('🚆 תחבורה ציבורית', 'האתר הרשמי של התחבורה בעיר, ותחנות קרובות במפה.', [
+    link('🌐 האתר הרשמי (חיפוש)', g(city + ' official public transport website tickets')),
+    link('📍 תחנות במפה', maps('public transport station ' + where)),
+    link('🧭 כל דרכי ההגעה (Rome2Rio)', 'https://www.rome2rio.com/')
+  ]);
+  row('✈️ מהשדה לעיר', 'איך מגיעים מנמל התעופה למרכז, ומה העלות בערך.', [
+    link('🔎 איך מגיעים מהשדה', g('how to get from ' + city + ' airport to city center train bus taxi price')),
+    link('📍 שדות תעופה במפה', maps('airport ' + where))
+  ]);
+  row('🚕 מוניות', 'חיפוש מוניות באזור, ומה כדאי לדעת (מונה, מחיר קבוע, הונאות נפוצות).', [
+    link('📍 תחנות מוניות', maps('taxi ' + where)),
+    link('🔎 טיפים למוניות', g('taxi tips ' + where + ' scams official fare'))
+  ]);
+
+  const cc = String(trip.cc || '').toUpperCase();
+  const apps = cc ? RIDE_APPS.filter(a => a.cc.split(' ').includes(cc)) : [];
+  if (apps.length) {
+    row('📱 אפליקציות הסעה נפוצות', 'לפי המדינה. הזמינות משתנה בין ערים, ולכן כדאי לבדוק באפליקציה.', apps.map(a => link(a.name, a.url)));
+  }
+  box.appendChild(el('div', { className: 'attr-src' }, 'קישורים כלליים וחיפושים, לא מידע רשמי. מומלץ לבדוק מחירים ושעות באתר התחבורה המקומי.'));
+  makeCollapsible(box, 'transport', 1, true);
+}
+
 function renderWeather() {
   updateWelcome();
   renderTasks();
   renderEntry();
+  renderTransport();
   renderAttractions();
   updateWizardVisibility();
   const box = $('weather');

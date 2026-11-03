@@ -1,6 +1,6 @@
 // Service worker של PackPal: שומר את האפליקציה במכשיר כדי שתיפתח גם בלי אינטרנט (למשל בטיסה).
 // עובד רק כשהאתר מוגש ישירות (GitHub Pages), לא בתוך Streamlit.
-const CACHE = 'packpal-sw-v1';
+const CACHE = 'packpal-sw-v2';
 const SHELL = [
   './',
   'index.html',
@@ -35,7 +35,7 @@ function networkFirst(req, fallbackKey) {
       return r;
     });
     const timer = setTimeout(useCache, 4000);
-    fetch(req).then((res) => {
+    fetch(req, { cache: 'no-cache' }).then((res) => {
       clearTimeout(timer);
       if (res && res.ok) {
         const copy = res.clone();
@@ -63,7 +63,7 @@ self.addEventListener('fetch', (ev) => {
   // קבצים סטטיים: מהמטמון מיד, ומתעדכנים ברקע
   ev.respondWith(
     caches.match(req).then((hit) => {
-      const net = fetch(req).then((res) => {
+      const net = fetch(req, { cache: 'no-cache' }).then((res) => {
         if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
         return res;
       }).catch(() => hit);
