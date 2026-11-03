@@ -4790,6 +4790,7 @@ async function initCloud() {
 function installAppIdentity() {
   let top = window;
   try { void window.top.document; top = window.top; } catch (e) { return; }
+  if (top === window) return;   // האתר רץ לבד (GitHub Pages): האייקון והמניפסט כבר בדף, אין מעטפת להחליף
   const doc = top.document;
   // איפה הקבצים מוגשים: ב-Streamlit Cloud האפליקציה רצה בתוך מעטפת, והקבצים ב-/~/+/app/static/.
   // בשרת Streamlit רגיל (בלי מעטפת) ב-/app/static/, וכשמריצים את הקובץ לבד (בפיתוח) ב-/static/.
