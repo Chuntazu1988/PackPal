@@ -985,6 +985,16 @@ if (IS_DEV) {
 // אחסון נפרד לגרסת פיתוח, כדי שנתוני בדיקה לא יתערבבו עם הגרסה הסופית
 const STORAGE_KEY = IS_DEV ? 'packpal-v1-dev' : 'packpal-v1';
 
+// בפעם הראשונה בגרסה הסופית: מעתיקים את מה ששמרת בגרסת הפיתוח (באותו דפדפן), כדי שלא תאבדי טיולים
+if (!IS_DEV) {
+  try {
+    ['', '-history', '-favs', '-sync', '-welcomed'].forEach(sfx => {
+      const from = localStorage.getItem('packpal-v1-dev' + sfx);
+      if (from !== null && localStorage.getItem('packpal-v1' + sfx) === null) localStorage.setItem('packpal-v1' + sfx, from);
+    });
+  } catch (e) {}
+}
+
 /* =========================================================
    1ב. מצב כהה / בהיר
    ========================================================= */
