@@ -707,6 +707,15 @@
   .countdown.big.soon .cd-cell { box-shadow: 0 3px 0 color-mix(in srgb, var(--hero-top) 55%, #000), 0 0 22px var(--stamp); }
   .cd-plane { filter: drop-shadow(0 3px 3px rgba(0,0,0,.25)); }
   @media (prefers-reduced-motion: reduce) { .cd-cell b.flip { animation: none; } }
+
+  /* ===== תבניות ===== */
+  #tplPick select { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); font: inherit; }
+  .tpl-row { display: flex; align-items: center; gap: 8px; padding: 10px 4px; border-bottom: 1px dashed var(--border); }
+  .tpl-row .info { flex: 1; }
+  .tpl-row .info small { display: block; color: var(--muted); }
+  .tpl-row .del { background: none; color: var(--danger); padding: 4px 8px; font-size: 1.1rem; }
+  .tpl-row .del.sure { background: var(--danger); color: #fff; font-size: .9rem; }
+  .shared-mode #tplSection, .shared-mode #tplSaveBtn, .shared-mode #tplPick, .shared-mode #tplPanel { display: none !important; }
 </style>
 </head>
 <body>
@@ -824,6 +833,11 @@
         <div class="note" id="wizRecap"></div>
         <div class="chips" id="activities"></div>
 
+        <div id="tplPick" class="hidden">
+          <label for="tplSelect">🗂️ להוסיף פריטים מתבנית שלי (לא חובה)</label>
+          <select id="tplSelect"></select>
+        </div>
+
         <label class="check-label"><input type="checkbox" id="sharedCheck"> 👥 טיול משותף (כמה אנשים אורזים יחד)</label>
         <div id="sharedOptions" class="hidden">
           <label for="ownerName">השם שלך (שם הלשונית שלך)</label>
@@ -897,12 +911,19 @@
       <label class="check-label fav-check"><input type="checkbox" id="newFav"> ⭐ שמור גם בפריטים הקבועים (יתווסף לכל טיול חדש)</label>
     </form>
 
+    <form class="add-row hidden" id="tplPanel" autocomplete="off">
+      <input type="text" id="tplName" maxlength="40" placeholder="שם התבנית, למשל: סופ&quot;ש בים" aria-label="שם התבנית">
+      <button type="submit" class="secondary">💾 שמור</button>
+      <button type="button" class="secondary" id="tplCancel">ביטול</button>
+    </form>
+
     <div class="actions">
       <button type="button" class="secondary" id="packBtn">🎒 מצב אריזה</button>
       <button type="button" class="whatsapp" id="shareBtn">שתף בוואטסאפ</button>
       <div class="more-wrap">
         <button type="button" class="secondary" id="moreBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="moreMenu">⋯ עוד</button>
         <div id="moreMenu" class="popover" role="menu" aria-hidden="true">
+          <button type="button" role="menuitem" id="tplSaveBtn">💾 שמור כתבנית</button>
           <button type="button" role="menuitem" id="imageBtn">🖼️ שתף כתמונה</button>
           <button type="button" role="menuitem" id="printBtn">🖨️ הדפס</button>
           <button type="button" role="menuitem" id="reorderBtn">↕️ שנה סדר</button>
@@ -918,6 +939,9 @@
   <section id="pastSection" class="card hidden" data-tab="more"></section>
 
   <!-- ===== פריטים קבועים ===== -->
+  <!-- ===== תבניות ===== -->
+  <section id="tplSection" class="card hidden" data-tab="more"></section>
+
   <section id="favSection" class="card" data-tab="more">
     <strong>⭐ פריטים קבועים</strong>
     <p class="note">דברים שתמיד אורזים. הם יתווספו אוטומטית לכל טיול חדש, בקטגוריה משלהם.</p>
@@ -2739,6 +2763,116 @@ const FAV_KEY = STORAGE_KEY + '-favs';
 const FAV_CAT = '⭐ הקבועים שלי';
 const FAV_MAX = 50;
 
+/* =========================================================
+   תבניות: שומרים רשימה כתבנית, ובטיול חדש מוסיפים ממנה פריטים
+   ========================================================= */
+
+const TPL_KEY = STORAGE_KEY + '-templates';
+const TPL_MAX = 10;
+
+function cleanTemplate(t) {
+  if (!t || typeof t.name !== 'string' || !t.name.trim()) return null;
+  const rawItems = Array.isArray(t.items) ? t.items : Object.values(t.items || {});
+  const items = rawItems.filter(i => i && typeof i.text === 'string' && i.text.trim())
+    .map(i => ({ text: i.text.trim().slice(0, 80), cat: String(i.cat || CUSTOM_CAT).slice(0, 40), qty: clampQty(i.qty) }));
+  if (!items.length) return null;
+  return { id: String(t.id || uid()), name: t.name.trim().slice(0, 40), items: items };
+}
+
+function loadTemplates() {
+  try {
+    const a = JSON.parse(localStorage.getItem(TPL_KEY));
+    return (Array.isArray(a) ? a : []).map(cleanTemplate).filter(Boolean).slice(0, TPL_MAX);
+  } catch (e) { return []; }
+}
+
+function saveTemplates(list) {
+  try { localStorage.setItem(TPL_KEY, JSON.stringify(list.slice(0, TPL_MAX))); } catch (e) {}
+  scheduleCloudPush();
+}
+
+// פריטי התבנית נוספים לרשימה שנבנתה (בלי כפילויות)
+function withTemplate(items, tplId) {
+  const tpl = tplId && loadTemplates().find(t => t.id === tplId);
+  if (!tpl) return items;
+  const have = new Set(items.map(i => i.text));
+  tpl.items.forEach(ti => {
+    if (have.has(ti.text)) return;
+    const it = makeItem(ti.text, ti.cat);
+    it.qty = ti.qty;
+    items.push(it);
+    have.add(ti.text);
+  });
+  return items;
+}
+
+function renderTemplates() {
+  const list = loadTemplates();
+  // רשימה לניהול (לשונית "הטיולים שלי")
+  const box = $('tplSection');
+  box.replaceChildren();
+  box.classList.toggle('hidden', !list.length);
+  if (list.length) {
+    box.appendChild(el('strong', null, '🗂️ התבניות שלי'));
+    box.appendChild(el('p', { className: 'note' }, 'בטיול חדש אפשר להוסיף פריטים מתבנית, בשלב האחרון של הבנייה.'));
+    list.forEach(t => {
+      const row = el('div', { className: 'tpl-row' });
+      const info = el('div', { className: 'info' }, t.name);
+      info.appendChild(el('small', null, t.items.length + ' פריטים'));
+      const del = el('button', { type: 'button', className: 'del', title: 'מחק תבנית' }, '✕');
+      del.setAttribute('aria-label', 'מחק תבנית: ' + t.name);
+      let armed = false;
+      del.addEventListener('click', () => {
+        if (!armed) { armed = true; del.classList.add('sure'); del.textContent = 'למחוק?'; setTimeout(() => { armed = false; del.classList.remove('sure'); del.textContent = '✕'; }, 3000); return; }
+        saveTemplates(loadTemplates().filter(x => x.id !== t.id));
+        renderTemplates();
+        if (typeof toast === 'function') toast('התבנית נמחקה');
+      });
+      row.append(info, del);
+      box.appendChild(row);
+    });
+  }
+  // בחירה בשלב האחרון של בניית טיול
+  const sel = $('tplSelect');
+  const prev = sel.value;
+  sel.replaceChildren(el('option', { value: '' }, 'בלי תבנית'));
+  list.forEach(t => sel.appendChild(el('option', { value: t.id }, t.name + ' (' + t.items.length + ')')));
+  if (list.some(t => t.id === prev)) sel.value = prev;
+  $('tplPick').classList.toggle('hidden', !list.length);
+  makeCollapsible(box, 'templates', 1, false);
+}
+
+function openTemplatePanel() {
+  if (!state) return;
+  $('tplName').value = String(state.trip.place).split(',')[0].trim();
+  $('tplPanel').classList.remove('hidden');
+  $('tplName').focus();
+  $('tplName').select();
+}
+
+$('tplSaveBtn').addEventListener('click', openTemplatePanel);
+$('tplCancel').addEventListener('click', () => $('tplPanel').classList.add('hidden'));
+$('tplPanel').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  if (!state) return;
+  const name = $('tplName').value.trim().slice(0, 40);
+  if (!name) return;
+  const list = loadTemplates();
+  if (list.length >= TPL_MAX && !list.some(t => t.name === name)) {
+    if (typeof toast === 'function') toast('אפשר לשמור עד ' + TPL_MAX + ' תבניות. מחקי אחת קודם.');
+    return;
+  }
+  const tpl = cleanTemplate({ name: name, items: state.items.map(i => ({ text: i.text, cat: i.cat, qty: i.qty })) });
+  if (!tpl) return;
+  const idx = list.findIndex(t => t.name === name);          // אותו שם = מעדכנים את התבנית הקיימת
+  if (idx >= 0) { tpl.id = list[idx].id; list[idx] = tpl; } else list.unshift(tpl);
+  saveTemplates(list);
+  $('tplPanel').classList.add('hidden');
+  renderTemplates();
+  if (typeof toast === 'function') toast('נשמרה התבנית "' + name + '"');
+});
+
+
 function loadFavs() {
   try {
     const f = JSON.parse(localStorage.getItem(FAV_KEY));
@@ -3440,7 +3574,8 @@ async function buildTrip(place, start, end, activities) {
   if (state && state.trip.name && state.trip.place === place.label) trip.name = state.trip.name;
   const previous = state && state.items && state.items.length ? JSON.parse(JSON.stringify(state)) : null;
   nextId = 1;
-  state = { trip: trip, weather: weather, items: withFavorites(buildList(trip, weather)) };
+  state = { trip: trip, weather: weather, items: withTemplate(withFavorites(buildList(trip, weather)), $('tplSelect').value) };
+  $('tplSelect').value = '';
   if (previous) setUndo({ kind: 'rebuild', prev: previous });
   save();
   renderWeather();
@@ -4624,7 +4759,7 @@ function cloudUrl(token) {
 }
 
 function localHasData() {
-  return !!(state || loadHistory().length || loadFavs().length);
+  return !!(state || loadHistory().length || loadFavs().length || loadTemplates().length);
 }
 
 function buildCloudPayload() {
@@ -4632,6 +4767,7 @@ function buildCloudPayload() {
     current: state || null,
     history: loadHistory(),
     favorites: loadFavs(),
+    templates: loadTemplates(),
     updatedAt: Date.now()
   };
 }
@@ -4653,6 +4789,7 @@ function normalizeCloud(c) {
     current: normalizeTrip(c.current),
     history: arr(c.history).map(normalizeTrip).filter(Boolean),
     favorites: arr(c.favorites).filter(f => f && typeof f.text === 'string'),
+    templates: arr(c.templates).map(cleanTemplate).filter(Boolean),
     updatedAt: c.updatedAt || 0
   };
 }
@@ -4685,12 +4822,14 @@ function applyCloudToDevice(c) {
     if (c.current) localStorage.setItem(STORAGE_KEY, JSON.stringify(c.current)); else localStorage.removeItem(STORAGE_KEY);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(c.history));
     localStorage.setItem(FAV_KEY, JSON.stringify(c.favorites));
+    localStorage.setItem(TPL_KEY, JSON.stringify(c.templates || []));
     localStorage.setItem(SYNC_META_KEY, JSON.stringify({ uid: cloudUser.uid, at: c.updatedAt }));
   } catch (e) {}
   state = c.current;
   if (state) applyStateToPage();
   else { renderWeather(); renderList(); renderPast(); }
   renderFavs();
+  renderTemplates();
   cloudApplying = false;
 }
 
@@ -4712,10 +4851,14 @@ function mergeCloudIntoDevice(c) {
   const favs = loadFavs();
   c.favorites.forEach(f => { if (!favs.some(x => x.text === f.text) && favs.length < FAV_MAX) favs.push({ text: f.text, qty: clampQty(f.qty) }); });
   try { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); } catch (e) {}
+  const tpls = loadTemplates();
+  (c.templates || []).forEach(t => { if (tpls.length < TPL_MAX && !tpls.some(x => x.name === t.name)) tpls.push(t); });
+  try { localStorage.setItem(TPL_KEY, JSON.stringify(tpls)); } catch (e) {}
   cloudApplying = false;
   if (state) applyStateToPage();
   else { renderWeather(); renderList(); renderPast(); }
   renderFavs();
+  renderTemplates();
 }
 
 // אחרי כניסה: מחליטים מה לעשות מול מה שכבר שמור בענן
@@ -4842,6 +4985,7 @@ window.addEventListener('online', () => {
 // בטעינת הדף – אם יש טיול שמור, מציגים אותו
 // כרטיס הפריטים הקבועים
 renderFavs();
+renderTemplates();
 
 // כפתורי סוג הטיול בטופס (נבנים כאן, אחרי שכל ההגדרות למעלה כבר קיימות)
 buildTypeChips($('tripTypes'), 'tripType');
