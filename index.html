@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#1b2a41">
 <meta name="author" content="נטע ונטוררו שבירו">
 <meta name="copyright" content="© כל הזכויות שמורות לנטע ונטוררו שבירו">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=JetBrains+Mono:wght@500;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=JetBrains+Mono:wght@500;700;800&family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
   /* ===== צבעים: מצב יום = כרטיס טיסה (קרם ונייבי), מצב כהה = לילה ונאון ===== */
   :root {
@@ -754,833 +754,380 @@
   .bud-main { margin: 6px 0 2px; font-size: 1.9rem; font-weight: 900; direction: ltr; text-align: right; }
 </style>
 <style>
-/* ===== Gemini design layer ===== */
-  /* =========================================================
-     1. פלטות צבעים ומשתנים (Light & Dark Luxe Theme)
-     ========================================================= */
-  :root {
-    /* --- Light Mode: Executive Aviation Luxe --- */
-    --bg: #f8f6f0;
-    --card: rgba(255, 255, 255, 0.85);
-    --card-hover: rgba(255, 255, 255, 0.98);
-    --text: #0f172a;
-    --muted: #64748b;
-    --accent: #0284c7;
-    --accent-dark: #0369a1;
-    --on-accent: #ffffff;
-    --ok: #059669;
-    --danger: #e11d48;
-    --border: rgba(15, 23, 42, 0.12);
-    --soft: rgba(241, 245, 249, 0.8);
-    --stat: #f1f5f9;
-    --track: #e2e8f0;
-    --sand: #fef3c7;
-    --sun: #d97706;
-    --hero-top: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    --hero-bottom: #0f172a;
-    --hero-text: #f8fafc;
-    --cloud: rgba(255,255,255,.15);
-    --shadow: rgba(15, 23, 42, 0.08);
-    --shadow-hover: rgba(15, 23, 42, 0.15);
-    --stamp: #d97706;
-    --glow: rgba(2, 132, 199, 0.15);
-    --font: 'Heebo', system-ui, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
-    color-scheme: light;
-  }
-
-  /* --- Dark Mode: Cyber Aviation Neon --- */
-  :root[data-theme="dark"] {
-    --bg: #070a12;
-    --card: rgba(15, 23, 42, 0.65);
-    --card-hover: rgba(30, 41, 67, 0.75);
-    --text: #f8fafc;
-    --muted: #94a3b8;
-    --accent: #38bdf8;
-    --accent-dark: #0284c7;
-    --on-accent: #070a12;
-    --ok: #10b981;
-    --danger: #f43f5e;
-    --border: rgba(255, 255, 255, 0.1);
-    --soft: rgba(30, 41, 59, 0.6);
-    --stat: rgba(30, 41, 59, 0.8);
-    --track: rgba(255, 255, 255, 0.08);
-    --sand: rgba(245, 158, 11, 0.15);
-    --sun: #fbbf24;
-    --hero-top: linear-gradient(135deg, #090d16 0%, #111827 100%);
-    --hero-bottom: #090d16;
-    --hero-text: #f8fafc;
-    --cloud: rgba(255,255,255,.08);
-    --shadow: rgba(0, 0, 0, 0.5);
-    --shadow-hover: rgba(0, 0, 0, 0.7);
-    --stamp: #f59e0b;
-    --glow: rgba(56, 189, 248, 0.25);
-    color-scheme: dark;
-  }
-
-  /* =========================================================
-     2. Reset & Base Layout
-     ========================================================= */
-  * { box-sizing: border-box; }
-  html { font-size: 100%; scroll-behavior: smooth; }
-  body {
-    margin: 0;
-    font-size: 1rem;
-    font-family: var(--font);
-    background: var(--bg);
-    background-image: 
-      radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
-      radial-gradient(circle at 90% 90%, rgba(245, 158, 11, 0.04) 0%, transparent 40%);
-    background-attachment: fixed;
-    color: var(--text);
-    line-height: 1.5;
-    transition: background-color 0.4s ease, color 0.4s ease;
-  }
-
-  main { max-width: 680px; margin: 0 auto; padding: 20px 16px 50px; }
-
-  /* =========================================================
-     3. Futuristic Boarding Pass Header
-     ========================================================= */
-  .hero {
-    position: relative;
-    overflow: hidden;
-    margin: 8px 0 20px;
-    padding: 24px 24px 22px;
-    border-radius: 24px;
-    background: var(--hero-top);
-    color: var(--hero-text);
-    border: 1px solid var(--border);
-    box-shadow: 0 20px 40px var(--shadow), 0 0 25px var(--glow);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    animation: rise .5s cubic-bezier(0.16, 1, 0.3, 1) both;
-    transition: all 0.3s ease;
-  }
-
-  .hero:hover {
-    box-shadow: 0 25px 50px var(--shadow-hover), 0 0 35px var(--glow);
-  }
-
-  .bp-top {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    font-family: var(--font-mono);
-    font-weight: 700;
-    font-size: 0.78rem;
-    letter-spacing: 2.5px;
-    color: var(--stamp);
-    margin-bottom: 12px;
-    direction: ltr;
-    text-transform: uppercase;
-  }
-
-  .hero h1 {
-    position: relative;
-    z-index: 2;
-    margin: 0;
-    font-size: 2.2rem;
-    font-weight: 900;
-    letter-spacing: -0.5px;
-    line-height: 1.15;
-    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .hero h1 small {
-    display: block;
-    margin-top: 6px;
-    font-size: 0.95rem;
-    font-weight: 400;
-    color: var(--muted);
-    -webkit-text-fill-color: var(--muted);
-    letter-spacing: 0;
-  }
-
-  /* Route Animation */
-  .bp-route {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin: 20px -24px -22px;
-    padding: 16px 24px;
-    border-top: 1px dashed var(--border);
-    background: rgba(0, 0, 0, 0.2);
-    direction: ltr;
-  }
-
-  /* Pass Cutouts (חריצים צדדיים של כרטיס טיסה) */
-  .bp-route::before, .bp-route::after {
-    content: "";
-    position: absolute;
-    top: -10px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--bg);
-  }
-  .bp-route::before { left: -10px; }
-  .bp-route::after { right: -10px; }
-
-  .bp-code {
-    font-family: var(--font-mono);
-    font-weight: 800;
-    font-size: 1.4rem;
-    letter-spacing: 2px;
-    color: var(--hero-text);
-  }
-
-  .bp-path {
-    position: relative;
-    flex: 1;
-    height: 24px;
-    margin: 0 16px;
-  }
-
-  .bp-path::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  }
-
-  .bp-plane {
-    position: absolute;
-    top: -2px;
-    left: 0;
-    font-style: normal;
-    font-size: 1.3rem;
-    line-height: 24px;
-    animation: bpfly 4s ease-in-out infinite alternate;
-    filter: drop-shadow(0 0 8px var(--accent));
-  }
-
-  @keyframes bpfly {
-    0% { left: 0%; transform: rotate(-90deg) scaleX(-1); }
-    100% { left: calc(100% - 1.4rem); transform: rotate(-90deg) scaleX(-1); }
-  }
-
-  /* =========================================================
-     4. Glassmorphism Cards & Components
-     ========================================================= */
-  .card {
-    position: relative;
-    background: var(--card);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 20px;
-    margin: 16px 0;
-    box-shadow: 0 10px 30px var(--shadow);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: rise .45s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  .card:hover {
-    box-shadow: 0 15px 35px var(--shadow-hover);
-    border-color: rgba(255, 255, 255, 0.18);
-  }
-
-  label { display: block; font-weight: 600; margin: 10px 0 6px; font-size: 0.95rem; }
-
-  input[type=text], input[type=date], input[type=search], input[type=number] {
-    width: 100%;
-    padding: 12px 16px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    font-size: 1rem;
-    font-family: inherit;
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text);
-    transition: all 0.2s ease;
-  }
-
-  input[type=text]:focus, input[type=date]:focus, input[type=search]:focus, input[type=number]:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px var(--glow);
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .row { display: flex; gap: 12px; }
-  .row > div { flex: 1; min-width: 0; }
-
-  /* Buttons */
-  button {
-    font-family: inherit;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    border-radius: 12px;
-    padding: 12px 18px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.05); }
-  button:active:not(:disabled) { transform: translateY(0) scale(0.98); }
-
-  .primary {
-    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-    color: var(--on-accent);
-    width: 100%;
-    margin-top: 18px;
-    font-weight: 700;
-    padding: 15px 20px;
-    border-radius: 14px;
-    box-shadow: 0 8px 20px var(--glow);
-  }
-
-  .secondary {
-    background: var(--soft);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  .whatsapp {
-    background: #25d366;
-    color: #ffffff;
-    font-weight: 700;
-    box-shadow: 0 6px 16px rgba(37, 211, 102, 0.25);
-  }
-
-  /* Chips (Activities) */
-  .chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px; }
-  .chip input { display: none; }
-  .chip { margin: 0; font-weight: normal; }
-  .chip span {
-    display: block;
-    text-align: center;
-    padding: 12px 10px;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    background: var(--soft);
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .chip span:hover { border-color: var(--accent); transform: translateY(-1px); }
-
-  .chip input:checked + span {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--on-accent);
-    font-weight: 700;
-    transform: scale(1.02);
-    box-shadow: 0 6px 16px var(--glow);
-  }
-
-  /* =========================================================
-     5. Packing List Items
-     ========================================================= */
-  .item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    margin-bottom: 8px;
-    border-radius: 14px;
-    background: var(--soft);
-    border: 1px solid var(--border);
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .item:hover {
-    background: var(--card-hover);
-    transform: translateX(-2px);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-
-  .item input[type=checkbox] {
-    width: 22px;
-    height: 22px;
-    accent-color: var(--ok);
-    cursor: pointer;
-    border-radius: 6px;
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .item input[type=checkbox]:checked {
-    transform: scale(1.15);
-  }
-
-  .item .text { flex: 1; font-weight: 500; transition: all 0.2s ease; }
-
-  .item.done {
-    opacity: 0.6;
-    background: rgba(16, 185, 129, 0.04);
-    border-color: rgba(16, 185, 129, 0.15);
-  }
-
-  .item.done .text {
-    text-decoration: line-through;
-    color: var(--muted);
-  }
-
-  .item .qty { font-weight: 700; color: var(--accent); font-family: var(--font-mono); }
-
-  /* =========================================================
-     6. Progress & Tab Bar
-     ========================================================= */
-  .bar {
-    height: 12px;
-    background: var(--track);
-    border-radius: 20px;
-    overflow: hidden;
-    margin: 12px 0;
-    box-shadow: inset 0 1px 3px var(--shadow);
-  }
-
-  .bar > div {
-    height: 100%;
-    width: 0;
-    border-radius: 20px;
-    background: linear-gradient(90deg, var(--accent), var(--ok));
-    box-shadow: 0 0 12px var(--glow);
-    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .tabbar {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    margin: 20px 0 8px;
-    padding: 6px;
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    background: var(--card);
-    backdrop-filter: blur(12px);
-  }
-
-  .tabbar button {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 10px 4px;
-    background: none;
-    color: var(--muted);
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 0.82rem;
-  }
-
-  .tabbar button.active {
-    background: var(--accent);
-    color: var(--on-accent);
-    box-shadow: 0 4px 14px var(--glow);
-  }
-
-  /* Animations */
-  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-  @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-
-  /* Custom Scrollbar */
-  ::-webkit-scrollbar { width: 8px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
-
-  /* כפתור העיצוב צמוד לעמודה המרכזית במסכים רחבים */
-  @media (min-width: 900px) { #tools { left: calc(50vw - 300px - 120px); } }
-
-  /* =========================================================
-     PackPal 2.0 layer: זכוכית כהה, זוהר תכלת, תגי זהב, כפתורים מדורגים
-     ========================================================= */
-  :root {
-    --glow2: rgba(56, 189, 248, 0.30);
-    --gold2: #b45309;
-    --head: 'Space Grotesk', 'Heebo', system-ui, sans-serif;
-    --glass-border: rgba(2, 132, 199, 0.22);
-  }
-  :root[data-theme="dark"] {
-    --bg: #030712;
-    --card: rgba(17, 24, 39, 0.72);
-    --card-hover: rgba(24, 33, 52, 0.85);
-    --accent: #38bdf8;
-    --accent-dark: #0284c7;
-    --on-accent: #030712;
-    --text: #f9fafb;
-    --muted: #9ca3af;
-    --border: rgba(56, 189, 248, 0.20);
-    --glass-border: rgba(56, 189, 248, 0.22);
-    --gold2: #fbbf24;
-    --shadow: rgba(0, 0, 0, 0.55);
-  }
-  body {
-    background-image:
-      radial-gradient(circle at 15% 12%, rgba(56, 189, 248, 0.09) 0%, transparent 42%),
-      radial-gradient(circle at 85% 88%, rgba(251, 191, 36, 0.06) 0%, transparent 42%);
-    background-attachment: fixed;
-  }
-  :root:not([data-theme="dark"]) body {
-    background-image:
-      radial-gradient(circle at 15% 12%, rgba(2, 132, 199, 0.07) 0%, transparent 42%),
-      radial-gradient(circle at 85% 88%, rgba(217, 119, 6, 0.06) 0%, transparent 42%);
-  }
-
-  /* כרטיסי זכוכית */
-  .card, .hero {
-    border: 1px solid var(--glass-border);
-    border-radius: 28px;
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
-    box-shadow: 0 18px 40px -14px var(--shadow), 0 0 28px -6px var(--glow2);
-  }
-  .card { padding: 22px; }
-  .hero { background: var(--hero-top); }
-  .hero h1, .welcome h2, .wiz-q, .trip-title {
-    font-family: var(--head);
-    letter-spacing: -.2px;
-  }
-  .hero h1 {
-    background: linear-gradient(135deg, #ffffff 0%, #bae6fd 100%);
-    -webkit-background-clip: text; background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .hero h1 small { -webkit-text-fill-color: var(--hero-text); opacity: .8; }
-
-  /* תגית זהב (כמו NEXT-GEN) */
-  .stamp, .badge, .hero-tag {
-    font-family: var(--font-mono);
-    letter-spacing: 2.5px;
-    color: var(--gold2);
-    background: rgba(251, 191, 36, 0.10);
-    border: 1px solid rgba(251, 191, 36, 0.25);
-    border-radius: 999px;
-    padding: 5px 12px;
-  }
-
-  /* כפתור ראשי: מדורג עם זוהר */
-  .primary {
-    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-    color: var(--on-accent);
-    font-family: var(--head);
-    font-weight: 700;
-    border: 0;
-    border-radius: 18px;
-    padding: 16px 18px;
-    box-shadow: 0 10px 25px var(--glow2);
-    transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
-  }
-  .primary:hover:not(:disabled) {
-    transform: translateY(-3px);
-    box-shadow: 0 15px 35px rgba(56, 189, 248, 0.45);
-    filter: brightness(1.1);
-  }
-  .secondary { border-radius: 14px; border: 1px solid var(--glass-border); background: var(--soft); }
-
-  /* שדות וצ'יפים */
-  input[type=text], input[type=date], input[type=search], select {
-    border-radius: 16px;
-    border: 1px solid var(--glass-border);
-    background: rgba(3, 7, 18, 0.35);
-  }
-  :root:not([data-theme="dark"]) input[type=text],
-  :root:not([data-theme="dark"]) input[type=date],
-  :root:not([data-theme="dark"]) input[type=search],
-  :root:not([data-theme="dark"]) select { background: rgba(255, 255, 255, 0.7); }
-  input:focus, select:focus { box-shadow: 0 0 0 3px var(--glow2); }
-  .chip span { border-radius: 16px; border: 1px solid var(--glass-border); }
-  .chip input:checked + span {
-    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-    color: var(--on-accent);
-    box-shadow: 0 6px 18px var(--glow2);
-  }
-
-  /* פריטי רשימה ושורות */
-  .item, .task, .stat { border-radius: 16px; }
-  .bar { border-radius: 999px; }
-  #barFill { background: linear-gradient(90deg, var(--accent), var(--ok)); box-shadow: 0 0 12px var(--glow2); }
-
-  /* סרגל לשוניות */
-  .tabbar { border-radius: 24px; border: 1px solid var(--glass-border); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
-  .tabbar [aria-selected="true"], .tabbar .active {
-    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-    color: var(--on-accent);
-    box-shadow: 0 8px 20px var(--glow2);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .primary:hover:not(:disabled) { transform: none; }
-  }
-
-  /* ===== מיכל זכוכית אחד גדול סביב כל האפליקציה, כמו בדף 2.0 ===== */
-  main {
-    max-width: 600px;
-    margin: 24px auto 40px;
-    padding: 28px;
-    background: var(--card);
-    border: 1px solid var(--glass-border);
-    border-radius: 32px;
-    -webkit-backdrop-filter: blur(24px);
-    backdrop-filter: blur(24px);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 44px var(--glow2);
-    animation: shellIn .6s cubic-bezier(.16, 1, .3, 1);
-  }
-  @keyframes shellIn { from { opacity: 0; transform: translateY(20px) scale(.98); } to { opacity: 1; transform: none; } }
-  main > .card, main > .hero, main > form.card {
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 22px;
-    background: rgba(3, 7, 18, 0.45);
-  }
-  :root:not([data-theme="dark"]) main > .card,
-  :root:not([data-theme="dark"]) main > form.card { background: rgba(255, 255, 255, 0.6); border-color: rgba(15, 23, 42, 0.08); }
-  main > .hero { background: var(--hero-top); }
-  .tabbar { box-shadow: none; background: rgba(3, 7, 18, 0.45); }
-  :root:not([data-theme="dark"]) .tabbar { background: rgba(255, 255, 255, 0.6); }
-  @media (max-width: 640px) {
-    main { margin: 10px; padding: 14px; border-radius: 26px; }
-  }
-
-  /* ===== מסך נחיתה במסך מלא ===== */
-  .landing { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;
-    background-color: var(--bg);
-    background-image: radial-gradient(circle at 20% 15%, rgba(56,189,248,.14) 0%, transparent 45%), radial-gradient(circle at 80% 85%, rgba(251,191,36,.10) 0%, transparent 45%); }
-  .landing.hidden { display: none; }
-  .landing-card { width: 100%; max-width: 520px; margin: auto; padding: 32px; border-radius: 32px; background: var(--card); border: 1px solid var(--glass-border);
-    -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); box-shadow: 0 25px 50px -12px rgba(0,0,0,.6), 0 0 44px var(--glow2);
-    animation: shellIn .6s cubic-bezier(.16,1,.3,1); }
-  .landing-badge { display: inline-block; font-family: var(--font-mono); font-size: .72rem; letter-spacing: 3px; color: var(--gold2); background: rgba(251,191,36,.10); border: 1px solid rgba(251,191,36,.25); border-radius: 999px; padding: 6px 14px; }
-  .landing h1 { font-family: var(--head); font-size: 2.6rem; margin: 18px 0 8px; line-height: 1.1; background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-  .landing-plane { -webkit-text-fill-color: initial; filter: drop-shadow(0 0 8px var(--accent)); }
-  .landing-lead { color: var(--muted); font-size: 1.05rem; margin: 0 0 22px; }
-  .landing-route { display: flex; align-items: center; gap: 16px; padding: 18px 20px; border-radius: 20px; border: 1px solid var(--border); background: var(--soft); margin-bottom: 20px; direction: ltr; font-family: var(--head); font-size: 1.4rem; }
-  .landing-line { flex: 1; height: 2px; position: relative; background: linear-gradient(90deg, transparent, var(--accent), transparent); }
-  .landing-line i { position: absolute; top: -12px; left: 50%; transform: translateX(-50%) rotate(90deg); font-style: normal; font-size: 1.1rem; filter: drop-shadow(0 0 8px var(--accent)); }
-  .landing-points { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 10px; color: var(--text); }
-  .landing-points li { padding: 10px 14px; border-radius: 14px; background: var(--soft); }
-  .landing .primary { margin-top: 0; font-size: 1.1rem; }
-  .landing-login { width: 100%; margin-top: 12px; padding: 14px; border-radius: 18px; border: 1px solid var(--glass-border); background: var(--soft); color: var(--text); font-weight: 600; }
-  .landing-note { color: var(--muted); font-size: .85rem; text-align: center; margin: 14px 0 0; }
-  body.landing-on main, body.landing-on #tools, body.landing-on .fab-wrap { display: none !important; }
-  @media (max-width: 480px) { .landing-card { padding: 24px 20px; border-radius: 26px; } .landing h1 { font-size: 2.2rem; } }
-
-  .copyright, .site-footer { text-align: center; color: var(--muted); font-size: .8rem; letter-spacing: .3px; }
-  .copyright { margin: 10px 0 0; }
-  .site-footer { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--border); }
-
-  /* =========================================================
-     AURORA: עיצוב עתידני. רקע חי, גבולות זוהרים, ריחוף, דוק צף
-     כל התנועה כבויה כשהמשתמשת ביקשה פחות תנועה
-     ========================================================= */
-  @property --ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-
-  /* --- רקע חי: שלושה כתמי זוהר שצפים + רשת עדינה --- */
-  body::before {
-    content: ""; position: fixed; inset: -20vmax; z-index: -2; pointer-events: none;
-    background:
-      radial-gradient(38vmax 38vmax at 18% 22%, rgba(56,189,248,.28), transparent 62%),
-      radial-gradient(34vmax 34vmax at 82% 30%, rgba(168,85,247,.22), transparent 62%),
-      radial-gradient(40vmax 40vmax at 55% 88%, rgba(251,191,36,.14), transparent 62%);
-    filter: blur(20px);
-    animation: auroraDrift 26s ease-in-out infinite alternate;
-  }
-  body::after {
-    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .5;
-    background-image:
-      linear-gradient(rgba(148,163,184,.07) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(148,163,184,.07) 1px, transparent 1px);
-    background-size: 56px 56px;
-    -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 20%, transparent 75%);
-    mask-image: radial-gradient(ellipse at 50% 30%, #000 20%, transparent 75%);
-  }
-  :root:not([data-theme="dark"]) body::before {
-    background:
-      radial-gradient(38vmax 38vmax at 18% 22%, rgba(56,189,248,.30), transparent 62%),
-      radial-gradient(34vmax 34vmax at 82% 30%, rgba(196,181,253,.34), transparent 62%),
-      radial-gradient(40vmax 40vmax at 55% 88%, rgba(253,224,171,.45), transparent 62%);
-  }
-  @keyframes auroraDrift {
-    0%   { transform: translate3d(-3%, -2%, 0) rotate(0deg) scale(1); }
-    50%  { transform: translate3d(4%, 3%, 0) rotate(8deg) scale(1.08); }
-    100% { transform: translate3d(-2%, 5%, 0) rotate(-6deg) scale(1.04); }
-  }
-
-  /* --- גבול מסתובב של אור סביב הכותרת וסביב מסך הנחיתה --- */
-  .hero, .landing-card { position: relative; isolation: isolate; }
-  .hero::after, .landing-card::after {
-    content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1.5px; z-index: -1; pointer-events: none;
-    background: conic-gradient(from var(--ang), transparent 0deg, var(--accent) 60deg, transparent 130deg, #a855f7 220deg, transparent 300deg, var(--gold2) 340deg, transparent 360deg);
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor; mask-composite: exclude;
-    animation: spinBorder 7s linear infinite;
-  }
-  @keyframes spinBorder { to { --ang: 360deg; } }
-
-  /* --- כותרות עם גרדיאנט נע --- */
-  .hero h1, .landing h1 {
-    background: linear-gradient(110deg, #fff 0%, #7dd3fc 30%, #c4b5fd 55%, #fde68a 80%, #fff 100%);
-    background-size: 220% 100%;
-    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-    animation: titleShine 8s linear infinite;
-  }
-  :root:not([data-theme="dark"]) .landing h1 { background-image: linear-gradient(110deg, #0f172a 0%, #0284c7 40%, #7c3aed 70%, #0f172a 100%); background-size: 220% 100%; }
-  @keyframes titleShine { to { background-position: -220% 0; } }
-
-  /* --- ריחוף צף של המטוס, והמטוס שטס לאורך המסלול --- */
-  .landing-plane { display: inline-block; animation: floatY 4s ease-in-out infinite; }
-  @keyframes floatY { 50% { transform: translateY(-8px) rotate(-4deg); } }
-  .landing-line i { animation: flyAcross 4.5s ease-in-out infinite; left: 0; }
-  @keyframes flyAcross { 0% { left: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
-  .landing-points li { opacity: 0; animation: slideIn .6s cubic-bezier(.2,.8,.25,1) forwards; }
-  .landing-points li:nth-child(1) { animation-delay: .25s; }
-  .landing-points li:nth-child(2) { animation-delay: .4s; }
-  .landing-points li:nth-child(3) { animation-delay: .55s; }
-  @keyframes slideIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-
-  /* --- כפתור ראשי: הבהוב אור שעובר, ופעימה בנחיתה --- */
-  .primary { position: relative; overflow: hidden; }
-  .primary::after {
-    content: ""; position: absolute; top: 0; bottom: 0; width: 45%; left: -60%; pointer-events: none;
-    background: linear-gradient(100deg, transparent, rgba(255,255,255,.45), transparent);
-    transform: skewX(-18deg);
-    animation: sheen 4.2s ease-in-out infinite;
-  }
-  @keyframes sheen { 0%, 55% { left: -60%; } 100% { left: 130%; } }
-  .landing .primary { animation: pulseGlow 2.8s ease-in-out infinite; }
-  @keyframes pulseGlow { 50% { box-shadow: 0 10px 40px rgba(56,189,248,.6), 0 0 0 6px rgba(56,189,248,.10); } }
-
-  /* --- זרקור שעוקב אחרי העכבר על כרטיסים (ערכים מ-JS) --- */
-  main > .card, main > form.card {
-    background:
-      radial-gradient(420px circle at var(--mx, 50%) var(--my, -40%), rgba(56,189,248,.13), transparent 55%),
-      rgba(3, 7, 18, 0.45);
-    transition: border-color .3s, transform .3s;
-  }
-  :root:not([data-theme="dark"]) main > .card,
-  :root:not([data-theme="dark"]) main > form.card {
-    background:
-      radial-gradient(420px circle at var(--mx, 50%) var(--my, -40%), rgba(2,132,199,.12), transparent 55%),
-      rgba(255, 255, 255, 0.62);
-  }
-  main > .card:hover { border-color: rgba(56,189,248,.35); }
-
-  /* --- חשיפה מדורגת בגלילה (פעיל רק כש-JS הוסיף html.reveal) --- */
-  html.reveal .rv { opacity: 0; transform: translateY(22px) scale(.985); transition: opacity .7s cubic-bezier(.2,.8,.25,1), transform .7s cubic-bezier(.2,.8,.25,1); }
-  html.reveal .rv.in { opacity: 1; transform: none; }
-
-  /* --- תפריט לשוניות כדוק זכוכית צף שנדבק לתחתית המסך --- */
-  .tabbar {
-    position: sticky; bottom: 14px; z-index: 60; margin: 18px 0 8px; padding: 8px;
-    border: 1px solid var(--glass-border); border-radius: 26px;
-    background: rgba(8, 13, 26, .78);
-    -webkit-backdrop-filter: blur(22px) saturate(1.4); backdrop-filter: blur(22px) saturate(1.4);
-    box-shadow: 0 18px 40px -10px rgba(0,0,0,.7), 0 0 30px -4px var(--glow2);
-  }
-  :root:not([data-theme="dark"]) .tabbar { background: rgba(255,255,255,.82); box-shadow: 0 18px 40px -12px rgba(15,23,42,.25), 0 0 30px -6px var(--glow2); }
-  .tabbar button { min-height: 52px; border-radius: 18px; }
-  .tabbar button:not(.active):hover { transform: translateY(-3px); }
-  .tabbar button.active { transform: translateY(-4px); }
-  .tabbar button.active .ti { animation: hop .5s cubic-bezier(.3,1.6,.5,1), floatY 3.2s ease-in-out .6s infinite; }
-
-  /* --- כפתור הפעולה הצף: טבעת פועמת, ותפריט שנפתח בקפיצה מדורגת --- */
-  .fab { position: relative; }
-  .fab::before {
-    content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--accent); opacity: .5;
-    animation: ringPulse 2.6s ease-out infinite; pointer-events: none;
-  }
-  @keyframes ringPulse { from { transform: scale(.85); opacity: .6; } to { transform: scale(1.5); opacity: 0; } }
-  .fab-wrap.open .fab::before { animation: none; opacity: 0; }
-  .fab-item { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); }
-  .fab-wrap.open .fab-item { transition: opacity .35s, transform .45s cubic-bezier(.3,1.6,.5,1); }
-
-  /* --- מגירת עיצוב: זכוכית --- */
-  .drawer { -webkit-backdrop-filter: blur(26px); backdrop-filter: blur(26px); border-inline-end: 1px solid var(--glass-border); }
-
-  /* --- פריטי רשימה --- */
-  .item { transition: transform .2s, background .25s, border-color .25s; }
-  .item:hover { transform: translateX(-3px); border-color: rgba(56,189,248,.35); }
-  .item.done { opacity: .72; }
-  .item input[type=checkbox] { transition: transform .2s; }
-  .item input[type=checkbox]:checked { transform: scale(1.12); }
-
-  /* --- סרגל התקדמות זוהר עם פס נע --- */
-  #barFill { position: relative; overflow: hidden; }
-  #barFill::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.5), transparent 80%); background-size: 200% 100%; animation: barShine 2.4s linear infinite; }
-  @keyframes barShine { from { background-position: 200% 0; } to { background-position: -100% 0; } }
-
-  /* --- נגישות: דלג לתוכן, טבעת מיקוד ברורה, מטרות מגע גדולות, ניגודיות --- */
-  .skip-link { position: fixed; top: -80px; inset-inline-start: 12px; z-index: 1000; padding: 12px 18px; border-radius: 14px; background: var(--accent); color: var(--on-accent); font-weight: 700; text-decoration: none; transition: top .2s; }
-  .skip-link:focus { top: 12px; }
-  :focus-visible { outline: 3px solid var(--accent) !important; outline-offset: 3px !important; }
-  button, .chip span, select, input[type=date], input[type=text], input[type=search] { min-height: 44px; }
-  .item .qty-btn, .item .move, .item .del { min-width: 44px; min-height: 44px; }
-  :root:not([data-theme="dark"]) { --muted: #475569; }
-
-  /* --- פחות תנועה: מכבים הכל, בלי לשבור שום דבר --- */
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
-    html.reveal .rv { opacity: 1 !important; transform: none !important; }
-    .landing-points li { opacity: 1; }
-  }
-
-  main { padding-bottom: 96px; }
-  html { scroll-padding-bottom: 110px; }
-
-  /* =========================================================
-     SHELL: פריסת מחשב חדשה. פס ניווט אנכי צף + רשת בנטו (שתי עמודות)
-     בטלפון נשאר הדוק התחתון
-     ========================================================= */
-  @media (min-width: 1100px) {
-    body { padding: 0 28px; }
-    main {
-      max-width: 1280px; margin: 28px auto 48px; padding: 28px;
-      display: grid; grid-template-columns: 112px minmax(0, 1fr) minmax(0, 1fr); column-gap: 20px; row-gap: 0; align-items: start;
-    }
-    main > * { grid-column: 2 / -1; min-width: 0; margin-bottom: 20px; }
-    main > .skip-link { grid-column: auto; }
-    main > #accountBar, main > .hero, main > #sharedBar, main > .site-footer { grid-column: 1 / -1; }
-    main > .site-footer { margin-top: 8px; }
-
-    /* תוכן "היעד" ו"לפני הטיסה": כרטיסים בשתי עמודות (בנטו). הרחבים נשארים ברוחב מלא */
-    main > .card[data-tab="dest"], main > .card[data-tab="before"] { grid-column: auto; }
-    main > #weather, main > #budgetSection, main > #flightSection, main > #attrSection { grid-column: 2 / -1; }
-
-    /* פס הניווט: אנכי, זכוכית, צף לצד התוכן */
-    main > .tabbar {
-      grid-column: 1; grid-row: 3 / span 40; align-self: start;
-      position: sticky; top: 24px; bottom: auto; margin: 0 0 20px;
-      display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 28px;
-    }
-    main > .tabbar.hidden { display: none; }
-    .tabbar button { flex-direction: column; width: 100%; padding: 14px 4px; min-height: 76px; font-size: .8rem; }
-    .tabbar button.active { transform: translateX(6px); }
-    .tabbar button:not(.active):hover { transform: translateX(4px); }
-    .tabbar .ti { font-size: 1.6rem; }
-
-    /* כותרת גדולה ורחבה */
-    .hero { padding: 36px 40px; }
-    .hero h1 { font-size: 3.1rem; }
-
-    main { padding-bottom: 28px; }
-    html { scroll-padding-bottom: 0; }
-  }
-  @media (min-width: 1500px) {
-    main { max-width: 1400px; grid-template-columns: 120px repeat(3, minmax(0, 1fr)); }
-    main > .card[data-tab="dest"], main > .card[data-tab="before"] { grid-column: auto; }
-    main > #weather, main > #budgetSection, main > #flightSection { grid-column: 2 / -1; }
-  }
+/* =====================================================================
+   NOVA: תמה חדשה לגמרי. Cyber Holo + Sunset Glass
+   זכוכית, שקיעה, נאון ציאן, אותיות מונו, תנועה חיה
+   ===================================================================== */
+@property --ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+
+:root {
+  --font: 'Rubik', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  --sunset: linear-gradient(135deg, #ffb86b 0%, #ff6f91 52%, #c06cff 100%);
+  --neon: #00e5ff;
+  --magenta: #ff3dcf;
+  --lime: #b8ff5c;
+  --glass-blur: blur(18px) saturate(1.35);
+  --r-card: 28px;
+  --ink-on-sunset: #1a0f2e;
+
+  /* ===== מצב בהיר: שקיעת יום ===== */
+  --bg: #fff1e4;
+  --card: rgba(255, 255, 255, 0.62);
+  --card-hover: rgba(255, 255, 255, 0.82);
+  --text: #22143d;
+  --muted: #5b4f78;
+  --accent: #6a3df0;
+  --accent-dark: #4f24c9;
+  --on-accent: #ffffff;
+  --ok: #0f9d6b;
+  --danger: #d6245a;
+  --border: rgba(34, 20, 61, 0.14);
+  --soft: rgba(255, 255, 255, 0.55);
+  --stat: rgba(255, 255, 255, 0.7);
+  --track: rgba(34, 20, 61, 0.1);
+  --sand: rgba(255, 184, 107, 0.28);
+  --sun: #e8792b;
+  --stamp: #e8792b;
+  --glow: rgba(106, 61, 240, 0.25);
+  --glow2: rgba(106, 61, 240, 0.22);
+  --glass-border: rgba(106, 61, 240, 0.22);
+  --shadow: rgba(60, 30, 110, 0.18);
+  --shadow-hover: rgba(60, 30, 110, 0.28);
+  --hero-text: #22143d;
+  --hero-top: rgba(255, 255, 255, 0.55);
+  --hero-bottom: transparent;
+  --cloud: rgba(255, 255, 255, 0.4);
+  --gold2: #b45309;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #060712;
+  --card: rgba(255, 255, 255, 0.055);
+  --card-hover: rgba(255, 255, 255, 0.09);
+  --text: #f4f1ff;
+  --muted: #a9a5c8;
+  --accent: #00e5ff;
+  --accent-dark: #7b5cff;
+  --on-accent: #06070f;
+  --ok: #6dffb0;
+  --danger: #ff5c7a;
+  --border: rgba(255, 255, 255, 0.13);
+  --soft: rgba(255, 255, 255, 0.07);
+  --stat: rgba(255, 255, 255, 0.08);
+  --track: rgba(255, 255, 255, 0.1);
+  --sand: rgba(255, 184, 107, 0.14);
+  --sun: #ffb86b;
+  --stamp: #ff9a6b;
+  --glow: rgba(0, 229, 255, 0.28);
+  --glow2: rgba(0, 229, 255, 0.26);
+  --glass-border: rgba(0, 229, 255, 0.24);
+  --shadow: rgba(0, 0, 0, 0.55);
+  --shadow-hover: rgba(0, 0, 0, 0.7);
+  --hero-text: #ffffff;
+  --hero-top: rgba(255, 255, 255, 0.05);
+  --cloud: rgba(255, 255, 255, 0.08);
+  --gold2: #ffb86b;
+  color-scheme: dark;
+}
+
+/* ---------- בסיס ורקע חי ---------- */
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background-color: var(--bg);
+  color: var(--text);
+  background-image: none;
+  min-height: 100vh;
+}
+body::before {
+  content: ""; position: fixed; inset: -20vmax; z-index: -2; pointer-events: none;
+  background:
+    radial-gradient(36vmax 36vmax at 12% 18%, rgba(255, 184, 107, .55), transparent 60%),
+    radial-gradient(40vmax 40vmax at 88% 26%, rgba(192, 108, 255, .45), transparent 60%),
+    radial-gradient(34vmax 34vmax at 60% 92%, rgba(255, 111, 145, .42), transparent 60%);
+  filter: blur(24px);
+  animation: novaDrift 28s ease-in-out infinite alternate;
+}
+:root[data-theme="dark"] body::before {
+  background:
+    radial-gradient(36vmax 36vmax at 12% 18%, rgba(255, 140, 90, .30), transparent 60%),
+    radial-gradient(40vmax 40vmax at 88% 26%, rgba(123, 92, 255, .34), transparent 60%),
+    radial-gradient(34vmax 34vmax at 55% 95%, rgba(0, 229, 255, .20), transparent 60%);
+}
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(120, 100, 200, .09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 100, 200, .09) 1px, transparent 1px),
+    linear-gradient(180deg, transparent 0, rgba(0, 229, 255, .07) 50%, transparent 100%);
+  background-size: 52px 52px, 52px 52px, 100% 160px;
+  background-repeat: repeat, repeat, no-repeat;
+  animation: novaScan 7s linear infinite;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 35%, #000 25%, transparent 78%);
+  mask-image: radial-gradient(ellipse at 50% 35%, #000 25%, transparent 78%);
+}
+@keyframes novaDrift {
+  0% { transform: translate3d(-3%, -2%, 0) rotate(0) scale(1); }
+  50% { transform: translate3d(4%, 3%, 0) rotate(8deg) scale(1.08); }
+  100% { transform: translate3d(-2%, 5%, 0) rotate(-6deg) scale(1.04); }
+}
+@keyframes novaScan { from { background-position: 0 0, 0 0, 0 -160px; } to { background-position: 0 0, 0 0, 0 110vh; } }
+
+/* ---------- מיכל ראשי ---------- */
+main { max-width: 640px; margin: 20px auto 0; padding: 18px 16px 120px; background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; animation: none; border-radius: 0; }
+
+/* ---------- כרטיסי זכוכית ---------- */
+.card, .hero {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: 0 18px 44px -18px var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .12);
+  padding: 22px;
+  transition: border-color .3s, transform .3s, box-shadow .3s;
+}
+.card::after { display: none; content: none; }
+.card::before {
+  content: ""; position: absolute; top: -1px; inset-inline-start: 28px; left: auto; right: auto; width: 54px; height: 3px; border: 0; border-radius: 0 0 4px 4px;
+  background: var(--sunset); box-shadow: 0 0 14px rgba(255, 111, 145, .6); clip-path: none; pointer-events: none; z-index: 1;
+}
+main > .card:hover { border-color: var(--glass-border); box-shadow: 0 24px 54px -16px var(--shadow), 0 0 32px -8px var(--glow2), inset 0 1px 0 rgba(255, 255, 255, .14); }
+.card .note, .note, .hint { color: var(--muted); }
+.card-head { border-radius: 16px; }
+
+/* ---------- כותרת ראשית ---------- */
+.hero { padding: 26px 24px 22px; overflow: hidden; background: var(--hero-top); margin-bottom: 16px; isolation: isolate; }
+.hero::before { display: none; }
+.hero::after {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1.5px; z-index: -1; pointer-events: none;
+  background: conic-gradient(from var(--ang), transparent 0deg, var(--neon) 55deg, transparent 120deg, var(--magenta) 210deg, transparent 280deg, #ffb86b 330deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: novaSpin 7s linear infinite;
+}
+@keyframes novaSpin { to { --ang: 360deg; } }
+.hero-art, .hero .waves, .hero .cloud, .hero .sun { display: none; }
+.bp-top { font-family: var(--font-mono); font-size: .68rem; letter-spacing: .28em; color: var(--accent); display: flex; justify-content: space-between; text-transform: uppercase; }
+.hero h1 {
+  font-family: var(--font); font-weight: 800; font-size: 2.4rem; line-height: 1.1; letter-spacing: -.02em; margin: 14px 0 4px;
+  background: linear-gradient(100deg, var(--text) 0%, #ffb86b 35%, #ff6f91 60%, var(--accent) 100%); background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+  animation: novaShine 9s linear infinite;
+}
+.hero h1 small { display: block; font-size: 1rem; font-weight: 400; letter-spacing: 0; margin-top: 8px; -webkit-text-fill-color: var(--muted); color: var(--muted); }
+@keyframes novaShine { to { background-position: -220% 0; } }
+.bp-route { display: flex; align-items: center; gap: 14px; margin-top: 18px; direction: ltr; }
+.bp-code { font-family: var(--font-mono); font-weight: 800; font-size: 1.15rem; letter-spacing: .12em; color: var(--text); }
+.bp-path { flex: 1; height: 2px; position: relative; background: linear-gradient(90deg, transparent, var(--accent), var(--magenta), transparent); border-radius: 2px; }
+.bp-plane { filter: drop-shadow(0 0 8px var(--accent)); }
+
+/* ---------- כפתורים ---------- */
+button, .tab, select, input, textarea { font-family: var(--font); }
+button { border-radius: 999px; transition: transform .2s, box-shadow .25s, background .25s, border-color .25s, filter .25s; }
+.primary {
+  position: relative; overflow: hidden; background: var(--sunset); color: var(--ink-on-sunset); font-weight: 800; letter-spacing: .01em;
+  border: 0; border-radius: 999px; padding: 15px 22px; box-shadow: 0 12px 28px -8px rgba(255, 111, 145, .65);
+}
+.primary::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55), transparent); transform: skewX(-18deg); animation: novaSheen 4.4s ease-in-out infinite;
+}
+@keyframes novaSheen { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+.primary:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 18px 38px -8px rgba(255, 111, 145, .8); filter: brightness(1.06); }
+.primary:active:not(:disabled) { transform: scale(.97); }
+.secondary, .tab-manage button, .actions button:not(.primary) {
+  background: var(--soft); color: var(--text); border: 1px solid var(--border); border-radius: 999px;
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.secondary:hover:not(:disabled) { border-color: var(--accent); background: var(--card-hover); box-shadow: 0 0 18px -4px var(--glow); }
+.link-btn, a { color: var(--accent); }
+.danger-btn { background: rgba(255, 92, 122, .14); color: var(--danger); border: 1px solid rgba(255, 92, 122, .4); }
+
+/* ---------- שדות וצ'יפים ---------- */
+input[type=text], input[type=date], input[type=search], input[type=number], select, textarea {
+  background: var(--soft); color: var(--text); border: 1px solid var(--border); border-radius: 18px; padding: 12px 16px;
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: .8; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow), 0 0 22px -4px var(--glow); outline: none; }
+label { color: var(--muted); font-size: .9rem; }
+.chip span { background: var(--soft); border: 1px solid var(--border); border-radius: 999px; color: var(--text); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.chip span:hover { border-color: var(--accent); box-shadow: 0 0 16px -4px var(--glow); }
+.chip input:checked + span { background: var(--sunset); color: var(--ink-on-sunset); border-color: transparent; font-weight: 700; box-shadow: 0 8px 20px -6px rgba(255, 111, 145, .7); }
+.suggest { background: var(--card); border: 1px solid var(--glass-border); border-radius: 20px; -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); overflow: hidden; }
+
+/* ---------- אשף ---------- */
+.wiz-steps { gap: 8px; }
+.wiz-steps button { border-radius: 999px; background: var(--soft); border: 1px solid var(--border); color: var(--muted); }
+.wiz-steps button.active, .wiz-steps button[aria-current="step"] { background: var(--sunset); color: var(--ink-on-sunset); border-color: transparent; box-shadow: 0 8px 22px -8px rgba(255, 111, 145, .7); font-weight: 700; }
+.wiz-q { font-weight: 800; font-size: 1.5rem; letter-spacing: -.01em; }
+.wiz-summary { border-radius: 20px; }
+
+/* ---------- ספירה לאחור, התקדמות ופריטים ---------- */
+.countdown { background: var(--sand); border: 1px solid var(--border); border-radius: 24px; padding: 18px; position: relative; overflow: hidden; }
+.countdown, .cd-main { color: var(--text); }
+.cd-num, .cd-big { font-family: var(--font-mono); font-weight: 800; background: var(--sunset); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.cd-cell { background: var(--stat); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: 0 0 22px -8px var(--glow); }
+.cd-cell b, .cd-cell .cd-unit-num, .cd-num { font-family: var(--font-mono); }
+.cd-cell b { color: var(--accent); text-shadow: 0 0 14px var(--glow); }
+.cd-fill { background: var(--sunset); box-shadow: 0 0 12px rgba(255, 111, 145, .6); border-radius: 999px; }
+.cd-track { background: var(--track); border-radius: 999px; }
+.stat, .stats > * { background: var(--stat); border: 1px solid var(--border); border-radius: 999px; }
+.bar { background: var(--track); border-radius: 999px; height: 10px; overflow: hidden; }
+#barFill { background: linear-gradient(90deg, var(--neon), var(--magenta), #ffb86b); box-shadow: 0 0 16px rgba(0, 229, 255, .5); border-radius: 999px; position: relative; overflow: hidden; }
+#barFill::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, .6), transparent 80%); background-size: 200% 100%; animation: novaBar 2.4s linear infinite; }
+@keyframes novaBar { from { background-position: 200% 0; } to { background-position: -100% 0; } }
+.trip-title { font-weight: 800; letter-spacing: -.01em; }
+.cat-title { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
+.item {
+  background: var(--soft); border: 1px solid var(--border); border-radius: 20px; padding: 12px 14px;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transition: transform .2s, border-color .25s, background .25s, opacity .25s;
+}
+.item:hover { transform: translateX(-3px); border-color: var(--glass-border); background: var(--card-hover); }
+.item.done { opacity: .6; }
+.item input[type=checkbox] { accent-color: var(--accent); width: 24px; height: 24px; transition: transform .2s; }
+.item input[type=checkbox]:checked { transform: scale(1.12); }
+.pack-bar, .undo-bar { background: var(--card); border: 1px solid var(--glass-border); border-radius: 22px; -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
+.tab { background: var(--soft); border: 1px solid var(--border); border-radius: 999px; color: var(--text); }
+.tab.active { background: var(--sunset); color: var(--ink-on-sunset); border-color: transparent; }
+.quick-tile, .fact, .visa-box, .lf-box { background: var(--soft); border: 1px solid var(--border); border-radius: 20px; }
+.attr-item { border-radius: 18px; }
+
+/* ---------- תפריט לשוניות: דוק זכוכית צף ---------- */
+.tabbar {
+  position: sticky; bottom: 14px; z-index: 60; margin: 18px 0 8px; padding: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  border: 1px solid var(--glass-border); border-radius: 999px; background: var(--card);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5); backdrop-filter: blur(22px) saturate(1.5);
+  box-shadow: 0 20px 44px -12px var(--shadow), 0 0 34px -8px var(--glow2);
+}
+:root[data-theme="dark"] .tabbar { background: rgba(10, 12, 28, .72); }
+.tabbar button { background: none; border: 0; box-shadow: none; color: var(--muted); border-radius: 999px; min-height: 56px; }
+.tabbar button:not(.active):hover { background: var(--soft); color: var(--text); transform: translateY(-3px); }
+.tabbar button.active { background: var(--sunset); color: var(--ink-on-sunset); transform: translateY(-4px); box-shadow: 0 12px 24px -8px rgba(255, 111, 145, .75); }
+.tabbar button.active .ti { animation: hop .5s cubic-bezier(.3, 1.6, .5, 1), novaFloat 3.2s ease-in-out .6s infinite; }
+.tabbar .tb { background: var(--magenta); color: #fff; box-shadow: 0 0 12px rgba(255, 61, 207, .7); }
+@keyframes novaFloat { 50% { transform: translateY(-3px) rotate(-4deg); } }
+
+/* ---------- כפתור צף, תפריטים ומגירה ---------- */
+.fab { background: var(--sunset); color: var(--ink-on-sunset); border: 0; box-shadow: 0 14px 30px -6px rgba(255, 111, 145, .75); position: relative; }
+.fab::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--magenta); opacity: .5; animation: novaRing 2.6s ease-out infinite; pointer-events: none; }
+@keyframes novaRing { from { transform: scale(.85); opacity: .6; } to { transform: scale(1.5); opacity: 0; } }
+.fab-wrap.open .fab::before { animation: none; opacity: 0; }
+.fab-item { background: var(--card); border: 1px solid var(--glass-border); color: var(--text); border-radius: 999px; -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); box-shadow: 0 12px 28px -10px var(--shadow); }
+.fab-item b { background: var(--sunset); color: var(--ink-on-sunset); }
+.fab-wrap.open .fab-item { transition: opacity .35s, transform .45s cubic-bezier(.3, 1.6, .5, 1); }
+.drawer { background: var(--card); border-inline-end: 1px solid var(--glass-border); -webkit-backdrop-filter: blur(28px) saturate(1.4); backdrop-filter: blur(28px) saturate(1.4); }
+:root[data-theme="dark"] .drawer { background: rgba(10, 12, 28, .8); }
+.drawer-body > button, .drawer-body #bgBtn { background: var(--soft); border: 1px solid var(--border); border-radius: 20px; color: var(--text); }
+.overlay { background: rgba(6, 7, 18, .55); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.toast, .sheet, .popover { background: var(--card); border: 1px solid var(--glass-border); border-radius: 22px; -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); color: var(--text); }
+#tools { left: 12px; }
+#designToggle, #themeBtn, #sizeBtn, #fontBtn { background: var(--card); color: var(--text); border: 1px solid var(--glass-border); border-radius: 999px; -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); box-shadow: 0 10px 24px -10px var(--shadow); }
+.account-bar { background: transparent; }
+.dev-banner, #devBanner { border-radius: 0 0 18px 18px; }
+
+/* ---------- מסך נחיתה ---------- */
+.landing { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; background-color: var(--bg); }
+.landing.hidden { display: none; }
+.landing::before {
+  content: ""; position: fixed; inset: -20vmax; z-index: -1; pointer-events: none; filter: blur(24px); animation: novaDrift 28s ease-in-out infinite alternate;
+  background:
+    radial-gradient(36vmax 36vmax at 12% 18%, rgba(255, 184, 107, .55), transparent 60%),
+    radial-gradient(40vmax 40vmax at 88% 26%, rgba(192, 108, 255, .45), transparent 60%),
+    radial-gradient(34vmax 34vmax at 60% 92%, rgba(255, 111, 145, .42), transparent 60%);
+}
+:root[data-theme="dark"] .landing::before {
+  background:
+    radial-gradient(36vmax 36vmax at 12% 18%, rgba(255, 140, 90, .30), transparent 60%),
+    radial-gradient(40vmax 40vmax at 88% 26%, rgba(123, 92, 255, .34), transparent 60%),
+    radial-gradient(34vmax 34vmax at 55% 95%, rgba(0, 229, 255, .20), transparent 60%);
+}
+.landing-card {
+  position: relative; isolation: isolate; width: 100%; max-width: 500px; margin: auto; padding: 32px; border-radius: 36px;
+  background: var(--card); border: 1px solid var(--border); -webkit-backdrop-filter: blur(26px) saturate(1.4); backdrop-filter: blur(26px) saturate(1.4);
+  box-shadow: 0 30px 60px -20px var(--shadow), 0 0 50px -10px var(--glow2); animation: novaRise .7s cubic-bezier(.16, 1, .3, 1);
+}
+@keyframes novaRise { from { opacity: 0; transform: translateY(24px) scale(.97); } to { opacity: 1; transform: none; } }
+.landing-card::after {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1.5px; z-index: -1; pointer-events: none;
+  background: conic-gradient(from var(--ang), transparent 0deg, var(--neon) 55deg, transparent 120deg, var(--magenta) 210deg, transparent 280deg, #ffb86b 330deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: novaSpin 7s linear infinite;
+}
+.landing-badge { display: inline-block; font-family: var(--font-mono); font-size: .7rem; letter-spacing: .3em; color: var(--accent); background: var(--soft); border: 1px solid var(--glass-border); border-radius: 999px; padding: 6px 14px; }
+.landing h1 {
+  font-weight: 800; font-size: 3rem; line-height: 1.05; letter-spacing: -.03em; margin: 20px 0 8px;
+  background: linear-gradient(100deg, var(--text) 0%, #ffb86b 35%, #ff6f91 62%, var(--accent) 100%); background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: novaShine 9s linear infinite;
+}
+.landing-plane { display: inline-block; -webkit-text-fill-color: initial; animation: novaFloat 4s ease-in-out infinite; filter: drop-shadow(0 0 10px var(--accent)); }
+.landing-lead { color: var(--muted); font-size: 1.08rem; margin: 0 0 22px; }
+.landing-route { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-radius: 22px; border: 1px solid var(--border); background: var(--soft); margin-bottom: 20px; direction: ltr; font-family: var(--font-mono); font-weight: 800; font-size: 1.2rem; letter-spacing: .12em; }
+.landing-line { flex: 1; height: 2px; position: relative; background: linear-gradient(90deg, transparent, var(--accent), var(--magenta), transparent); }
+.landing-line i { position: absolute; top: -12px; left: 0; transform: translateX(-50%) rotate(90deg); font-style: normal; font-size: 1.1rem; filter: drop-shadow(0 0 8px var(--accent)); animation: novaFly 4.5s ease-in-out infinite; }
+@keyframes novaFly { 0% { left: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+.landing-points { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 10px; }
+.landing-points li { padding: 13px 16px; border-radius: 20px; background: var(--soft); border: 1px solid var(--border); opacity: 0; animation: novaIn .6s cubic-bezier(.2, .8, .25, 1) forwards; }
+.landing-points li:nth-child(1) { animation-delay: .25s; } .landing-points li:nth-child(2) { animation-delay: .4s; } .landing-points li:nth-child(3) { animation-delay: .55s; }
+@keyframes novaIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.landing .primary { margin-top: 0; font-size: 1.1rem; animation: novaGlow 2.8s ease-in-out infinite; }
+@keyframes novaGlow { 50% { box-shadow: 0 14px 44px -6px rgba(255, 111, 145, .95), 0 0 0 6px rgba(255, 111, 145, .14); } }
+.landing-login { width: 100%; margin-top: 12px; padding: 14px; border-radius: 999px; border: 1px solid var(--glass-border); background: var(--soft); color: var(--text); font-weight: 600; }
+.landing-login:hover { border-color: var(--accent); box-shadow: 0 0 20px -4px var(--glow); }
+.landing-note { color: var(--muted); font-size: .85rem; text-align: center; margin: 14px 0 0; }
+.copyright, .site-footer { text-align: center; color: var(--muted); font-size: .8rem; letter-spacing: .3px; }
+.copyright { margin: 10px 0 0; }
+.site-footer { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--border); }
+body.landing-on main, body.landing-on #tools, body.landing-on .fab-wrap { display: none !important; }
+
+/* ---------- זרקור עכבר וחשיפה בגלילה ---------- */
+main > .card, main > form.card {
+  background: radial-gradient(380px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--glow) 38%, transparent), transparent 60%), var(--card);
+}
+html.reveal .rv { opacity: 0; transform: translateY(22px) scale(.985); transition: opacity .7s cubic-bezier(.2, .8, .25, 1), transform .7s cubic-bezier(.2, .8, .25, 1); }
+html.reveal .rv.in { opacity: 1; transform: none; }
+
+/* ---------- נגישות ---------- */
+.skip-link { position: fixed; top: -80px; inset-inline-start: 12px; z-index: 1000; padding: 12px 18px; border-radius: 999px; background: var(--sunset); color: var(--ink-on-sunset); font-weight: 800; text-decoration: none; transition: top .2s; }
+.skip-link:focus { top: 12px; }
+:focus-visible { outline: 3px solid var(--accent) !important; outline-offset: 3px !important; }
+button, .chip span, select, input[type=date], input[type=text], input[type=search] { min-height: 44px; }
+.item .qty-btn, .item .move, .item .del { min-width: 44px; min-height: 44px; }
+
+/* ---------- מחשב: פס ניווט אנכי צף ורשת כרטיסים ---------- */
+@media (min-width: 1100px) {
+  body { padding: 0 28px; }
+  main { max-width: 1280px; margin: 28px auto 48px; padding: 0 0 48px; display: grid; grid-template-columns: 116px minmax(0, 1fr) minmax(0, 1fr); column-gap: 22px; row-gap: 0; align-items: start; }
+  main > * { grid-column: 2 / -1; min-width: 0; margin-bottom: 22px; }
+  main > #accountBar, main > .hero, main > #sharedBar, main > .site-footer { grid-column: 1 / -1; }
+  main > .card[data-tab="dest"], main > .card[data-tab="before"] { grid-column: auto; }
+  main > #weather, main > #budgetSection, main > #flightSection, main > #attrSection { grid-column: 2 / -1; }
+  main > .tabbar { grid-column: 1; grid-row: 3 / span 40; align-self: start; position: sticky; top: 24px; bottom: auto; margin: 0 0 22px; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 34px; }
+  main > .tabbar.hidden { display: none; }
+  .tabbar button { flex-direction: column; width: 100%; padding: 14px 4px; min-height: 80px; font-size: .8rem; }
+  .tabbar button.active { transform: translateX(6px); }
+  .tabbar button:not(.active):hover { transform: translateX(4px); }
+  .tabbar .ti { font-size: 1.6rem; }
+  .hero { padding: 38px 44px; }
+  .hero h1 { font-size: 3.4rem; }
+}
+@media (min-width: 1500px) {
+  main { max-width: 1400px; grid-template-columns: 120px repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  main { padding: 12px 12px 120px; }
+  .card { padding: 18px; border-radius: 24px; }
+  .hero h1 { font-size: 2rem; }
+  .landing-card { padding: 24px 20px; border-radius: 30px; }
+  .landing h1 { font-size: 2.5rem; }
+}
+
+/* ---------- פחות תנועה ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  html.reveal .rv { opacity: 1 !important; transform: none !important; }
+  .landing-points li { opacity: 1; }
+}
 </style>
 </head>
 <body>
