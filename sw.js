@@ -1,6 +1,6 @@
 // Service worker של PackPal: שומר את האפליקציה במכשיר כדי שתיפתח גם בלי אינטרנט (למשל בטיסה).
 // עובד רק כשהאתר מוגש ישירות (GitHub Pages), לא בתוך Streamlit.
-const CACHE = 'packpal-sw-v2';
+const CACHE = 'packpal-sw-v3';
 const SHELL = [
   './',
   'index.html',
