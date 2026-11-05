@@ -3,289 +3,169 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PackPal – Executive Smart Packing</title>
-<link rel="icon" type="image/png" sizes="32x32" href="static/favicon-32.png">
-<link rel="apple-touch-icon" href="static/apple-touch-icon.png">
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#05070d">
+<title>PackPal – Next-Gen Aviation Luxe</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 
 <style>
-  /* =========================================================
-     1. פלטת צבעים יוקרתית עתידנית (Cyber Luxe & Executive)
-     ========================================================= */
   :root {
-    /* --- Light Mode: Executive Aviation Luxe --- */
-    --bg-main: #f4f1ea;
-    --card-bg: rgba(255, 255, 255, 0.9);
-    --card-hover: #ffffff;
-    --text-main: #0b132b;
-    --text-muted: #64748b;
-    --accent-gold: #d97706;
-    --accent-blue: #0284c7;
-    --accent-dark: #0f172a;
-    --ok-green: #059669;
-    --border-color: rgba(15, 23, 42, 0.1);
-    --soft-bg: #eae6df;
-    --shadow-luxe: 0 20px 40px rgba(15, 23, 42, 0.07);
-    --glow-effect: rgba(217, 119, 6, 0.15);
-    --font-base: 'Heebo', system-ui, sans-serif;
-    --font-code: 'JetBrains Mono', monospace;
-    color-scheme: light;
+    --bg: #030712;
+    --card-bg: rgba(17, 24, 39, 0.7);
+    --border: rgba(56, 189, 248, 0.2);
+    --text: #f9fafb;
+    --muted: #9ca3af;
+    --accent: #38bdf8;
+    --accent-glow: rgba(56, 189, 248, 0.35);
+    --gold: #fbbf24;
+    --font: 'Heebo', sans-serif;
+    --font-head: 'Space Grotesk', sans-serif;
   }
 
-  :root[data-theme="dark"] {
-    /* --- Dark Mode: Cyber Aviation Neon --- */
-    --bg-main: #05070d;
-    --card-bg: rgba(13, 19, 33, 0.75);
-    --card-hover: rgba(21, 31, 53, 0.85);
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --accent-gold: #f59e0b;
-    --accent-blue: #38bdf8;
-    --accent-dark: #0284c7;
-    --ok-green: #10b981;
-    --border-color: rgba(245, 158, 11, 0.2);
-    --soft-bg: rgba(21, 31, 53, 0.5);
-    --shadow-luxe: 0 25px 50px rgba(0, 0, 0, 0.7);
-    --glow-effect: rgba(56, 189, 248, 0.25);
-    color-scheme: dark;
-  }
-
-  /* =========================================================
-     2. Reset & Layout
-     ========================================================= */
   * { box-sizing: border-box; }
-  html { font-size: 100%; scroll-behavior: smooth; }
   body {
     margin: 0;
-    font-family: var(--font-base);
-    background: var(--bg-main);
-    background-image: 
-      radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.04) 0%, transparent 45%),
-      radial-gradient(circle at 85% 85%, rgba(245, 158, 11, 0.05) 0%, transparent 45%);
-    background-attachment: fixed;
-    color: var(--text-main);
-    line-height: 1.5;
-    transition: background-color 0.4s ease, color 0.4s ease;
-  }
-
-  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 60px; }
-  .hidden { display: none !important; }
-
-  /* =========================================================
-     3. Executive Boarding Pass Header
-     ========================================================= */
-  .hero-pass {
-    position: relative;
-    overflow: hidden;
-    margin: 10px 0 24px;
-    padding: 28px 26px 22px;
-    border-radius: 28px;
-    background: linear-gradient(135deg, #090d16 0%, #111827 100%);
-    color: #ffffff;
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-luxe), 0 0 30px var(--glow-effect);
-    backdrop-filter: blur(20px);
-  }
-
-  .pass-header {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
     display: flex;
-    justify-content: space-between;
-    font-family: var(--font-code);
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 3px;
-    color: var(--accent-gold);
-    text-transform: uppercase;
-    direction: ltr;
-    margin-bottom: 14px;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background-image: 
+      radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(251, 191, 36, 0.06) 0%, transparent 40%);
   }
 
-  .hero-pass h1 {
-    margin: 0;
-    font-size: 2.4rem;
-    font-weight: 900;
-    letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  .app-container {
+    width: 100%;
+    max-width: 540px;
+    background: var(--card-bg);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--border);
+    border-radius: 32px;
+    padding: 32px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 40px var(--accent-glow);
+    animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .brand-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-head);
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    background: rgba(251, 191, 36, 0.1);
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-family: var(--font-head);
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
-  .hero-pass h1 small {
-    display: block;
-    margin-top: 6px;
-    font-size: 0.95rem;
-    font-weight: 400;
-    color: #94a3b8;
-    -webkit-text-fill-color: #94a3b8;
+  p {
+    color: var(--muted);
+    font-size: 1.05rem;
+    margin-bottom: 30px;
   }
 
-  .pass-flight-path {
+  .flight-card {
+    background: rgba(3, 7, 18, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 24px;
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    margin: 22px -26px -22px;
-    padding: 16px 26px;
-    background: rgba(0, 0, 0, 0.3);
-    border-top: 1px dashed var(--border-color);
-    direction: ltr;
+    align-items: center;
   }
 
-  .flight-code {
-    font-family: var(--font-code);
-    font-weight: 800;
+  .airport {
+    font-family: var(--font-head);
     font-size: 1.5rem;
-    color: #ffffff;
-    letter-spacing: 2px;
+    font-weight: 700;
+    color: #fff;
   }
 
-  .flight-line {
-    position: relative;
+  .flight-visual {
     flex: 1;
     height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
     margin: 0 20px;
-    background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
+    position: relative;
   }
 
-  .flight-plane {
+  .plane-icon {
     position: absolute;
-    top: -12px;
-    left: 0;
-    font-style: normal;
-    font-size: 1.3rem;
-    animation: fly 4s ease-in-out infinite alternate;
-    filter: drop-shadow(0 0 10px var(--accent-blue));
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%) rotate(90deg);
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 8px var(--accent));
   }
 
-  @keyframes fly {
-    0% { left: 0%; transform: rotate(-90deg) scaleX(-1); }
-    100% { left: calc(100% - 1.5rem); transform: rotate(-90deg) scaleX(-1); }
-  }
-
-  /* =========================================================
-     4. Luxury Cards & Interactive UI
-     ========================================================= */
-  .luxe-card {
-    background: var(--card-bg);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--border-color);
-    border-radius: 22px;
-    padding: 24px;
-    margin: 18px 0;
-    box-shadow: var(--shadow-luxe);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .luxe-card:hover {
-    background: var(--card-hover);
-    transform: translateY(-2px);
-  }
-
-  button {
-    font-family: inherit;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    border-radius: 14px;
-    padding: 14px 20px;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  button:hover { transform: translateY(-2px); filter: brightness(1.08); }
-  button:active { transform: translateY(0) scale(0.98); }
-
-  .btn-gold {
-    background: linear-gradient(135deg, var(--accent-gold), #b45309);
-    color: #ffffff;
-    font-weight: 700;
-    box-shadow: 0 8px 20px rgba(217, 119, 6, 0.3);
+  .action-btn {
     width: 100%;
-  }
-
-  .btn-soft {
-    background: var(--soft-bg);
-    color: var(--text-main);
-    border: 1px solid var(--border-color);
-  }
-
-  /* Items Styling */
-  .pack-item {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
-    border-radius: 16px;
-    background: var(--soft-bg);
-    border: 1px solid var(--border-color);
-    transition: all 0.25s ease;
-  }
-
-  .pack-item:hover {
-    border-color: var(--accent-gold);
-    transform: translateX(-4px);
-  }
-
-  .pack-item input[type=checkbox] {
-    width: 24px;
-    height: 24px;
-    accent-color: var(--ok-green);
+    background: linear-gradient(135deg, var(--accent), #0284c7);
+    color: #030712;
+    font-family: var(--font-head);
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 18px;
+    border: none;
+    border-radius: 18px;
     cursor: pointer;
+    box-shadow: 0 10px 25px var(--accent-glow);
+    transition: all 0.3s ease;
   }
 
-  .pack-item.checked {
-    opacity: 0.55;
-    background: rgba(16, 185, 129, 0.05);
-  }
-
-  .pack-item.checked .item-name {
-    text-decoration: line-through;
-    color: var(--text-muted);
-  }
-
-  /* Navigation Bar */
-  .top-tools {
-    position: fixed;
-    top: 16px;
-    left: 16px;
-    z-index: 99;
+  .action-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(56, 189, 248, 0.5);
+    filter: brightness(1.1);
   }
 </style>
 </head>
 <body>
 
-<div class="top-tools">
-  <button type="button" class="btn-soft" id="themeToggle">🌙 / ☀️</button>
+<div class="app-container">
+  <div class="brand-badge">⚡ Next-Gen Experience</div>
+  <h1>PackPal 2.0</h1>
+  <p>מערכת הניטור והאריזה העתידנית שלך לטיסות מנהלים ויעדים בעולם.</p>
+
+  <div class="flight-card">
+    <div>
+      <div style="font-size: 0.8rem; color: var(--muted);">מוצא</div>
+      <div class="airport">TLV</div>
+    </div>
+    <div class="flight-visual"><span class="plane-icon">✈️</span></div>
+    <div style="text-align: left;">
+      <div style="font-size: 0.8rem; color: var(--muted);">יעד</div>
+      <div class="airport">SFO</div>
+    </div>
+  </div>
+
+  <button class="action-btn" onclick="alert('ברוכה הבאה לעיצוב החדש!')">התחל תכנון טיסה חכם 🚀</button>
 </div>
 
-<main>
-  <!-- Executive Boarding Pass Header -->
-  <header class="hero-pass">
-    <div class="pass-header">
-      <span>EXECUTIVE PASS</span>
-      <span>PACKPAL · CYBER LUXE</span>
-    </div>
-    <h1>🧳 PackPal <small>מערכת אריזה חכמה לפי תחזית מזג האוויר ופעילויות</small></h1>
-    <div class="pass-flight-path">
-      <span class="flight-code">TLV</span>
-      <div class="flight-line"><i class="flight-plane">✈️</i></div>
-      <span class="flight-code">DEST</span>
-    </div>
-  </header>
-
-  <!-- Main Luxury Card -->
-  <section class="luxe-card">
-    <h2>ברוכה הבאה לעיצוב החדש! ✈️</h2>
-    <p>מהפך הושלם בהצלחה: האתר כעת מעוצב בקו היוקרתי והנקי ביותר לשני המצבים (Executive Light & Cyber Dark).</p>
-    
-    <div class="pack-item">
-      <input type="checkbox" id="sample1">
-      <label for="sample
+</body>
+</html>
