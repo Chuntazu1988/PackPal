@@ -727,6 +727,18 @@
   .note-edit input { flex: 1; min-width: 0; }
   .note-edit input.grams-in { flex: 0 0 4.2rem; width: 4.2rem; text-align: center; padding: 8px 4px; }
   .note-edit button { padding: 8px 12px; font-size: .9rem; }
+
+  /* ===== הטיסה שלי ===== */
+  .ft-pass { margin-top: 10px; padding: 14px 16px; border-radius: 12px; background: var(--hero-top); color: var(--hero-text); box-shadow: 0 3px 0 color-mix(in srgb, var(--hero-top) 55%, #000), 0 0 18px var(--glow); }
+  .ft-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; direction: ltr; }
+  .ft-code { font: 800 1.9rem/1 ui-monospace, "SF Mono", Consolas, monospace; letter-spacing: 2px; }
+  .ft-when { font-weight: 700; opacity: .9; }
+  .ft-meta { margin-top: 6px; font-weight: 700; color: var(--stamp); }
+  .ft-count { margin-top: 10px; font-size: 1.15rem; font-weight: 800; }
+  .ft-advice { margin-top: 2px; font-size: .88rem; opacity: .85; }
+  .ft-pass + .attr-links { margin-top: 10px; }
+  .ft-form .row { margin-top: 6px; }
+  .shared-mode #flightSection { display: none !important; }
 </style>
 </head>
 <body>
@@ -889,6 +901,7 @@
 
   <!-- ===== הרשימה ===== -->
   <!-- ===== משימות לפני הטיסה ===== -->
+  <section id="flightSection" class="card hidden" data-tab="before"></section>
   <section id="tasksSection" class="card hidden" data-tab="before"></section>
 
   <section id="listSection" class="card hidden" data-tab="list">
@@ -2175,6 +2188,117 @@ function fmtNum(n) {
   return n.toLocaleString('he-IL', { maximumFractionDigits: d });
 }
 
+/* =========================================================
+   הטיסה שלי: פרטים שאת מזינה, ספירה לאחור, ושעת הגעה מומלצת לשדה
+   ========================================================= */
+
+let flightTimer = null;
+const FLIGHT_RE = /^[A-Za-z0-9]{2}\s?\d{1,4}[A-Za-z]?$/;
+
+function flightDeparture(f) {
+  if (!f || !f.date || !f.time) return null;
+  const d = new Date(f.date + 'T' + f.time + ':00');
+  return isNaN(d) ? null : d;
+}
+
+function flightCode(f) { return String(f.number || '').replace(/\s+/g, '').toUpperCase(); }
+
+function renderFlight() {
+  clearInterval(flightTimer);
+  const box = $('flightSection');
+  box.replaceChildren();
+  if (!state || daysFromToday(state.trip.end) < 0) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  const f = state.flight;
+  const link = (text, href) => el('a', { href: href, target: '_blank', rel: 'noopener noreferrer' }, text);
+
+  box.appendChild(el('strong', null, '🎫 הטיסה שלי'));
+  const body = el('div');
+  box.appendChild(body);
+
+  if (f && f.number) {
+    const code = flightCode(f);
+    const dep = flightDeparture(f);
+    const pass = el('div', { className: 'ft-pass' });
+    const top = el('div', { className: 'ft-top' });
+    top.appendChild(el('span', { className: 'ft-code' }, code));
+    if (dep) top.appendChild(el('span', { className: 'ft-when' }, fmtDate(f.date) + ' · ' + f.time));
+    pass.appendChild(top);
+    const meta = [];
+    if (f.terminal) meta.push('טרמינל ' + f.terminal);
+    if (f.gate) meta.push('שער ' + f.gate);
+    if (f.seat) meta.push('מושב ' + f.seat);
+    if (meta.length) pass.appendChild(el('div', { className: 'ft-meta' }, meta.join('  ·  ')));
+    if (dep) {
+      const clock = el('div', { className: 'ft-count' });
+      const advice = el('div', { className: 'ft-advice' });
+      pass.append(clock, advice);
+      const tick = () => {
+        const ms = dep - Date.now();
+        if (ms <= 0) { clock.textContent = 'המראה! ✈️'; advice.textContent = ''; return; }
+        const d = Math.floor(ms / 86400000), h = Math.floor(ms % 86400000 / 3600000), m = Math.floor(ms % 3600000 / 60000);
+        clock.textContent = 'ההמראה בעוד ' + (d ? d + ' ימים, ' : '') + h + ' שעות ו-' + m + ' דקות';
+        const at = new Date(dep.getTime() - 3 * 3600000);
+        advice.textContent = 'כדאי להגיע לשדה עד ' + at.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) + (at.toDateString() !== dep.toDateString() ? ' (יום קודם)' : '') + ' (3 שעות לפני, בטיסות בינלאומיות)';
+      };
+      tick();
+      flightTimer = setInterval(() => { if (!clock.isConnected) { clearInterval(flightTimer); return; } tick(); }, 20000);
+    }
+    body.appendChild(pass);
+    const links = el('div', { className: 'attr-links' });
+    links.appendChild(link('🔴 סטטוס חי (Flightradar24)', 'https://www.flightradar24.com/data/flights/' + encodeURIComponent(code.toLowerCase())));
+    links.appendChild(link('🔎 סטטוס בגוגל', 'https://www.google.com/search?q=' + encodeURIComponent(code + ' flight status')));
+    links.appendChild(link('📡 FlightAware', 'https://www.flightaware.com/live/flight/' + encodeURIComponent(code)));
+    body.appendChild(links);
+    body.appendChild(el('div', { className: 'attr-src' }, 'הפרטים הם מה שהזנת (לפי שעון המכשיר). המעקב החי נפתח באתרים חיצוניים, ושם רואים עיכובים ושינויי שער.'));
+    const row = el('div', { className: 'actions' });
+    const edit = el('button', { type: 'button', className: 'secondary' }, '✏️ ערוך');
+    edit.addEventListener('click', () => flightForm(body, f));
+    const del = el('button', { type: 'button', className: 'secondary' }, '🗑️ הסר');
+    del.addEventListener('click', () => { delete state.flight; save(); renderFlight(); });
+    row.append(edit, del);
+    body.appendChild(row);
+  } else {
+    body.appendChild(el('p', { className: 'note' }, 'הזיני את פרטי הטיסה, ותקבלי ספירה לאחור, שעת הגעה מומלצת לשדה וקישורים לסטטוס חי.'));
+    flightForm(body, null);
+  }
+  makeCollapsible(box, 'flight', 1, false);
+}
+
+function flightForm(body, f) {
+  body.replaceChildren();
+  const form = el('form', { className: 'ft-form', autocomplete: 'off' });
+  const field = (label, name, attrs, val) => {
+    const wrap = el('div');
+    wrap.appendChild(el('label', null, label));
+    const input = el('input', Object.assign({ name: name }, attrs));
+    if (val) input.value = val;
+    wrap.appendChild(input);
+    return [wrap, input];
+  };
+  const [w1, number] = field('מספר טיסה', 'number', { type: 'text', maxLength: 8, placeholder: 'LY001' }, f && f.number);
+  const [w2, date] = field('תאריך', 'date', { type: 'date' }, (f && f.date) || state.trip.start);
+  const [w3, time] = field('שעת המראה', 'time', { type: 'time' }, f && f.time);
+  const [w4, terminal] = field('טרמינל', 'terminal', { type: 'text', maxLength: 6 }, f && f.terminal);
+  const [w5, gate] = field('שער', 'gate', { type: 'text', maxLength: 6 }, f && f.gate);
+  const [w6, seat] = field('מושב', 'seat', { type: 'text', maxLength: 6 }, f && f.seat);
+  const r1 = el('div', { className: 'row' }); r1.append(w1, w2, w3);
+  const r2 = el('div', { className: 'row' }); r2.append(w4, w5, w6);
+  const err = el('div', { className: 'dup-error', role: 'alert' });
+  const save_ = el('button', { type: 'submit', className: 'primary' }, 'שמור טיסה');
+  form.append(r1, r2, err, save_);
+  form.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const num = number.value.trim();
+    if (!FLIGHT_RE.test(num)) { err.textContent = 'מספר טיסה נראה כך: שתי אותיות/ספרות וכמה ספרות, למשל LY001.'; number.focus(); return; }
+    state.flight = { number: num.toUpperCase(), date: date.value || state.trip.start, time: time.value || '' };
+    [['terminal', terminal], ['gate', gate], ['seat', seat]].forEach(([k, inp]) => { const v = inp.value.trim(); if (v) state.flight[k] = v; });
+    save();
+    renderFlight();
+  });
+  body.appendChild(form);
+}
+
 function renderQuick() {
   const box = $('quickSection');
   box.replaceChildren();
@@ -2372,6 +2496,7 @@ function renderWeather() {
   updateWelcome();
   renderTasks();
   renderEntry();
+  renderFlight();
   renderQuick();
   renderAirport();
   renderTransport();
