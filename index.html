@@ -979,7 +979,15 @@ label { color: var(--muted); font-size: .9rem; }
 #barFill::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, .6), transparent 80%); background-size: 200% 100%; animation: novaBar 2.4s linear infinite; }
 @keyframes novaBar { from { background-position: 200% 0; } to { background-position: -100% 0; } }
 .trip-title { font-weight: 800; letter-spacing: -.01em; }
-.cat-title { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
+.cat-title { margin: 0; font-size: 1rem; }
+.cat-toggle { width: 100%; display: flex; align-items: center; gap: 10px; background: none; border: 0; box-shadow: none; border-radius: 16px; color: var(--text); padding: 8px 6px; }
+.cat-toggle .name { font-weight: 700; font-size: 1.05rem; flex: 1; text-align: start; }
+.cat-toggle .arrow { color: var(--accent); }
+.cat-toggle .count { font-family: var(--font-mono); font-size: .75rem; color: var(--muted); background: var(--soft); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+#list .cat-title { break-after: avoid; margin-top: 8px; }
+#list .item { break-inside: avoid; margin-bottom: 8px; }
+.item .text { min-width: 0; overflow-wrap: anywhere; }
+.item .qty-btn, .item .note-btn, .item .del { flex: none; }
 .item {
   background: var(--soft); border: 1px solid var(--border); border-radius: 20px; padding: 12px 14px;
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transition: transform .2s, border-color .25s, background .25s, opacity .25s;
@@ -1082,7 +1090,7 @@ body.landing-on main, body.landing-on #tools, body.landing-on .fab-wrap { displa
 
 /* ---------- זרקור עכבר וחשיפה בגלילה ---------- */
 main > .card, main > form.card {
-  background: radial-gradient(380px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--glow) 38%, transparent), transparent 60%), var(--card);
+  background: radial-gradient(380px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--glow) 22%, transparent), transparent 55%), var(--card);
 }
 html.reveal .rv { opacity: 0; transform: translateY(22px) scale(.985); transition: opacity .7s cubic-bezier(.2, .8, .25, 1), transform .7s cubic-bezier(.2, .8, .25, 1); }
 html.reveal .rv.in { opacity: 1; transform: none; }
@@ -1108,6 +1116,8 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
   .tabbar button.active { transform: translateX(6px); }
   .tabbar button:not(.active):hover { transform: translateX(4px); }
   .tabbar .ti { font-size: 1.6rem; }
+  main > .card.span-all { grid-column: 2 / -1 !important; }
+  #list { column-count: 2; column-gap: 22px; }
   .hero { padding: 38px 44px; }
   .hero h1 { font-size: 3.4rem; }
 }
@@ -6097,6 +6107,33 @@ function makeCollapsible(box, key, headCount, defaultCollapsed) {
   new MutationObserver(watch).observe(document.querySelector('main'), { childList: true });
   // רשת ביטחון: אם משהו לא נחשף תוך שנייה וחצי, מציגים אותו
   setTimeout(function () { document.querySelectorAll('.rv:not(.in)').forEach(function (n) { n.classList.add('in'); }); }, 1500);
+})();
+
+/* מאזן את רשת הכרטיסים במחשב: כרטיס בודד בשורה תופס את כל הרוחב, בלי חור ריק */
+(function () {
+  const main = document.querySelector('main');
+  if (!main) return;
+  const FULL = ['weather', 'budgetSection', 'flightSection', 'attrSection', 'listSection', 'tripForm', 'favSection', 'pastSection', 'tplSection', 'sharedBar'];
+  let queued = false;
+  function balance() {
+    queued = false;
+    const cards = [...main.querySelectorAll(':scope > .card')].filter(function (c) { return c.offsetParent !== null || getComputedStyle(c).display !== 'none'; });
+    const want = new Set();
+    if (window.innerWidth >= 1100) {
+      let pending = null;
+      cards.forEach(function (c) {
+        if (FULL.indexOf(c.id) !== -1) { if (pending) { want.add(pending); pending = null; } return; }
+        pending = pending ? null : c;
+      });
+      if (pending) want.add(pending);
+    }
+    main.querySelectorAll(':scope > .card.span-all').forEach(function (c) { if (!want.has(c)) c.classList.remove('span-all'); });
+    want.forEach(function (c) { if (!c.classList.contains('span-all')) c.classList.add('span-all'); });
+  }
+  function queue() { if (!queued) { queued = true; requestAnimationFrame(balance); } }
+  new MutationObserver(queue).observe(main, { subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'], childList: true });
+  window.addEventListener('resize', queue);
+  queue();
 })();
 </script>
 </body>
