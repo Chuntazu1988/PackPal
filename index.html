@@ -3396,7 +3396,8 @@ function renderCountdown() {
 
   const caption = clockDays > 30 ? 'יש זמן, אפשר להתחיל לארוז בנחת 🧳'
     : clockDays > 7 ? 'הספירה לאחור התחילה ✨'
-    : clockDays > 3 ? 'עוד שבוע! הגיע הזמן לארוז 🎒'
+    : clockDays === 7 ? 'עוד שבוע! הגיע הזמן לארוז 🎒'
+    : clockDays > 3 ? 'עוד פחות משבוע! הגיע הזמן לארוז 🎒'
     : 'כמעט שם! ✈️';
   box.appendChild(el('div', { className: 'cd-caption' }, caption));
 
