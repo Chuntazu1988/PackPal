@@ -499,7 +499,12 @@
   .fact .v { font-weight: 700; }
   .entry-sub { margin: 14px 0 4px; font-weight: 700; }
   .entry-warn { background: var(--sand); border-radius: 14px; padding: 10px 14px; margin: 10px 0; font-size: .95rem; }
-  .entry-links { display: grid; gap: 8px; margin: 10px 0; }
+  .fact .k { font-size: .9rem !important; letter-spacing: .1em !important; color: var(--accent) !important; font-weight: 800 !important; }
+.fact .v { font-size: 1.3rem !important; }
+.fact-clock .v { display: flex; flex-direction: column; gap: 2px; }
+.fact-time { direction: ltr; text-align: start; font-family: var(--font-mono); font-size: 1.9rem; font-weight: 800; letter-spacing: .04em; background: var(--sunset); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.fact-clock .v small { font-size: .9rem; font-weight: 600; color: var(--muted); }
+.entry-links { display: grid; gap: 8px; margin: 10px 0; }
   .entry-links a {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
     padding: 11px 14px; border: 1px solid var(--border); border-radius: 14px;
@@ -1146,7 +1151,7 @@ html.reveal .rv.in { opacity: 1; transform: none; }
 .visa-box .status { font-size: 1.35rem; font-weight: 800; line-height: 1.3; letter-spacing: -.01em; }
 .visa-box .vnote { margin-top: 10px; color: var(--text); line-height: 1.65; }
 .visa-box small { display: block; margin-top: 12px; color: var(--muted); }
-.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 4px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 4px; }
 .fact { position: relative; padding: 16px 16px 14px; border-radius: 22px; background: var(--soft); border: 1px solid var(--border); overflow: hidden; transition: transform .25s, border-color .25s; }
 .fact:hover { transform: translateY(-3px); border-color: var(--glass-border); }
 .fact::after { content: ""; position: absolute; inset-inline-end: -14px; top: -14px; width: 56px; height: 56px; border-radius: 50%; background: var(--sunset); opacity: .18; filter: blur(8px); }
@@ -2392,13 +2397,16 @@ function renderEntry() {
       const diff = timeDiffText(meta.tz, trip.start);
       if (diff) items.push(['הפרש שעות מישראל', diff]);
     }
+    if (meta.tz) items.push(['שעה מקומית ביעד', '', 'clock']);
     if (items.length) {
       factsBox.appendChild(el('div', { className: 'entry-sub' }, 'חשמל ושעון: מה כדאי לדעת לפני האריזה'));
       const grid = el('div', { className: 'facts' });
-      items.forEach(([k, v]) => {
-        const cell = el('div', { className: 'fact' });
-        cell.append(el('div', { className: 'k' }, k), el('div', { className: 'v' }, v));
+      items.forEach(([k, v, kind]) => {
+        const cell = el('div', { className: 'fact' + (kind === 'clock' ? ' fact-clock' : '') });
+        const val = el('div', { className: 'v' }, v);
+        cell.append(el('div', { className: 'k' }, k), val);
         grid.appendChild(cell);
+        if (kind === 'clock') startLocalClock(val, meta.tz);
       });
       factsBox.appendChild(grid);
       if (plug) {
@@ -2417,6 +2425,25 @@ function renderEntry() {
       links.appendChild(a);
     }
   });
+}
+
+// שעון חי של שעה מקומית ביעד (לפי אזור הזמן של המקום)
+function startLocalClock(node, tz) {
+  let fmt;
+  try {
+    fmt = new Intl.DateTimeFormat('he-IL', { timeZone: tz, weekday: 'long', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  } catch (e) { node.textContent = 'לא זמין'; return; }
+  const render = () => {
+    const parts = fmt.formatToParts(new Date());
+    const g = t => (parts.find(p => p.type === t) || {}).value || '';
+    node.replaceChildren();
+    node.append(el('span', { className: 'fact-time' }, g('hour') + ':' + g('minute') + ':' + g('second')), el('small', null, g('weekday')));
+  };
+  const timer = setInterval(() => {
+    if (!node.isConnected) { clearInterval(timer); return; }
+    render();
+  }, 1000);
+  render();
 }
 
 function fillVisa(visaBox, cc, country) {
