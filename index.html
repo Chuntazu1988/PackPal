@@ -2972,9 +2972,13 @@ const DEST_RULES = (function () {
   const R = {};
   const set = (ccs, r) => ccs.forEach(cc => { R[cc] = r; });
   set(SCHENGEN, { months: 3, from: 'end', issued10: true, blank: 2, ins: 'rec', note: 'באזור שנגן נדרש דרכון שהונפק ב-10 השנים האחרונות ותקף 3 חודשים אחרי היציאה.', url: 'https://travel-europe.europa.eu/etias_en' });
+  // מדינות האיחוד האירופי שמחוץ לאזור שנגן: גם הן דורשות 3 חודשי תוקף מתאריך החזרה
+  set(['BG', 'IE', 'RO'], { months: 3, from: 'end', blank: 0, ins: 'rec', note: 'באיחוד האירופי נדרש תוקף של 3 חודשים לפחות מתאריך החזרה.', url: '' });
+  set(['CY'], { months: 3, from: 'end', blank: 2, ins: 'rec', note: 'בקפריסין נדרשים 2 עמודים ריקים בדרכון, ותוקף של 3 חודשים מתאריך החזרה.', url: '' });
+  set(['GE'], { months: 6, from: 'start', blank: 0, ins: 'req', generic: true, note: 'בגאורגיה נדרש ביטוח בריאות. את תוקף הדרכון בדקי באתר הרשמי: מוצג הכלל הנפוץ.', url: '' });
   set(['US'], { stay: true, blank: 0, ins: 'rec', note: 'ביטוח בריאות מומלץ מאוד: הטיפול הרפואי בארה"ב יקר מאוד.', url: 'https://travel.state.gov' });
   set(['GB'], { stay: true, blank: 0, ins: 'rec', note: 'נדרש רישום מקוון (ETA) לפני הנסיעה.', url: 'https://www.gov.uk/check-uk-visa' });
-  set(['TH'], { months: 6, from: 'start', blank: 2, ins: 'rec', note: 'נדרש רישום מקוון מראש (TDAC).', url: 'https://tdac.immigration.go.th' });
+  set(['TH'], { months: 6, from: 'start', blank: 1, ins: 'rec', note: 'נדרש עמוד ריק אחד בדרכון, ורישום מקוון מראש (TDAC).', url: 'https://tdac.immigration.go.th' });
   set(['JP'], { stay: true, blank: 1, ins: 'rec', note: '', url: 'https://www.mofa.go.jp/j_info/visit/visa/' });
   set(['AE'], { months: 6, from: 'start', blank: 1, ins: 'rec', note: '', url: 'https://u.ae/en/information-and-services/visa-and-emirates-id' });
   set(['TR'], { months: 5, from: 'start', blank: 0, ins: 'rec', note: 'נדרש תוקף של כ-150 יום מיום הכניסה.', url: 'https://www.evisa.gov.tr' });
@@ -3036,7 +3040,7 @@ function checkPassport(p, rule, trip) {
   const end = parseISO(trip.end), start = parseISO(trip.start);
   let need, needTxt;
   if (rule.stay) { need = end; needTxt = 'נדרש תוקף עד סוף הטיול (' + fmtDate(trip.end) + '), ומומלץ חצי שנה אחריו'; }
-  else { need = addMonthsISO(rule.from === 'start' ? trip.start : trip.end, rule.months); needTxt = 'תקף לפחות עד ' + fmtDate(isoOf(need)) + ' (' + rule.months + ' חודשים ' + (rule.from === 'start' ? 'מהכניסה' : 'אחרי היציאה') + ')'; }
+  else { need = addMonthsISO(rule.from === 'start' ? trip.start : trip.end, rule.months); needTxt = 'תקף לפחות עד ' + fmtDate(isoOf(need)) + ' (' + rule.months + ' חודשים ' + (rule.from === 'start' ? 'מהכניסה' : 'מתאריך החזרה') + ')'; }
   if (!exp) rows.push({ k: 'warn', l: 'תוקף', t: 'לא הוזן תאריך תוקף. ' + needTxt });
   else if (exp < end) rows.push({ k: 'bad', l: 'תוקף', t: 'הדרכון פג לפני סוף הטיול (' + fmtDate(p.expiry) + ')' });
   else if (exp < need) rows.push({ k: 'bad', l: 'תוקף', t: 'התוקף (' + fmtDate(p.expiry) + ') קצר מדי. ' + needTxt });
@@ -3049,7 +3053,7 @@ function checkPassport(p, rule, trip) {
       rows.push(parseISO(p.issue) < limit ? { k: 'bad', l: 'הנפקה', t: 'הונפק ב-' + fmtDate(p.issue) + ', לפני יותר מ-10 שנים' } : { k: 'ok', l: 'הנפקה', t: 'הונפק ב-' + fmtDate(p.issue) + ', בתוך 10 שנים' });
     }
   }
-  rows.push({ k: 'info', l: 'עמודים ריקים', t: rule.blank ? 'מומלץ לפחות ' + rule.blank + ' עמודים ריקים בדרכון' : 'אין דרישה מיוחדת' });
+  rows.push({ k: 'info', l: 'עמודים ריקים', t: rule.blank ? 'נדרשים לפחות ' + rule.blank + (rule.blank === 1 ? ' עמוד ריק' : ' עמודים ריקים') + ' בדרכון' : 'אין דרישה מיוחדת' });
   rows.push({ k: rule.ins === 'req' ? 'warn' : 'info', l: 'ביטוח בריאות', t: rule.ins === 'req' ? 'נדרש ביטוח בריאות תקף' : 'לא נדרש בדרך כלל, אבל מומלץ מאוד' });
   return rows;
 }
