@@ -716,6 +716,17 @@
   .tpl-row .del { background: none; color: var(--danger); padding: 4px 8px; font-size: 1.1rem; }
   .tpl-row .del.sure { background: var(--danger); color: #fff; font-size: .9rem; }
   .shared-mode #tplSection, .shared-mode #tplSaveBtn, .shared-mode #tplPick, .shared-mode #tplPanel { display: none !important; }
+
+  /* ===== הערות לפריט ושדה תעופה ===== */
+  .item-note { display: block; margin-top: 2px; color: var(--muted); font-size: .82rem; font-weight: 500; text-decoration: none; }
+  .item.done .item-note { text-decoration: none; }
+  .note-btn { background: none; padding: 4px 6px; font-size: 1rem; opacity: .45; }
+  .note-btn.has, .note-btn:hover { opacity: 1; }
+  .pack-mode .note-btn { display: none; }
+  .note-edit { display: flex; gap: 6px; padding: 6px 4px 10px; border-bottom: 1px dashed var(--border); }
+  .note-edit input { flex: 1; min-width: 0; }
+  .note-edit input.grams-in { flex: 0 0 4.2rem; width: 4.2rem; text-align: center; padding: 8px 4px; }
+  .note-edit button { padding: 8px 12px; font-size: .9rem; }
 </style>
 </head>
 <body>
@@ -872,6 +883,7 @@
 
   <!-- ===== המלצות לאטרקציות (Wikivoyage) ===== -->
   <section id="quickSection" class="card hidden" data-tab="dest"></section>
+  <section id="airportSection" class="card hidden" data-tab="dest"></section>
   <section id="transSection" class="card hidden" data-tab="dest"></section>
   <section id="attrSection" class="card hidden" data-tab="dest"></section>
 
@@ -2224,6 +2236,90 @@ function renderQuick() {
   makeCollapsible(box, 'quick', 1, false);
 }
 
+/* =========================================================
+   שדה התעופה ביעד: שם, קוד, וקישור לאתר הרשמי (מנתוני Wikidata)
+   ========================================================= */
+
+const AIRPORT_KEY = 'packpal-airports-';
+let airportToken = 0;
+
+async function loadAirports(lat, lon) {
+  const key = AIRPORT_KEY + 'v2-' + lat.toFixed(2) + ',' + lon.toFixed(2);
+  try { const c = JSON.parse(localStorage.getItem(key)); if (c && Array.isArray(c.list) && Date.now() - c.at < 30 * 86400000) return c.list; } catch (e) {}
+  // Wikidata: שדות תעופה עם קוד IATA במרחק עד 80 ק"מ, מהגדול (לפי נוסעים) לקטן
+  const q = 'SELECT ?a ?aLabel ?aEn ?iata ?site ?pax WHERE {' +
+    ' SERVICE wikibase:around { ?a wdt:P625 ?loc . bd:serviceParam wikibase:center "Point(' + lon + ' ' + lat + ')"^^geo:wktLiteral . bd:serviceParam wikibase:radius "80" . }' +
+    ' ?a wdt:P238 ?iata .' +
+    ' OPTIONAL { ?a wdt:P856 ?site . } OPTIONAL { ?a wdt:P3872 ?pax . }' +
+    ' OPTIONAL { ?a rdfs:label ?aEn FILTER(lang(?aEn) = "en") }' +
+    ' SERVICE wikibase:label { bd:serviceParam wikibase:language "he,en". }' +
+    ' } ORDER BY DESC(?pax) LIMIT 30';
+  const res = await fetchWithTimeout('https://query.wikidata.org/sparql?format=json&query=' + encodeURIComponent(q), 20000);
+  if (!res.ok) throw new Error('wikidata ' + res.status);
+  const rows = (await res.json()).results.bindings;
+  const okUrl = (u) => { try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : ''; } catch (e) { return ''; } };
+  const byIata = new Map();
+  rows.forEach(r => {
+    const iata = r.iata.value;
+    const cur = byIata.get(iata) || { name: r.aLabel && r.aLabel.value, en: r.aEn ? r.aEn.value : '', iata: iata, site: '', pax: 0 };
+    const pax = Number(r.pax ? r.pax.value : 0);
+    if (pax > cur.pax) cur.pax = pax;
+    const site = r.site ? okUrl(r.site.value) : '';
+    // כמה כתובות לאותו שדה (שפות שונות): בוחרים את הקצרה, בדרך כלל דף הבית
+    if (site && (!cur.site || site.length < cur.site.length)) cur.site = site;
+    byIata.set(iata, cur);
+  });
+  const list = [...byIata.values()].filter(a => a.name).sort((x, y) => y.pax - x.pax).slice(0, 3);
+  try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), list: list })); } catch (e) {}
+  return list;
+}
+
+function renderAirport() {
+  const box = $('airportSection');
+  box.replaceChildren();
+  const token = ++airportToken;
+  if (!state || !Number.isFinite(state.trip.lat) || !Number.isFinite(state.trip.lon)) { box.classList.add('hidden'); return; }
+  const city = String(state.trip.place).split(',')[0].trim();
+  box.appendChild(el('strong', null, '🛫 שדה התעופה ב' + city));
+  box.classList.remove('hidden');
+  const body = el('div');
+  box.appendChild(body);
+  body.appendChild(el('div', { className: 'note' }, 'מחפשת שדות תעופה באזור...'));
+  makeCollapsible(box, 'airport', 1, false);
+
+  const g = (q) => 'https://www.google.com/search?q=' + encodeURIComponent(q);
+  const link = (text, href) => el('a', { href: href, target: '_blank', rel: 'noopener noreferrer' }, text);
+  const fallback = () => {
+    body.replaceChildren();
+    body.appendChild(el('div', { className: 'note' }, 'לא הצלחתי למצוא שדה תעופה אוטומטית.'));
+    const w = el('div', { className: 'attr-links' });
+    w.appendChild(link('🔎 האתר הרשמי של שדה התעופה (חיפוש)', g(city + ' airport official website')));
+    body.appendChild(w);
+  };
+
+  loadAirports(state.trip.lat, state.trip.lon).then(list => {
+    if (token !== airportToken) return;
+    if (!list.length) { fallback(); return; }
+    body.replaceChildren();
+    list.forEach(a => {
+      const item = el('div', { className: 'attr-item' });
+      const title = el('div', { className: 'name' }, a.name + ' (' + a.iata + ')');
+      item.appendChild(title);
+      const links = el('div', { className: 'attr-links' });
+      if (a.site) links.appendChild(link('🌐 האתר הרשמי', a.site));
+      else links.appendChild(link('🔎 האתר הרשמי (חיפוש)', g((a.en || a.name) + ' ' + a.iata + ' airport official website')));
+      links.appendChild(link('🛬 טיסות נכנסות', g(a.iata + ' airport arrivals flight status')));
+      links.appendChild(link('📍 במפה', 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent((a.en || a.name) + ' airport')));
+      item.appendChild(links);
+      body.appendChild(item);
+    });
+    body.appendChild(el('div', { className: 'attr-src' }, 'הנתונים מ-Wikidata, ייתכנו אי-דיוקים. את הטיסה עצמה כדאי לבדוק באתר חברת התעופה או באתר שדה התעופה.'));
+  }).catch(() => {
+    if (token !== airportToken) return;
+    fallback();
+  });
+}
+
 function renderTransport() {
   const box = $('transSection');
   box.replaceChildren();
@@ -2277,6 +2373,7 @@ function renderWeather() {
   renderTasks();
   renderEntry();
   renderQuick();
+  renderAirport();
   renderTransport();
   renderAttractions();
   updateWizardVisibility();
@@ -2580,6 +2677,7 @@ function renderList() {
       del.addEventListener('click', () => deleteItem(it.id));
       const label = el('span', { className: 'text' }, it.text);
       if ((it.qty || 1) > 1) label.appendChild(el('span', { className: 'qty' }, ' ×' + it.qty));
+      if (it.note || it.grams) label.appendChild(el('small', { className: 'item-note' }, [it.note, it.grams ? '⚖️ ' + it.grams + ' גרם' : ''].filter(Boolean).join(' · ')));
       row.append(box, label);
       if (typeof sharedMode !== 'undefined' && sharedMode && viewMemberId === GROUP_ID) {
         row.append(assigneeSelect(it));
@@ -2607,8 +2705,15 @@ function renderList() {
         down.addEventListener('click', () => moveItem(it.id, 1));
         row.append(up, down);
       }
+      if (!reorderMode) {
+        const noteBtn = el('button', { type: 'button', className: 'note-btn' + (it.note || it.grams ? ' has' : ''), title: it.note ? 'ערוך הערה' : 'הוסף הערה' }, '📝');
+        noteBtn.setAttribute('aria-label', (it.note ? 'ערוך הערה: ' : 'הוסף הערה: ') + it.text);
+        noteBtn.addEventListener('click', () => { noteEditId = noteEditId === it.id ? null : it.id; renderList(); });
+        row.append(noteBtn);
+      }
       row.append(del);
       list.appendChild(row);
+      if (noteEditId === it.id && !reorderMode) list.appendChild(noteEditor(it));
     });
   });
   placeUndoRow(list);
@@ -2620,6 +2725,35 @@ function renderList() {
   const allCats = Object.keys(groups);
   const allCollapsed = allCats.length > 0 && allCats.every(c => collapsed.includes(c));
   $('collapseAllBtn').textContent = allCollapsed ? 'הרחב הכל' : 'כווץ הכל';
+}
+
+// הערה לפריט (למשל "בתיק היד"): שדה קטן מתחת לפריט
+let noteEditId = null;
+function noteEditor(it) {
+  const form = el('form', { className: 'note-edit', autocomplete: 'off' });
+  const input = el('input', { type: 'text', maxLength: 120, value: it.note || '' });
+  input.placeholder = 'הערה, למשל: בתיק היד';
+  input.setAttribute('aria-label', 'הערה ל' + it.text);
+  const grams = el('input', { type: 'number', min: '0', max: '50000', inputMode: 'numeric', value: it.grams ? String(it.grams) : '' });
+  grams.className = 'grams-in';
+  grams.placeholder = 'גרם';
+  grams.setAttribute('aria-label', 'משקל ביחידה, בגרמים');
+  const saveBtn = el('button', { type: 'submit', className: 'secondary' }, 'שמור');
+  const cancel = el('button', { type: 'button', className: 'secondary' }, 'ביטול');
+  cancel.addEventListener('click', () => { noteEditId = null; renderList(); });
+  form.append(input, grams, saveBtn, cancel);
+  form.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const v = input.value.trim().slice(0, 120);
+    if (v) it.note = v; else delete it.note;
+    const gv = Math.round(Number(grams.value));
+    if (Number.isFinite(gv) && gv > 0) it.grams = Math.min(50000, gv); else delete it.grams;
+    noteEditId = null;
+    save();
+    renderList();
+  });
+  setTimeout(() => input.focus(), 0);
+  return form;
 }
 
 // פותח או מקפל קטגוריה אחת. הבחירה נשמרת יחד עם הטיול.
@@ -3080,7 +3214,13 @@ const WEIGHT_RULES = [
   [/שעון|רצועת יד/, 100], [/חלוק/, 1000], [/ספר לקריאה/, 400], [/מצלמה/, 800], [/סוללות|מטען למצלמה/, 200],
   [/חצובה/, 500], [/חיתולים/, 1500], [/צעצועים/, 600], [/חטיפים ובקבוק/, 500], [/עגלה|מנשא/, 5000],
   [/חטיפים ומים/, 1000], [/מטען לרכב/, 150], [/טלפון \+ מטען/, 350], [/מטען נייד/, 350], [/מתאם/, 80], [/אוזניות/, 100],
-  [/מברשת ומשחת/, 100], [/דאודורנט/, 400], [/תרופות אישיות/, 200], [/תרופות בסיסיות/, 150], [/מזומן/, 20]
+  [/מברשת ומשחת/, 100], [/דאודורנט/, 400], [/תרופות אישיות/, 200], [/תרופות בסיסיות/, 150], [/מזומן/, 20],
+  // מילים נפוצות לפריטים שמוסיפים בעצמך
+  [/ספר|ספרים|מגזין/, 400], [/טאבלט|אייפד|קינדל/, 500], [/לפטופ|מחשב/, 1800], [/נעל|סנדל|מגפ/, 800],
+  [/ג'ינס|מכנס/, 500], [/חולצ|טי.?שירט|גופי|שמלה|חצאית|בגד/, 200], [/מעיל|ז'קט|ג'קט/, 800], [/סוודר|קפוצ|פליז/, 500],
+  [/מתנ/, 500], [/יין|אלכוהול|וויסקי|ויסקי/, 1200], [/כרית/, 400], [/שמיכה|שק שינה/, 1200],
+  [/קרם|שמפו|סבון|בושם|מי פנים|ג'ל/, 250], [/כבל|מטען|מתאם|סוללה/, 100], [/צעצוע|בובה|משחק/, 500],
+  [/חטיף|שוקולד|אוכל|ממתק/, 200], [/מזוודה|תיק|תרמיל/, 1200]
 ];
 const WEIGHT_DEFAULT = 200;
 const WEIGHT_LIMITS = [7, 8, 10, 15, 20, 23, 32];
@@ -3097,7 +3237,11 @@ function itemUnits(text) {
   return 1;
 }
 
+function hasKnownWeight(it) { return it.grams > 0 || WEIGHT_RULES.some(r => r[0].test(it.text)); }
+
+// משקל שהזנת לפריט (בגרמים ליחידה) קובע. אחרת מעריכים לפי המילים בשם הפריט.
 function itemGrams(it) {
+  if (it.grams > 0) return it.grams * (it.qty || 1);
   const rule = WEIGHT_RULES.find(r => r[0].test(it.text));
   const unit = rule ? rule[1] : WEIGHT_DEFAULT;
   return unit * itemUnits(it.text) * (it.qty || 1);
@@ -3132,7 +3276,9 @@ function renderWeight() {
   const msg = ratio > 1 ? 'עברת את המגבלה ב-' + (kg - limit).toLocaleString('he-IL', { maximumFractionDigits: 1 }) + ' ק"ג. אפשר להוריד פריטים או לבדוק מזוודה גדולה יותר.'
     : ratio > 0.85 ? 'קרוב למגבלה, כדאי להשאיר מקום לקניות.'
     : 'יש עוד מקום.';
-  box.appendChild(el('div', { className: 'note' }, msg + ' הערכה גסה לפי משקל טיפוסי של פריטים, לא כולל משקל המזוודה עצמה ומה שלובשים בטיסה.'));
+  const unknown = state.items.filter(it => !hasKnownWeight(it)).length;
+  const unknownMsg = unknown ? ' ל-' + unknown + ' פריטים אין משקל ידוע, והם נספרים כ-200 גרם. אפשר להזין משקל אמיתי בעריכת ההערה של הפריט (📝).' : '';
+  box.appendChild(el('div', { className: 'note' }, msg + ' הערכה גסה לפי משקל טיפוסי של פריטים, לא כולל משקל המזוודה עצמה ומה שלובשים בטיסה.' + unknownMsg));
 }
 
 // חותמת "נארז!" כשהרשימה הושלמה עכשיו (לא בכל טעינה של רשימה שכבר הושלמה)
@@ -3205,6 +3351,7 @@ function changeQty(id, delta) {
 function itemLabel(it) {
   let t = (it.qty || 1) > 1 ? it.text + ' ×' + it.qty : it.text;
   if (it.by && typeof remote !== 'undefined' && remote && remote.members && remote.members[it.by]) t += ' (' + remote.members[it.by].name + ')';
+  if (it.note) t += ' – ' + it.note;
   return t;
 }
 
@@ -4076,6 +4223,8 @@ async function fb(method, id, path, body) {
 function itemRecord(it, pos) {
   const rec = { text: it.text, cat: it.cat, checked: !!it.checked, qty: it.qty || 1, pos: pos };
   if (it.by) rec.by = it.by;   // מי מביא (רק ברשימה המשותפת)
+  if (it.note) rec.note = it.note;
+  if (it.grams) rec.grams = it.grams;
   return rec;
 }
 
@@ -4094,7 +4243,7 @@ function itemsFromRemote(member) {
     .filter(e => e[1] && typeof e[1].text === 'string')
     .map(e => ({
       id: e[0], text: e[1].text, cat: e[1].cat || '', checked: !!e[1].checked,
-      qty: e[1].qty || 1, pos: e[1].pos || 0, by: e[1].by || undefined
+      qty: e[1].qty || 1, pos: e[1].pos || 0, by: e[1].by || undefined, note: e[1].note || undefined, grams: e[1].grams || undefined
     }))
     .sort((a, b) => a.pos - b.pos);
 }
