@@ -1197,7 +1197,7 @@
   ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
   /* כפתור העיצוב צמוד לעמודה המרכזית במסכים רחבים */
-  @media (min-width: 900px) { #tools { left: calc(50vw - 340px - 120px); } }
+  @media (min-width: 900px) { #tools { left: calc(50vw - 300px - 120px); } }
 
   /* =========================================================
      PackPal 2.0 layer: זכוכית כהה, זוהר תכלת, תגי זהב, כפתורים מדורגים
@@ -1318,6 +1318,37 @@
 
   @media (prefers-reduced-motion: reduce) {
     .primary:hover:not(:disabled) { transform: none; }
+  }
+
+  /* ===== מיכל זכוכית אחד גדול סביב כל האפליקציה, כמו בדף 2.0 ===== */
+  main {
+    max-width: 600px;
+    margin: 24px auto 40px;
+    padding: 28px;
+    background: var(--card);
+    border: 1px solid var(--glass-border);
+    border-radius: 32px;
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 44px var(--glow2);
+    animation: shellIn .6s cubic-bezier(.16, 1, .3, 1);
+  }
+  @keyframes shellIn { from { opacity: 0; transform: translateY(20px) scale(.98); } to { opacity: 1; transform: none; } }
+  main > .card, main > .hero, main > form.card {
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    background: rgba(3, 7, 18, 0.45);
+  }
+  :root:not([data-theme="dark"]) main > .card,
+  :root:not([data-theme="dark"]) main > form.card { background: rgba(255, 255, 255, 0.6); border-color: rgba(15, 23, 42, 0.08); }
+  main > .hero { background: var(--hero-top); }
+  .tabbar { box-shadow: none; background: rgba(3, 7, 18, 0.45); }
+  :root:not([data-theme="dark"]) .tabbar { background: rgba(255, 255, 255, 0.6); }
+  @media (max-width: 640px) {
+    main { margin: 10px; padding: 14px; border-radius: 26px; }
   }
 </style>
 </head>
