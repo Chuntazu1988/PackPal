@@ -744,6 +744,11 @@
   .lf-title { font-weight: 800; margin-bottom: 6px; }
   .lf-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
   .lf-k { color: var(--muted); }
+
+  /* ===== תקציב ===== */
+  .bud-row { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; }
+  .bud-n { width: 4.2rem; padding: 8px 6px; text-align: center; border: 1.5px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); font: inherit; }
+  .bud-main { margin: 6px 0 2px; font-size: 1.9rem; font-weight: 900; direction: ltr; text-align: right; }
 </style>
 </head>
 <body>
@@ -900,6 +905,7 @@
 
   <!-- ===== המלצות לאטרקציות (Wikivoyage) ===== -->
   <section id="quickSection" class="card hidden" data-tab="dest"></section>
+  <section id="budgetSection" class="card hidden" data-tab="dest"></section>
   <section id="airportSection" class="card hidden" data-tab="dest"></section>
   <section id="transSection" class="card hidden" data-tab="dest"></section>
   <section id="attrSection" class="card hidden" data-tab="dest"></section>
@@ -2495,6 +2501,94 @@ function renderAirport() {
   });
 }
 
+/* =========================================================
+   כמה כסף כדאי להביא: הערכה גסה לפי היעד, סוג הטיול ומספר הימים
+   ========================================================= */
+
+// רמת מחירים ליעד: הוצאה יומית ממוצעת לאדם בדולרים (אוכל, תחבורה מקומית, פעילויות וקניות קטנות; בלי טיסה ולינה)
+const COST_TIERS = [
+  { usd: 45, cc: 'TH VN IN ID KH LA NP LK EG MA TN GE AL MK BA RS PH MM BD PK UZ' },
+  { usd: 85, cc: 'ES PT GR PL CZ HU RO HR BG SK SI EE LV LT CY MT TR MY BR AR CO PE CL ZA CN TW KR MX CR DO EC UY MV KE TZ GH NG UA AM ME MU JO' },
+  { usd: 150, cc: 'FR DE IT NL BE AT GB IE US CA AU NZ JP SG HK AE QA KW BH OM SA FI SE IL' },
+  { usd: 215, cc: 'CH NO IS DK LU' }
+];
+// כמה מההוצאה כדאי להחזיק במזומן, לפי היעד
+const CASH_HEAVY = 'TH VN IN ID KH LA NP LK EG MA TN MM BD PK GE AL MK BA RS'.split(' ');
+const CASH_LIGHT = 'GB SE NO DK FI NL IE US CA AU NZ SG HK FR BE EE LU IS'.split(' ');
+// סגנון הטיול לפי הפעילויות שנבחרו: מכפיל ליומי
+const STYLE_MULT = { camping: 0.7, hiking: 0.8, running: 0.9, cycling: 0.9, beach: 1, city: 1, snorkel: 1.1, photo: 1, roadtrip: 1.1, business: 1.2, kids: 1.2, spa: 1.4, fancy: 1.6, ski: 1.6 };
+const TRAVELERS_KEY = 'packpal-travelers';
+
+function budgetEstimate(trip, travelers) {
+  const cc = String(trip.cc || '').toUpperCase();
+  const tier = COST_TIERS.find(t => t.cc.split(' ').includes(cc));
+  const daily = tier ? tier.usd : 85;
+  const mults = (trip.activities || []).map(a => STYLE_MULT[a]).filter(Boolean);
+  const mult = mults.length ? Math.min(1.6, Math.max(0.7, mults.reduce((a, b) => a + b, 0) / mults.length)) : 1;
+  const days = Math.round((parseISO(trip.end) - parseISO(trip.start)) / 86400000) + 1;
+  const mid = daily * mult * days * travelers;
+  const cashShare = CASH_HEAVY.includes(cc) ? 0.6 : CASH_LIGHT.includes(cc) ? 0.15 : 0.3;
+  return { known: !!tier, daily: daily * mult, days: days, low: mid * 0.75, high: mid * 1.3, mid: mid, cashShare: cashShare };
+}
+
+function renderBudget() {
+  const box = $('budgetSection');
+  box.replaceChildren();
+  if (!state || typeof sharedMode !== 'undefined' && sharedMode) { box.classList.add('hidden'); return; }
+  const trip = state.trip;
+  if (daysFromToday(trip.end) < 0) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  let travelers = 1;
+  try { const v = Number(localStorage.getItem(TRAVELERS_KEY)); if (v >= 1 && v <= 10) travelers = Math.round(v); } catch (e) {}
+  const info = QUICK_INFO[String(trip.cc || '').toUpperCase()];
+  const cur = info ? info[0] : null;
+
+  box.appendChild(el('strong', null, '💵 כמה כסף כדאי להביא'));
+  const body = el('div');
+  box.appendChild(body);
+
+  const draw = (rates) => {
+    body.replaceChildren();
+    const est = budgetEstimate(trip, travelers);
+    // מדולרים לשקלים ולמטבע המקומי (השערים הם יחידות לשקל)
+    const usdPerIls = rates && rates.USD;
+    const ils = (usd) => usdPerIls ? usd / usdPerIls : null;
+    const round = (n, step) => Math.round(n / step) * step;
+    const local = (usd) => (rates && cur && rates[cur] && usdPerIls) ? usd / usdPerIls * rates[cur] : null;
+
+    const sel = el('div', { className: 'bud-row' });
+    sel.appendChild(el('span', null, 'כמה נוסעים?'));
+    const num = el('input', { type: 'number', min: '1', max: '10', value: String(travelers), inputMode: 'numeric' });
+    num.className = 'bud-n';
+    num.setAttribute('aria-label', 'מספר נוסעים');
+    num.addEventListener('change', () => {
+      const v = Math.max(1, Math.min(10, Math.round(Number(num.value)) || 1));
+      try { localStorage.setItem(TRAVELERS_KEY, String(v)); } catch (e) {}
+      renderBudget();
+    });
+    sel.appendChild(num);
+    body.appendChild(sel);
+
+    const range = ils(est.low) !== null
+      ? round(ils(est.low), 50).toLocaleString('he-IL') + ' – ' + round(ils(est.high), 50).toLocaleString('he-IL') + ' ₪'
+      : round(est.low, 50).toLocaleString('he-IL') + ' – ' + round(est.high, 50).toLocaleString('he-IL') + ' $';
+    body.appendChild(el('div', { className: 'bud-main' }, range));
+    body.appendChild(el('div', { className: 'note' }, 'ל' + (travelers === 1 ? 'אדם אחד' : travelers + ' נוסעים') + ', ' + est.days + ' ימים, בערך ' + round(est.daily, 5) + ' $ ליום לאדם לפי יעד וסגנון טיול. ללא טיסה ולינה.'));
+
+    const cash = est.mid * est.cashShare;
+    const lines = [];
+    if (local(cash) !== null && cur) lines.push(['מזומן מומלץ (' + Math.round(est.cashShare * 100) + '%)', '~' + round(local(cash), cur === 'JPY' || cur === 'KRW' || cur === 'VND' || cur === 'IDR' ? 10000 : 50).toLocaleString('he-IL') + ' ' + cur + (ils(cash) !== null ? ' (כ-' + round(ils(cash), 50).toLocaleString('he-IL') + ' ₪)' : '')]);
+    lines.push(['בכרטיס אשראי', Math.round((1 - est.cashShare) * 100) + '% מההוצאה']);
+    const grid = el('div', { className: 'lf-grid' });
+    lines.forEach(r => { grid.appendChild(el('span', { className: 'lf-k' }, r[0])); grid.appendChild(el('strong', null, r[1])); });
+    body.appendChild(grid);
+    body.appendChild(el('div', { className: 'attr-src' }, 'הערכה גסה בלבד, לא ייעוץ פיננסי: המחירים משתנים לפי עיר, עונה וסגנון אישי.' + (est.known ? '' : ' היעד לא ברשימה שלי, ולכן חושבה רמת מחירים ממוצעת.') + ' כדאי להוסיף מרווח לחירום ולבדוק עמלות בכרטיס שלך.'));
+  };
+  draw(null);
+  loadRates().then(r => { if (box.isConnected) draw(r.rates); }).catch(() => {});
+  makeCollapsible(box, 'budget', 1, false);
+}
+
 function renderTransport() {
   const box = $('transSection');
   box.replaceChildren();
@@ -2549,6 +2643,7 @@ function renderWeather() {
   renderEntry();
   renderFlight();
   renderQuick();
+  renderBudget();
   renderAirport();
   renderTransport();
   renderAttractions();
