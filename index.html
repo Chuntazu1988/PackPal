@@ -2467,7 +2467,16 @@ function renderQuick() {
   grid.appendChild(tile('🚗', 'נהיגה', LEFT_DRIVE.includes(cc) ? 'בצד שמאל' : 'בצד ימין'));
   grid.appendChild(tile('💱', 'מטבע', cur));
   box.appendChild(grid);
-  box.appendChild(el('div', { className: 'attr-src' }, 'מספרי החירום כלליים ועלולים להשתנות. מומלץ לוודא לפני הנסיעה (למשל באתר משרד החוץ או בחיפוש "emergency number" + שם המדינה).'));
+  box.appendChild(el('div', { className: 'attr-src' }, 'מספרי החירום כלליים ועלולים להשתנות. מומלץ לוודא לפני הנסיעה:'));
+  const verify = el('div', { className: 'attr-links' });
+  const vlink = (text, href) => el('a', { href: href, target: '_blank', rel: 'noopener noreferrer' }, text);
+  const countryName = placeCountry(state.trip.place) || city;
+  verify.append(
+    vlink('🔎 חיפוש: מספר חירום ב' + countryName, 'https://www.google.com/search?q=' + encodeURIComponent('emergency number ' + countryName + ' police ambulance')),
+    vlink('📖 רשימת מספרי חירום בעולם', 'https://en.wikipedia.org/wiki/List_of_emergency_telephone_numbers'),
+    vlink('🚗 צד נהיגה לפי מדינה', 'https://en.wikipedia.org/wiki/Left-_and_right-hand_traffic')
+  );
+  box.appendChild(verify);
 
   // מחשבון המרה
   const conv = el('div', { className: 'quick-conv' });
