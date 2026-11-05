@@ -1095,6 +1095,37 @@ main > .card, main > form.card {
 html.reveal .rv { opacity: 0; transform: translateY(22px) scale(.985); transition: opacity .7s cubic-bezier(.2, .8, .25, 1), transform .7s cubic-bezier(.2, .8, .25, 1); }
 html.reveal .rv.in { opacity: 1; transform: none; }
 
+
+/* ---------- לוח טיסות ישן: ספרות מתהפכות (split-flap) ---------- */
+.countdown.big { background: linear-gradient(180deg, #14151d, #0a0b10); border: 1px solid rgba(255, 211, 107, .25); padding: 44px 18px 18px; box-shadow: inset 0 0 40px rgba(0, 0, 0, .6), 0 18px 40px -16px var(--shadow); color: #f5ecd0; }
+.countdown.big::before {
+  content: "DEPARTURES  ·  יציאה בעוד"; position: absolute; top: 0; left: 0; right: 0; padding: 9px 16px; direction: ltr; text-align: start;
+  font: 700 .72rem var(--font-mono); letter-spacing: .28em; color: #14151d; background: #ffd36b; text-transform: uppercase;
+}
+.countdown.big::after { content: ""; position: absolute; top: 11px; inset-inline-end: 16px; width: 9px; height: 9px; border-radius: 50%; background: #e0412e; box-shadow: 0 0 10px #e0412e; animation: boardBlink 1.2s steps(2) infinite; }
+@keyframes boardBlink { 50% { opacity: .15; } }
+.countdown.big .cd-main { gap: 14px; align-items: center; }
+.countdown.big .cd-unit { color: #f5ecd0; font-weight: 700; font-size: 1.15rem; }
+.countdown.big .cd-caption { color: #b8ad8a; }
+.countdown.big small { color: #ffd36b; }
+.countdown .cd-num { display: inline-flex; direction: ltr; background: none !important; -webkit-text-fill-color: initial !important; text-shadow: none; font-size: clamp(2.6rem, 9vw, 4.6rem); animation: none !important; perspective: 500px; }
+.countdown .cd-clock { gap: 12px; margin-top: 16px; }
+.countdown .cd-cell { background: transparent; border: 0; box-shadow: none; min-width: 0; padding: 0; }
+.countdown .cd-cell b { display: inline-flex; direction: ltr; font-size: clamp(2.2rem, 8.5vw, 3.6rem); animation: none !important; text-shadow: none; perspective: 500px; }
+.countdown .cd-cell b .tile { display: inline-block; margin: 0 .05em; font-size: inherit; letter-spacing: 0; opacity: 1; }
+.countdown .cd-cell > span { color: #ffd36b; font: 700 .68rem var(--font-mono); letter-spacing: .25em; opacity: .9; margin-top: 8px; }
+.tile {
+  position: relative; display: inline-block; width: .72em; height: 1.28em; line-height: 1.28em; margin: 0 .05em; text-align: center; overflow: hidden;
+  font-family: var(--font-mono); font-weight: 800; letter-spacing: 0; color: #ffd36b; -webkit-text-fill-color: #ffd36b;
+  background: linear-gradient(180deg, #23252f 0%, #181a22 49.5%, #07080c 50.5%, #14161d 100%); border-radius: .1em;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07), 0 .05em .1em rgba(0, 0, 0, .7); transform-origin: 50% 50%;
+}
+.tile::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; background: #000; box-shadow: 0 1px 0 rgba(255, 255, 255, .08); }
+.tile::before { content: ""; position: absolute; top: 50%; left: 2px; width: 3px; height: 6px; margin-top: -3px; background: #000; border-radius: 2px; box-shadow: calc(.72em - 7px) 0 0 #000; z-index: 1; }
+.tile.flap { animation: tileFlap .5s cubic-bezier(.3, 1.2, .4, 1); }
+@keyframes tileFlap { 0% { transform: rotateX(-90deg); opacity: .2; } 60% { transform: rotateX(12deg); opacity: 1; } 100% { transform: none; } }
+@media (min-width: 1100px) { .countdown .cd-num { font-size: 5.4rem; } .countdown .cd-cell b { font-size: 4.4rem; } .countdown .cd-clock { justify-content: flex-start; } }
+@media (prefers-reduced-motion: reduce) { .tile.flap, .countdown.big::after { animation: none !important; } }
 /* ---------- נגישות ---------- */
 .skip-link { position: fixed; top: -80px; inset-inline-start: 12px; z-index: 1000; padding: 12px 18px; border-radius: 999px; background: var(--sunset); color: var(--ink-on-sunset); font-weight: 800; text-decoration: none; transition: top .2s; }
 .skip-link:focus { top: 12px; }
@@ -6134,6 +6165,29 @@ function makeCollapsible(box, key, headCount, defaultCollapsed) {
   new MutationObserver(queue).observe(main, { subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'], childList: true });
   window.addEventListener('resize', queue);
   queue();
+})();
+
+/* ספרות מתהפכות: ממירים את המספרים של הספירה לאחור לאריחים, ומסובבים רק ספרה ששינתה ערך */
+(function () {
+  const box = document.getElementById('countdown');
+  if (!box) return;
+  function convert(el) {
+    if (!el.firstChild || el.firstChild.nodeType !== 3) return;
+    const txt = el.textContent, old = el.dataset.v || '';
+    el.dataset.v = txt;
+    el.setAttribute('role', 'img'); el.setAttribute('aria-label', txt);
+    const pad = old.length - txt.length;
+    el.replaceChildren();
+    for (let i = 0; i < txt.length; i++) {
+      const t = document.createElement('span');
+      t.className = 'tile'; t.setAttribute('aria-hidden', 'true'); t.textContent = txt[i];
+      if (old[i + pad] !== txt[i]) { t.classList.add('flap'); }
+      el.appendChild(t);
+    }
+  }
+  function scan() { box.querySelectorAll('.cd-num, .cd-cell b').forEach(convert); }
+  new MutationObserver(scan).observe(box, { childList: true, subtree: true, characterData: true });
+  scan();
 })();
 </script>
 </body>
