@@ -1537,6 +1537,50 @@
 
   main { padding-bottom: 96px; }
   html { scroll-padding-bottom: 110px; }
+
+  /* =========================================================
+     SHELL: פריסת מחשב חדשה. פס ניווט אנכי צף + רשת בנטו (שתי עמודות)
+     בטלפון נשאר הדוק התחתון
+     ========================================================= */
+  @media (min-width: 1100px) {
+    body { padding: 0 28px; }
+    main {
+      max-width: 1280px; margin: 28px auto 48px; padding: 28px;
+      display: grid; grid-template-columns: 112px minmax(0, 1fr) minmax(0, 1fr); column-gap: 20px; row-gap: 0; align-items: start;
+    }
+    main > * { grid-column: 2 / -1; min-width: 0; margin-bottom: 20px; }
+    main > .skip-link { grid-column: auto; }
+    main > #accountBar, main > .hero, main > #sharedBar, main > .site-footer { grid-column: 1 / -1; }
+    main > .site-footer { margin-top: 8px; }
+
+    /* תוכן "היעד" ו"לפני הטיסה": כרטיסים בשתי עמודות (בנטו). הרחבים נשארים ברוחב מלא */
+    main > .card[data-tab="dest"], main > .card[data-tab="before"] { grid-column: auto; }
+    main > #weather, main > #budgetSection, main > #flightSection, main > #attrSection { grid-column: 2 / -1; }
+
+    /* פס הניווט: אנכי, זכוכית, צף לצד התוכן */
+    main > .tabbar {
+      grid-column: 1; grid-row: 3 / span 40; align-self: start;
+      position: sticky; top: 24px; bottom: auto; margin: 0 0 20px;
+      display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 28px;
+    }
+    main > .tabbar.hidden { display: none; }
+    .tabbar button { flex-direction: column; width: 100%; padding: 14px 4px; min-height: 76px; font-size: .8rem; }
+    .tabbar button.active { transform: translateX(6px); }
+    .tabbar button:not(.active):hover { transform: translateX(4px); }
+    .tabbar .ti { font-size: 1.6rem; }
+
+    /* כותרת גדולה ורחבה */
+    .hero { padding: 36px 40px; }
+    .hero h1 { font-size: 3.1rem; }
+
+    main { padding-bottom: 28px; }
+    html { scroll-padding-bottom: 0; }
+  }
+  @media (min-width: 1500px) {
+    main { max-width: 1400px; grid-template-columns: 120px repeat(3, minmax(0, 1fr)); }
+    main > .card[data-tab="dest"], main > .card[data-tab="before"] { grid-column: auto; }
+    main > #weather, main > #budgetSection, main > #flightSection { grid-column: 2 / -1; }
+  }
 </style>
 </head>
 <body>
