@@ -8,6 +8,8 @@
 <link rel="apple-touch-icon" href="static/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1b2a41">
+<meta name="author" content="נטע ונטוררו שבירו">
+<meta name="copyright" content="© כל הזכויות שמורות לנטע ונטוררו שבירו">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=JetBrains+Mono:wght@500;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
   /* ===== צבעים: מצב יום = כרטיס טיסה (קרם ונייבי), מצב כהה = לילה ונאון ===== */
@@ -1350,6 +1352,33 @@
   @media (max-width: 640px) {
     main { margin: 10px; padding: 14px; border-radius: 26px; }
   }
+
+  /* ===== מסך נחיתה במסך מלא ===== */
+  .landing { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;
+    background-color: var(--bg);
+    background-image: radial-gradient(circle at 20% 15%, rgba(56,189,248,.14) 0%, transparent 45%), radial-gradient(circle at 80% 85%, rgba(251,191,36,.10) 0%, transparent 45%); }
+  .landing.hidden { display: none; }
+  .landing-card { width: 100%; max-width: 520px; margin: auto; padding: 32px; border-radius: 32px; background: var(--card); border: 1px solid var(--glass-border);
+    -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); box-shadow: 0 25px 50px -12px rgba(0,0,0,.6), 0 0 44px var(--glow2);
+    animation: shellIn .6s cubic-bezier(.16,1,.3,1); }
+  .landing-badge { display: inline-block; font-family: var(--font-mono); font-size: .72rem; letter-spacing: 3px; color: var(--gold2); background: rgba(251,191,36,.10); border: 1px solid rgba(251,191,36,.25); border-radius: 999px; padding: 6px 14px; }
+  .landing h1 { font-family: var(--head); font-size: 2.6rem; margin: 18px 0 8px; line-height: 1.1; background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .landing-plane { -webkit-text-fill-color: initial; filter: drop-shadow(0 0 8px var(--accent)); }
+  .landing-lead { color: var(--muted); font-size: 1.05rem; margin: 0 0 22px; }
+  .landing-route { display: flex; align-items: center; gap: 16px; padding: 18px 20px; border-radius: 20px; border: 1px solid var(--border); background: var(--soft); margin-bottom: 20px; direction: ltr; font-family: var(--head); font-size: 1.4rem; }
+  .landing-line { flex: 1; height: 2px; position: relative; background: linear-gradient(90deg, transparent, var(--accent), transparent); }
+  .landing-line i { position: absolute; top: -12px; left: 50%; transform: translateX(-50%) rotate(90deg); font-style: normal; font-size: 1.1rem; filter: drop-shadow(0 0 8px var(--accent)); }
+  .landing-points { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 10px; color: var(--text); }
+  .landing-points li { padding: 10px 14px; border-radius: 14px; background: var(--soft); }
+  .landing .primary { margin-top: 0; font-size: 1.1rem; }
+  .landing-login { width: 100%; margin-top: 12px; padding: 14px; border-radius: 18px; border: 1px solid var(--glass-border); background: var(--soft); color: var(--text); font-weight: 600; }
+  .landing-note { color: var(--muted); font-size: .85rem; text-align: center; margin: 14px 0 0; }
+  body.landing-on main, body.landing-on #tools, body.landing-on .fab-wrap { display: none !important; }
+  @media (max-width: 480px) { .landing-card { padding: 24px 20px; border-radius: 26px; } .landing h1 { font-size: 2.2rem; } }
+
+  .copyright, .site-footer { text-align: center; color: var(--muted); font-size: .8rem; letter-spacing: .3px; }
+  .copyright { margin: 10px 0 0; }
+  .site-footer { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--border); }
 </style>
 </head>
 <body>
@@ -1377,6 +1406,26 @@
     </div>
   </div>
 </aside>
+<!-- ===== מסך נחיתה: מוצג בכניסה ראשונה ואחרי התנתקות ===== -->
+<section id="welcome" class="landing hidden" aria-labelledby="landingTitle">
+  <div class="landing-card">
+    <div class="landing-top">
+      <span class="landing-badge">NEXT-GEN PACKPAL</span>
+    </div>
+    <h1 id="landingTitle"><span class="landing-plane" aria-hidden="true">✈️</span> PackPal</h1>
+    <p class="landing-lead">רשימת אריזה חכמה לטיול: לפי מזג האוויר, היעד והפעילויות שלך.</p>
+    <div class="landing-route" aria-hidden="true"><b>TLV</b><span class="landing-line"><i>✈️</i></span><b>YOU</b></div>
+    <ul class="landing-points">
+      <li>🧳 אומרים לאן ומתי, ומקבלים רשימה מותאמת</li>
+      <li>✅ אורזים ומסמנים, ורואים כמה נשאר</li>
+      <li>👥 אורזים ביחד עם חברים ומשפחה</li>
+    </ul>
+    <button type="button" class="primary" id="welcomeStart">🚀 התחל תכנון טיסה</button>
+    <button type="button" class="landing-login" id="welcomeLogin">🔐 התחבר עם גוגל</button>
+    <p class="landing-note">אפשר להתחיל בלי חשבון. התחברות שומרת את הטיולים בענן ומאפשרת לראות אותם מכל מכשיר.</p>
+    <p class="copyright">© כל הזכויות שמורות לנטע ונטוררו שבירו</p>
+  </div>
+</section>
 <main>
   <div id="accountBar" class="account-bar hidden"></div>
 
@@ -1404,22 +1453,6 @@
   </section>
 
   <!-- ===== טופס הטיול ===== -->
-  <!-- ===== מסך פתיחה: רק למי שנכנסת בפעם הראשונה ===== -->
-  <section id="welcome" class="card welcome hidden">
-    <h2 class="wiz-q">ברוכה הבאה! 👋</h2>
-    <p class="welcome-lead">רשימת אריזה חכמה לטיול, בשלושה צעדים פשוטים:</p>
-    <ol class="welcome-steps">
-      <li><span class="ico">🧳</span><div><strong>אומרים לאן ומתי</strong><span>ומקבלים רשימה שמתאימה למזג האוויר ולמה שמתכננים לעשות.</span></div></li>
-      <li><span class="ico">✅</span><div><strong>אורזים ומסמנים</strong><span>רואים כמה נשאר, ומוסיפים או מוחקים פריטים איך שנוח.</span></div></li>
-      <li><span class="ico">👥</span><div><strong>אורזים ביחד</strong><span>שולחים קישור לחברים או למשפחה, וכל אחד מקבל לשונית משלו.</span></div></li>
-    </ol>
-    <p class="note">בנוסף: דרישות כניסה ליעד, חשמל והפרש שעות, והמלצות למה לעשות שם.</p>
-    <div class="wiz-nav">
-      <button type="button" class="primary" id="welcomeStart">בואי נתחיל ✈️</button>
-    </div>
-    <button type="button" class="link-btn" id="welcomeLogin">כבר יש לי חשבון, התחברי</button>
-  </section>
-
   <form id="tripForm" class="card wizard" autocomplete="off" novalidate>
     <!-- כשיש טיול פעיל: שורה קטנה במקום הטופס -->
     <div id="wizSummary" class="wiz-summary hidden">
@@ -1593,6 +1626,7 @@
     </div>
     <div id="favMsg" role="status"></div>
   </section>
+  <footer class="site-footer">© כל הזכויות שמורות לנטע ונטוררו שבירו</footer>
 </main>
 
 <!-- תפריט מהיר צף: נפתח כמניפה למעלה -->
@@ -3010,7 +3044,7 @@ function buildReminderEvents(st) {
 }
 
 function buildIcs(events) {
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//PackPal//HE', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:PackPal'];
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//PackPal//HE', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:PackPal', 'X-WR-CALDESC:© כל הזכויות שמורות לנטע ונטוררו שבירו'];
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');   // UTC, בפורמט 20260101T120000Z
   events.forEach((e, i) => {
     const end = new Date(e.start.getTime() + (e.mins || 30) * 60000);
@@ -4497,7 +4531,7 @@ function buildPrintHtml() {
     '.cat{break-inside:avoid;margin-bottom:14px}h2{font-size:1.1rem;margin:0 0 4px;border-bottom:1px solid #999}' +
     'ul{list-style:none;margin:0;padding:0;columns:2}li{padding:2px 0;break-inside:avoid}' +
     '.box{font-size:1.2rem;margin-inline-end:6px}' +
-    '</style></head><body>' + body + '<script>window.onload=function(){window.print();};<\/script></body></html>';
+    '</style></head><body>' + body + '<p style="margin-top:24px;text-align:center;font-size:12px;color:#666">© כל הזכויות שמורות לנטע ונטוררו שבירו</p><script>window.onload=function(){window.print();};<\/script></body></html>';
 }
 
 function printList() {
@@ -4850,6 +4884,7 @@ function isFirstVisit() {
 function updateWelcome() {
   const first = isFirstVisit();
   $('welcome').classList.toggle('hidden', !first);
+  document.body.classList.toggle('landing-on', first);
   $('tripForm').classList.toggle('hidden', first);
   // פריטים קבועים: מוצגים רק כשיש טיול או כבר יש פריטים קבועים
   $('favSection').classList.toggle('hidden', !state && loadFavs().length === 0);
@@ -5824,12 +5859,9 @@ function renderAccount(msg) {
   };
   bar.appendChild(el('span', { className: 'cloud ' + (cloudStatus === 'ok' ? 'ok' : cloudStatus === 'error' ? 'err' : '') }, labels[cloudStatus] || ''));
   bar.appendChild(el('span', { className: 'spacer' }));
-  const out = el('button', { type: 'button', className: 'secondary' }, 'התנתק');
-  out.addEventListener('click', () => signOutUser(false));
+  const out = el('button', { type: 'button', className: 'secondary', title: 'מתנתקת ומוחקת את הנתונים מהמכשיר הזה (הם נשארים בענן)' }, 'התנתק');
+  out.addEventListener('click', () => signOutUser());
   bar.appendChild(out);
-  const wipe = el('button', { type: 'button', className: 'secondary', title: 'מתנתקת ומוחקת את הנתונים מהמכשיר הזה (הם נשארים בענן)' }, 'התנתק ונקה מכשיר');
-  wipe.addEventListener('click', () => signOutUser(true));
-  bar.appendChild(wipe);
   if (msg) bar.appendChild(el('div', { className: 'hint', role: 'status' }, msg));
 }
 
@@ -5851,22 +5883,22 @@ async function signInWithGoogle() {
   }
 }
 
-async function signOutUser(wipeDevice) {
+async function signOutUser() {
   cloudUser = null;
   cloudReady = false;
   clearTimeout(cloudTimer);
   try { await fbSdk().auth().signOut(); } catch (e) {}
-  if (wipeDevice) {
-    // הנתונים נשארים בענן. מוחקים רק את העותק במכשיר הזה.
-    [STORAGE_KEY, HISTORY_KEY, FAV_KEY, SYNC_META_KEY].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
-    state = null;
-    renderWeather();
-    renderList();
-    renderPast();
-    renderFavs();
-  }
+  // התנתקות מוחקת את כל המידע מהמכשיר הזה (הוא נשאר בענן) וחוזרת למסך הנחיתה
+  [STORAGE_KEY, HISTORY_KEY, FAV_KEY, SYNC_META_KEY, TPL_KEY, WELCOME_KEY].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+  state = null;
+  renderWeather();
+  renderList();
+  renderPast();
+  renderFavs();
   setCloudStatus('idle');
-  renderAccount(wipeDevice ? 'התנתקת, והנתונים נמחקו מהמכשיר הזה. הם שמורים בחשבון שלך.' : null);
+  renderAccount();
+  updateWelcome();
+  window.scrollTo(0, 0);
 }
 
 /* ---------- שמירה וטעינה מהענן ---------- */
