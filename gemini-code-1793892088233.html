@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PackPal – רשימת אריזה חכמה לטיול</title>
+<link rel="icon" type="image/png" sizes="32x32" href="static/favicon-32.png">
+<link rel="apple-touch-icon" href="static/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#090d16">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+
+<style>
+  /* =========================================================
+     1. פלטות צבעים ומשתנים (Light & Dark Luxe Theme)
+     ========================================================= */
+  :root {
+    /* --- Light Mode: Executive Aviation Luxe --- */
+    --bg: #f8f6f0;
+    --card: rgba(255, 255, 255, 0.85);
+    --card-hover: rgba(255, 255, 255, 0.98);
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #0284c7;
+    --accent-dark: #0369a1;
+    --on-accent: #ffffff;
+    --ok: #059669;
+    --danger: #e11d48;
+    --border: rgba(15, 23, 42, 0.12);
+    --soft: rgba(241, 245, 249, 0.8);
+    --stat: #f1f5f9;
+    --track: #e2e8f0;
+    --sand: #fef3c7;
+    --sun: #d97706;
+    --hero-top: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    --hero-bottom: #0f172a;
+    --hero-text: #f8fafc;
+    --cloud: rgba(255,255,255,.15);
+    --shadow: rgba(15, 23, 42, 0.08);
+    --shadow-hover: rgba(15, 23, 42, 0.15);
+    --stamp: #d97706;
+    --glow: rgba(2, 132, 199, 0.15);
+    --font: 'Heebo', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    color-scheme: light;
+  }
+
+  /* --- Dark Mode: Cyber Aviation Neon --- */
+  :root[data-theme="dark"] {
+    --bg: #070a12;
+    --card: rgba(15, 23, 42, 0.65);
+    --card-hover: rgba(30, 41, 67, 0.75);
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent-dark: #0284c7;
+    --on-accent: #070a12;
+    --ok: #10b981;
+    --danger: #f43f5e;
+    --border: rgba(255, 255, 255, 0.1);
+    --soft: rgba(30, 41, 59, 0.6);
+    --stat: rgba(30, 41, 59, 0.8);
+    --track: rgba(255, 255, 255, 0.08);
+    --sand: rgba(245, 158, 11, 0.15);
+    --sun: #fbbf24;
+    --hero-top: linear-gradient(135deg, #090d16 0%, #111827 100%);
+    --hero-bottom: #090d16;
+    --hero-text: #f8fafc;
+    --cloud: rgba(255,255,255,.08);
+    --shadow: rgba(0, 0, 0, 0.5);
+    --shadow-hover: rgba(0, 0, 0, 0.7);
+    --stamp: #f59e0b;
+    --glow: rgba(56, 189, 248, 0.25);
+    color-scheme: dark;
+  }
+
+  /* =========================================================
+     2. Reset & Base Layout
+     ========================================================= */
+  * { box-sizing: border-box; }
+  html { font-size: 100%; scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-size: 1rem;
+    font-family: var(--font);
+    background: var(--bg);
+    background-image: 
+      radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
+      radial-gradient(circle at 90% 90%, rgba(245, 158, 11, 0.04) 0%, transparent 40%);
+    background-attachment: fixed;
+    color: var(--text);
+    line-height: 1.5;
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
+
+  main { max-width: 680px; margin: 0 auto; padding: 20px 16px 50px; }
+
+  /* =========================================================
+     3. Futuristic Boarding Pass Header
+     ========================================================= */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    margin: 8px 0 20px;
+    padding: 24px 24px 22px;
+    border-radius: 24px;
+    background: var(--hero-top);
+    color: var(--hero-text);
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 40px var(--shadow), 0 0 25px var(--glow);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    animation: rise .5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    transition: all 0.3s ease;
+  }
+
+  .hero:hover {
+    box-shadow: 0 25px 50px var(--shadow-hover), 0 0 35px var(--glow);
+  }
+
+  .bp-top {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 2.5px;
+    color: var(--stamp);
+    margin-bottom: 12px;
+    direction: ltr;
+    text-transform: uppercase;
+  }
+
+  .hero h1 {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+    font-size: 2.2rem;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    line-height: 1.15;
+    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero h1 small {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: var(--muted);
+    -webkit-text-fill-color: var(--muted);
+    letter-spacing: 0;
+  }
+
+  /* Route Animation */
+  .bp-route {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 20px -24px -22px;
+    padding: 16px 24px;
+    border-top: 1px dashed var(--border);
+    background: rgba(0, 0, 0, 0.2);
+    direction: ltr;
+  }
+
+  /* Pass Cutouts (חריצים צדדיים של כרטיס טיסה) */
+  .bp-route::before, .bp-route::after {
+    content: "";
+    position: absolute;
+    top: -10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--bg);
+  }
+  .bp-route::before { left: -10px; }
+  .bp-route::after { right: -10px; }
+
+  .bp-code {
+    font-family: var(--font-mono);
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: 2px;
+    color: var(--hero-text);
+  }
+
+  .bp-path {
+    position: relative;
+    flex: 1;
+    height: 24px;
+    margin: 0 16px;
+  }
+
+  .bp-path::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .bp-plane {
+    position: absolute;
+    top: -2px;
+    left: 0;
+    font-style: normal;
+    font-size: 1.3rem;
+    line-height: 24px;
+    animation: bpfly 4s ease-in-out infinite alternate;
+    filter: drop-shadow(0 0 8px var(--accent));
+  }
+
+  @keyframes bpfly {
+    0% { left: 0%; transform: rotate(-90deg) scaleX(-1); }
+    100% { left: calc(100% - 1.4rem); transform: rotate(-90deg) scaleX(-1); }
+  }
+
+  /* =========================================================
+     4. Glassmorphism Cards & Components
+     ========================================================= */
+  .card {
+    position: relative;
+    background: var(--card);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    margin: 16px 0;
+    box-shadow: 0 10px 30px var(--shadow);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: rise .45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .card:hover {
+    box-shadow: 0 15px 35px var(--shadow-hover);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  label { display: block; font-weight: 600; margin: 10px 0 6px; font-size: 0.95rem; }
+
+  input[type=text], input[type=date], input[type=search], input[type=number] {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    transition: all 0.2s ease;
+  }
+
+  input[type=text]:focus, input[type=date]:focus, input[type=search]:focus, input[type=number]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--glow);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .row { display: flex; gap: 12px; }
+  .row > div { flex: 1; min-width: 0; }
+
+  /* Buttons */
+  button {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 18px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.05); }
+  button:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+
+  .primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    color: var(--on-accent);
+    width: 100%;
+    margin-top: 18px;
+    font-weight: 700;
+    padding: 15px 20px;
+    border-radius: 14px;
+    box-shadow: 0 8px 20px var(--glow);
+  }
+
+  .secondary {
+    background: var(--soft);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .whatsapp {
+    background: #25d366;
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 6px 16px rgba(37, 211, 102, 0.25);
+  }
+
+  /* Chips (Activities) */
+  .chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px; }
+  .chip input { display: none; }
+  .chip { margin: 0; font-weight: normal; }
+  .chip span {
+    display: block;
+    text-align: center;
+    padding: 12px 10px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--soft);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .chip span:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+  .chip input:checked + span {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+    font-weight: 700;
+    transform: scale(1.02);
+    box-shadow: 0 6px 16px var(--glow);
+  }
+
+  /* =========================================================
+     5. Packing List Items
+     ========================================================= */
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border-radius: 14px;
+    background: var(--soft);
+    border: 1px solid var(--border);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .item:hover {
+    background: var(--card-hover);
+    transform: translateX(-2px);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .item input[type=checkbox] {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--ok);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .item input[type=checkbox]:checked {
+    transform: scale(1.15);
+  }
+
+  .item .text { flex: 1; font-weight: 500; transition: all 0.2s ease; }
+
+  .item.done {
+    opacity: 0.6;
+    background: rgba(16, 185, 129, 0.04);
+    border-color: rgba(16, 185, 129, 0.15);
+  }
+
+  .item.done .text {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+
+  .item .qty { font-weight: 700; color: var(--accent); font-family: var(--font-mono); }
+
+  /* =========================================================
+     6. Progress & Tab Bar
+     ========================================================= */
+  .bar {
+    height: 12px;
+    background: var(--track);
+    border-radius: 20px;
+    overflow: hidden;
+    margin: 12px 0;
+    box-shadow: inset 0 1px 3px var(--shadow);
+  }
+
+  .bar > div {
+    height: 100%;
+    width: 0;
+    border-radius: 20px;
+    background: linear-gradient(90deg, var(--accent), var(--ok));
+    box-shadow: 0 0 12px var(--glow);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .tabbar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 20px 0 8px;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--card);
+    backdrop-filter: blur(12px);
+  }
+
+  .tabbar button {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 4px;
+    background: none;
+    color: var(--muted);
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.82rem;
+  }
+
+  .tabbar button.active {
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: 0 4px 14px var(--glow);
+  }
+
+  /* Animations */
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+</style>
+</head>
+<body>
+
+<div id="devBanner" class="hidden">
+  🚧 גרסת פיתוח (DEV) 🚧
+  <small>זו לא הגרסה הסופית – כאן מנסים דברים חדשים</small>
+</div>
+
+<div id="tools" class="floaty">
+  <button type="button" id="designToggle" aria-expanded="false" aria-controls="designPanel">🎨 עיצוב</button>
+</div>
+
+<div id="drawerOverlay" class="overlay vp"></div>
+<aside id="designPanel" class="drawer vp" aria-label="הגדרות עיצוב" aria-hidden="true">
+  <div class="drawer-head">
+    <strong>🎨 הגדרות עיצוב</strong>
+    <button type="button" class="icon-btn" id="drawerClose" aria-label="סגור">✕</button>
+  </div>
+  <div class="drawer-body">
+    <p class="note">שינויים נשמרים אוטומטית.</p>
+    <button type="button" id="themeBtn" aria-label="החלף מצב כהה / בהיר"></button>
+    <button type="button" id="sizeBtn" aria-label="שנה את גודל הטקסט"></button>
+    <button type="button" id="fontBtn" aria-label="שנה את סוג הפונט"></button>
+    <div class="tool-row">
+      <label id="bgBtn" title="בחרי צבע רקע">🖌️ צבע רקע<input type="color" id="bgPicker" aria-label="בחרי צבע רקע"></label>
+      <button type="button" id="bgReset" class="hidden" aria-label="חזרה לצבע הרקע המקורי" title="חזרה לצבע המקורי">↺</button>
+    </div>
+  </div>
+</aside>
+
+<main>
+  <div id="accountBar" class="account-bar hidden"></div>
+
+  <!-- Header / Boarding Pass -->
+  <header class="hero">
+    <div class="bp-top" aria-hidden="true">
+      <span>BOARDING PASS</span>
+      <span>PACKPAL · PREMIUM</span>
+    </div>
+    <h1>🧳 PackPal <small>רשימת אריזה חכמה לפי מזג האוויר והפעילויות שלך</small></h1>
+    <div class="bp-route" aria-hidden="true">
+      <span class="bp-code">TLV</span>
+      <span class="bp-path"><i class="bp-plane">✈️</i></span>
+      <span class="bp-code">YOU</span>
+    </div>
+  </header>
+
+  <!-- ===== טיול משותף ===== -->
+  <section id="sharedBar" class="card hidden">
+    <a id="homeLink" class="home-link" href="#" target="_blank" rel="noopener">🏠 לעמוד הראשי</a>
+    <div class="shared-head"><strong>👥 טיול משותף<span id="sharedType"></span></strong><span id="connStatus" role="status"></span></div>
+    <div id="memberTabs" class="tabs" role="tablist"></div>
+    <div id="tabManage" class="tab-manage"></div>
+    <div id="groupHint" class="note hidden">בלשונית הזו כל אחד בוחר ליד פריט מי מביא אותו, כדי שלא יביאו אותו כולם.</div>
+    <div id="myGroupItems" class="my-group hidden"></div>
+    <div id="joinBox"></div>
+    <div class="shared-link"><label>קישור להזמנת עוד אנשים</label><div id="sharedLinkBox"></div></div>
+    <div id="expiryNote" class="note"></div>
+  </section>
+
+  <!-- ===== מסך פתיחה ===== -->
+  <section id="welcome" class="card welcome hidden">
+    <h2 class="wiz-q">ברוכה הבאה! 👋</h2>
+    <p class="welcome-lead">רשימת אריזה חכמה לטיול, בשלושה צעדים פשוטים:</p>
+    <ol class="welcome-steps">
+      <li><span class="ico">🧳</span><div><strong>אומרים לאן ומתי</strong><span>ומקבלים רשימה שמתאימה למזג האוויר ולמה שמתכננים לעשות.</span></div></li>
+      <li><span class="ico">✅</span><div><strong>אורזים ומסמנים</strong><span>רואים כמה נשאר, ומוסיפים או מוחקים פריטים איך שנוח.</span></div></li>
+      <li><span class="ico">👥</span><div><strong>אורזים ביחד</strong><span>שולחים קישור לחברים או למשפחה, וכל אחד מקבל לשונית משלו.</span></div></li>
+    </ol>
+    <p class="note">בנוסף: דרישות כניסה ליעד, חשמל והפרש שעות, והמלצות למה לעשות שם.</p>
+    <div class="wiz-nav">
+      <button type="button" class="primary" id="welcomeStart">בואי נתחיל ✈️</button>
+    </div>
+    <button type="button" class="link-btn" id="welcomeLogin">כבר יש לי חשבון, התחברי</button>
+  </section>
+
+  <form id="tripForm" class="card wizard" autocomplete="off" novalidate>
+    <div id="wizSummary" class="wiz-summary hidden">
+      <span id="wizSummaryText"></span>
+      <button type="button" class="secondary" id="wizEditBtn">✏️ שינוי פרטים</button>
+    </div>
+
+    <div id="wizBody">
+      <ol class="wiz-steps" aria-label="שלבי הבנייה">
+        <li><button type="button" data-go="1"><span class="num">1</span> לאן</button></li>
+        <li><button type="button" data-go="2"><span class="num">2</span> מתי</button></li>
+        <li><button type="button" data-go="3"><span class="num">3</span> מה</button></li>
+      </ol>
+
+      <div class="step" data-step="1">
+        <h2 class="wiz-q">לאן טסים? ✈️</h2>
+        <label for="destination" class="sr-only">יעד</label>
+        <input type="text" id="destination" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="placeSuggest" aria-autocomplete="list" placeholder="עיר או מדינה, למשל: פריז או ספרינגפילד, אילינוי">
+        <ul id="placeSuggest" class="suggest hidden" role="listbox" aria-label="הצעות ליעד"></ul>
+        <div id="placeChoices" class="choices hidden" role="group" aria-label="בחרי את המקום הנכון"></div>
+        <div id="placeFound" class="note" role="status"></div>
+      </div>
+
+      <div class="step hidden" data-step="2">
+        <h2 class="wiz-q">מתי? 📅</h2>
+        <div class="row">
+          <div>
+            <label for="startDate">יוצאים ב-</label>
+            <input type="date" id="startDate">
+          </div>
+          <div>
+            <label for="endDate">חוזרים ב-</label>
+            <input type="date" id="endDate">
+          </div>
+        </div>
+        <div class="note" style="margin-top:10px">או בחרי כמה ימים (מתחילים מתאריך היציאה):</div>
+        <div class="durations" id="durations"></div>
+      </div>
+
+      <div class="step hidden" data-step="3">
+        <h2 class="wiz-q">מה עושים שם? 🎒</h2>
+        <div class="note" id="wizRecap"></div>
+        <div class="chips" id="activities"></div>
+
+        <div id="tplPick" class="hidden">
+          <label for="tplSelect">🗂️ להוסיף פריטים מתבנית שלי (לא חובה)</label>
+          <select id="tplSelect"></select>
+        </div>
+
+        <label class="check-label"><input type="checkbox" id="sharedCheck"> 👥 טיול משותף (כמה אנשים אורזים יחד)</label>
+        <div id="sharedOptions" class="hidden">
+          <label for="ownerName">השם שלך (שם הלשונית שלך)</label>
+          <input type="text" id="ownerName" maxlength="30" placeholder="למשל: נטע">
+          <label>סוג הטיול</label>
+          <div class="chips three" id="tripTypes"></div>
+        </div>
+      </div>
+
+      <div id="error" role="alert"></div>
+      <div class="wiz-nav">
+        <button type="button" class="secondary hidden" id="wizBack">→ חזרה</button>
+        <button type="button" class="primary" id="wizNext">הבא ←</button>
+        <button type="submit" class="primary hidden" id="goBtn">בנה לי רשימה</button>
+      </div>
+    </div>
+  </form>
+
+  <nav id="tabBar" class="tabbar hidden" role="tablist" aria-label="חלקי הטיול">
+    <button type="button" role="tab" data-go="list" id="tabBtn-list"><span class="ti">🧳</span><span class="tl">אריזה</span><b class="tb"></b></button>
+    <button type="button" role="tab" data-go="before" id="tabBtn-before"><span class="ti">✈️</span><span class="tl">לפני הטיסה</span><b class="tb"></b></button>
+    <button type="button" role="tab" data-go="dest" id="tabBtn-dest"><span class="ti">🌍</span><span class="tl">היעד</span><b class="tb"></b></button>
+    <button type="button" role="tab" data-go="more" id="tabBtn-more"><span class="ti">🗂️</span><span class="tl">הטיולים שלי</span><b class="tb"></b></button>
+  </nav>
+
+  <section id="weather" class="card hidden" data-tab="dest"></section>
+  <section id="entrySection" class="card hidden" data-tab="before"></section>
+  <section id="quickSection" class="card hidden" data-tab="dest"></section>
+  <section id="budgetSection" class="card hidden" data-tab="dest"></section>
+  <section id="airportSection" class="card hidden" data-tab="dest"></section>
+  <section id="transSection" class="card hidden" data-tab="dest"></section>
+  <section id="attrSection" class="card hidden" data-tab="dest"></section>
+  <section id="flightSection" class="card hidden" data-tab="before"></section>
+  <section id="tasksSection" class="card hidden" data-tab="before"></section>
+
+  <section id="listSection" class="card hidden" data-tab="list">
+    <div id="packBar" class="pack-bar hidden">
+      <strong>🎒 מצב אריזה</strong>
+      <div class="pack-actions">
+        <button type="button" class="secondary" id="packOnlyLeftBtn"></button>
+        <button type="button" class="secondary" id="packExitBtn">יציאה ✕</button>
+      </div>
+    </div>
+    <div id="undoBar" class="undo-bar hidden" role="status"></div>
+    <div id="tripTitle" class="trip-title"></div>
+    <div id="countdown" class="countdown" role="status"></div>
+    <div class="progress-row">
+      <strong id="progressText"></strong>
+      <button type="button" class="secondary" id="collapseAllBtn"></button>
+    </div>
+    <div class="bar"><div id="barFill"></div></div>
+    <div id="weightBox" class="weight-box"></div>
+    <div id="packDone" class="pack-done hidden" role="status">🎉 הכל ארוז! נסיעה טובה ✈️</div>
+    <div class="search-row">
+      <input type="search" id="itemSearch" placeholder="🔍 חיפוש ברשימה..." aria-label="חיפוש ברשימה" autocomplete="off">
+      <div id="
