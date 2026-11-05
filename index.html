@@ -2730,7 +2730,7 @@ function startLiveFlight(code, box, wantDate) {
     // השירות מחזיר את הטיסה של היום, לא של התאריך שלך. אם התאריך שונה, הנתונים של טיסה אחרת ולא מציגים אותם.
     const gotDate = /(\d{4}-\d{2}-\d{2})/.exec(String(d.dep_time || ''));
     if (wantDate && gotDate && gotDate[1] !== wantDate) {
-      box.appendChild(el('div', { className: 'note' }, 'הטיסה שלך ב-' + fmtDate(wantDate) + '. נתונים חיים יופיעו כאן ביום הטיסה. כרגע השירות מחזיר טיסה אחרת (' + fmtDate(gotDate[1]) + '), ולכן לא מציגים אותה כדי לא להטעות.'));
+      box.appendChild(el('div', { className: 'note' }, 'נתונים חיים יופיעו כאן ביום הטיסה (' + fmtDate(wantDate) + ').'));
       return;
     }
     const rows = [];
