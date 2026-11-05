@@ -8,6 +8,8 @@
 <link rel="apple-touch-icon" href="static/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1b2a41">
+<meta name="author" content="נטע ונטוררו שבירו">
+<meta name="copyright" content="© כל הזכויות שמורות לנטע ונטוררו שבירו">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=JetBrains+Mono:wght@500;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
   /* ===== צבעים: מצב יום = כרטיס טיסה (קרם ונייבי), מצב כהה = לילה ונאון ===== */
@@ -1373,6 +1375,10 @@
   .landing-note { color: var(--muted); font-size: .85rem; text-align: center; margin: 14px 0 0; }
   body.landing-on main, body.landing-on #tools, body.landing-on .fab-wrap { display: none !important; }
   @media (max-width: 480px) { .landing-card { padding: 24px 20px; border-radius: 26px; } .landing h1 { font-size: 2.2rem; } }
+
+  .copyright, .site-footer { text-align: center; color: var(--muted); font-size: .8rem; letter-spacing: .3px; }
+  .copyright { margin: 10px 0 0; }
+  .site-footer { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--border); }
 </style>
 </head>
 <body>
@@ -1417,6 +1423,7 @@
     <button type="button" class="primary" id="welcomeStart">🚀 התחל תכנון טיסה</button>
     <button type="button" class="landing-login" id="welcomeLogin">🔐 התחבר עם גוגל</button>
     <p class="landing-note">אפשר להתחיל בלי חשבון. התחברות שומרת את הטיולים בענן ומאפשרת לראות אותם מכל מכשיר.</p>
+    <p class="copyright">© כל הזכויות שמורות לנטע ונטוררו שבירו</p>
   </div>
 </section>
 <main>
@@ -1619,6 +1626,7 @@
     </div>
     <div id="favMsg" role="status"></div>
   </section>
+  <footer class="site-footer">© כל הזכויות שמורות לנטע ונטוררו שבירו</footer>
 </main>
 
 <!-- תפריט מהיר צף: נפתח כמניפה למעלה -->
@@ -3036,7 +3044,7 @@ function buildReminderEvents(st) {
 }
 
 function buildIcs(events) {
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//PackPal//HE', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:PackPal'];
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//PackPal//HE', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:PackPal', 'X-WR-CALDESC:© כל הזכויות שמורות לנטע ונטוררו שבירו'];
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');   // UTC, בפורמט 20260101T120000Z
   events.forEach((e, i) => {
     const end = new Date(e.start.getTime() + (e.mins || 30) * 60000);
@@ -4523,7 +4531,7 @@ function buildPrintHtml() {
     '.cat{break-inside:avoid;margin-bottom:14px}h2{font-size:1.1rem;margin:0 0 4px;border-bottom:1px solid #999}' +
     'ul{list-style:none;margin:0;padding:0;columns:2}li{padding:2px 0;break-inside:avoid}' +
     '.box{font-size:1.2rem;margin-inline-end:6px}' +
-    '</style></head><body>' + body + '<script>window.onload=function(){window.print();};<\/script></body></html>';
+    '</style></head><body>' + body + '<p style="margin-top:24px;text-align:center;font-size:12px;color:#666">© כל הזכויות שמורות לנטע ונטוררו שבירו</p><script>window.onload=function(){window.print();};<\/script></body></html>';
 }
 
 function printList() {
