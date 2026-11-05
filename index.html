@@ -2107,6 +2107,11 @@ function renderTasks() {
     renderTasks();
   });
   box.appendChild(form);
+  const cal = el('button', { type: 'button', className: 'secondary', id: 'icsBtn' }, '📅 הוסף תזכורות ליומן');
+  cal.style.marginTop = '12px';
+  cal.addEventListener('click', exportReminders);
+  box.appendChild(cal);
+  box.appendChild(el('div', { className: 'attr-src' }, 'נוצר קובץ יומן עם תזכורות למשימות הפתוחות, לארוז, ולטיסה. הטלפון יתריע גם כשהאפליקציה סגורה.'));
   makeCollapsible(box, 'tasks', 2, false);
 }
 
@@ -2357,6 +2362,85 @@ function flightForm(body, f) {
     renderFlight();
   });
   body.appendChild(form);
+}
+
+/* =========================================================
+   תזכורות ביומן: קובץ iCalendar (.ics) שנפתח באפליקציית היומן של הטלפון
+   ========================================================= */
+
+function icsEscape(t) { return String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+function icsStamp(d) {
+  const z = n => String(n).padStart(2, '0');
+  return d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + 'T' + z(d.getHours()) + z(d.getMinutes()) + '00';
+}
+// שורות ב-iCalendar מוגבלות ל-75 בתים, ממשיכים בשורה חדשה שמתחילה ברווח
+function icsFold(line) {
+  const enc = new TextEncoder(); const dec = new TextDecoder();
+  if (enc.encode(line).length <= 74) return line;
+  const out = []; let cur = '';
+  for (const ch of line) {
+    if (enc.encode(cur + ch).length > (out.length ? 73 : 74)) { out.push(cur); cur = ch; } else cur += ch;
+  }
+  out.push(cur);
+  return out.join('\r\n ');
+}
+
+function buildReminderEvents(st) {
+  const ev = [];
+  const now = new Date();
+  const at = (iso, hh, mm) => { const d = parseISO(iso); d.setHours(hh, mm || 0, 0, 0); return d; };
+  // משימות פתוחות: ביום היעד שלהן, ב-9:00
+  (st.tasks || []).filter(t => !t.done).forEach(t => {
+    const d = parseISO(st.trip.start); d.setDate(d.getDate() - t.days); d.setHours(9, 0, 0, 0);
+    if (d > now) ev.push({ title: 'PackPal: ' + t.text, start: d, mins: 30, alarm: 0 });
+  });
+  // לארוז: ערב לפני היציאה (או יומיים לפני, בטיול רחוק)
+  const pack2 = new Date(at(st.trip.start, 18, 0)); pack2.setDate(pack2.getDate() - 2);
+  const pack1 = new Date(at(st.trip.start, 18, 0)); pack1.setDate(pack1.getDate() - 1);
+  if (pack2 > now) ev.push({ title: 'PackPal: זמן לארוז! 🧳', start: pack2, mins: 30, alarm: 0, desc: 'בודקים את רשימת האריזה' });
+  if (pack1 > now) ev.push({ title: 'PackPal: ערב אחרון לפני הטיול, בודקים שהכל ארוז', start: pack1, mins: 30, alarm: 0, desc: 'דרכון, כרטיסים, מטענים' });
+  // הטיסה: אירוע בשעת ההמראה, עם תזכורת יום לפני (צ'ק-אין) ו-3.5 שעות לפני (לצאת לשדה)
+  const dep = flightDeparture(st.flight);
+  if (dep && dep > now) {
+    const code = flightCode(st.flight);
+    ev.push({ title: '✈️ טיסה ' + code, start: dep, mins: 120, alarm: 210, alarm2: 1440, desc: [st.flight.terminal ? 'טרמינל ' + st.flight.terminal : '', st.flight.gate ? 'שער ' + st.flight.gate : ''].filter(Boolean).join(', ') });
+  }
+  return ev;
+}
+
+function buildIcs(events) {
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//PackPal//HE', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:PackPal'];
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');   // UTC, בפורמט 20260101T120000Z
+  events.forEach((e, i) => {
+    const end = new Date(e.start.getTime() + (e.mins || 30) * 60000);
+    lines.push('BEGIN:VEVENT',
+      'UID:packpal-' + Date.now().toString(36) + '-' + i + '@packpal',
+      'DTSTAMP:' + stamp,
+      'DTSTART:' + icsStamp(e.start),
+      'DTEND:' + icsStamp(end),
+      'SUMMARY:' + icsEscape(e.title));
+    if (e.desc) lines.push('DESCRIPTION:' + icsEscape(e.desc));
+    [e.alarm, e.alarm2].forEach(m => {
+      if (m === undefined) return;
+      lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEscape(e.title), 'TRIGGER:-PT' + m + 'M', 'END:VALARM');
+    });
+    lines.push('END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  return lines.map(icsFold).join('\r\n') + '\r\n';
+}
+
+function exportReminders() {
+  if (!state) return;
+  const events = buildReminderEvents(state);
+  if (!events.length) { if (typeof toast === 'function') toast('אין תזכורות עתידיות להוסיף'); return; }
+  const blob = new Blob([buildIcs(events)], { type: 'text/calendar;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'packpal-reminders.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  if (typeof toast === 'function') toast(events.length + ' תזכורות נוצרו. פתחי את הקובץ כדי להוסיף ליומן.');
 }
 
 function renderQuick() {
