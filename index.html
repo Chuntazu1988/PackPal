@@ -2715,7 +2715,7 @@ const FLIGHT_STATUS_HE = { scheduled: 'מתוכננת', active: 'באוויר', 
 const hhmm = (v) => { const m = /(\d{2}:\d{2})/.exec(String(v || '')); return m ? m[1] : ''; };
 
 // סטטוס חי מהשרת הקטן. מתעדכן כל 3 דקות כל עוד הכרטיס על המסך.
-function startLiveFlight(code, box) {
+function startLiveFlight(code, box, wantDate) {
   clearInterval(liveTimer);
   if (!FLIGHT_PROXY || !code) return;
   const draw = (state_, d) => {
@@ -2724,6 +2724,12 @@ function startLiveFlight(code, box) {
     if (state_ === 'loading') { box.appendChild(el('div', { className: 'note' }, 'בודקת מול נתוני הטיסות...')); return; }
     if (state_ === 'error') { box.appendChild(el('div', { className: 'note' }, 'לא הצלחתי לקבל סטטוס כרגע. נסה שוב עוד רגע, או בדקי באחד הקישורים.')); return; }
     if (!d || !d.found) { box.appendChild(el('div', { className: 'note' }, 'לא נמצאו נתונים חיים לטיסה הזו. ייתכן שהיא עוד רחוקה, ושהמידע יופיע קרוב למועד.')); return; }
+    // השירות מחזיר את הטיסה של היום, לא של התאריך שלך. אם התאריך שונה, הנתונים של טיסה אחרת ולא מציגים אותם.
+    const gotDate = /(\d{4}-\d{2}-\d{2})/.exec(String(d.dep_time || ''));
+    if (wantDate && gotDate && gotDate[1] !== wantDate) {
+      box.appendChild(el('div', { className: 'note' }, 'הטיסה שלך ב-' + fmtDate(wantDate) + '. נתונים חיים יופיעו כאן ביום הטיסה. כרגע השירות מחזיר טיסה אחרת (' + fmtDate(gotDate[1]) + '), ולכן לא מציגים אותה כדי לא להטעות.'));
+      return;
+    }
     const rows = [];
     const status = FLIGHT_STATUS_HE[d.status] || d.status;
     if (d.dep_iata && d.arr_iata) rows.push(['מסלול', '⁦' + d.dep_iata + ' → ' + d.arr_iata + '⁩']);
@@ -2806,7 +2812,7 @@ function renderFlight() {
       flightTimer = setInterval(() => { if (!clock.isConnected) { clearInterval(flightTimer); return; } tick(); }, 20000);
     }
     body.appendChild(pass);
-    if (FLIGHT_PROXY) { const live = el('div', { className: 'lf-box' }); body.appendChild(live); startLiveFlight(code, live); }
+    if (FLIGHT_PROXY) { const live = el('div', { className: 'lf-box' }); body.appendChild(live); startLiveFlight(code, live, f.date); }
     const links = el('div', { className: 'attr-links' });
     links.appendChild(link('🔴 סטטוס חי (Flightradar24)', 'https://www.flightradar24.com/data/flights/' + encodeURIComponent(code.toLowerCase())));
     links.appendChild(link('🔎 סטטוס בגוגל', 'https://www.google.com/search?q=' + encodeURIComponent(code + ' flight status')));
