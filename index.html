@@ -2726,7 +2726,7 @@ function startLiveFlight(code, box) {
     if (!d || !d.found) { box.appendChild(el('div', { className: 'note' }, 'לא נמצאו נתונים חיים לטיסה הזו. ייתכן שהיא עוד רחוקה, ושהמידע יופיע קרוב למועד.')); return; }
     const rows = [];
     const status = FLIGHT_STATUS_HE[d.status] || d.status;
-    if (d.dep_iata && d.arr_iata) rows.push(['מסלול', d.dep_iata + ' ← ' + d.arr_iata]);
+    if (d.dep_iata && d.arr_iata) rows.push(['מסלול', '⁦' + d.dep_iata + ' → ' + d.arr_iata + '⁩']);
     if (status) rows.push(['סטטוס', status]);
     // אומרים 'בזמן' רק כשהשירות באמת החזיר עיכוב 0. בלי נתון, לא מציינים כלום.
     if (d.dep_delayed > 0) rows.push(['עיכוב', 'מתעכבת ' + d.dep_delayed + ' דקות']);
