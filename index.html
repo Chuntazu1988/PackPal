@@ -2207,7 +2207,7 @@ let flightTimer = null;
 let liveTimer = null;
 
 // כתובת השרת הקטן שמביא סטטוס טיסה חי (ראו worker/flight-proxy.js). ריק = ווידג'ט חי כבוי.
-const FLIGHT_PROXY = '';
+const FLIGHT_PROXY = 'https://packpal-flight.netaven123.workers.dev/';
 
 const FLIGHT_STATUS_HE = { scheduled: 'מתוכננת', active: 'באוויר', 'en-route': 'באוויר', landed: 'נחתה', cancelled: 'בוטלה', incident: 'אירוע חריג', diverted: 'הוסטה' };
 const hhmm = (v) => { const m = /(\d{2}:\d{2})/.exec(String(v || '')); return m ? m[1] : ''; };
@@ -2224,13 +2224,16 @@ function startLiveFlight(code, box) {
     if (!d || !d.found) { box.appendChild(el('div', { className: 'note' }, 'לא נמצאו נתונים חיים לטיסה הזו. ייתכן שהיא עוד רחוקה, ושהמידע יופיע קרוב למועד.')); return; }
     const rows = [];
     const status = FLIGHT_STATUS_HE[d.status] || d.status;
+    if (d.dep_iata && d.arr_iata) rows.push(['מסלול', d.dep_iata + ' ← ' + d.arr_iata]);
     if (status) rows.push(['סטטוס', status]);
+    // אומרים 'בזמן' רק כשהשירות באמת החזיר עיכוב 0. בלי נתון, לא מציינים כלום.
     if (d.dep_delayed > 0) rows.push(['עיכוב', 'מתעכבת ' + d.dep_delayed + ' דקות']);
-    else if (d.dep_time) rows.push(['עיכוב', 'בזמן']);
+    else if (d.dep_delayed === 0) rows.push(['עיכוב', 'בזמן']);
     if (d.dep_time) rows.push(['המראה', hhmm(d.dep_time) + (d.dep_estimated && hhmm(d.dep_estimated) !== hhmm(d.dep_time) ? ' ← צפויה ' + hhmm(d.dep_estimated) : '')]);
     const gate = [d.dep_terminal ? 'טרמינל ' + d.dep_terminal : '', d.dep_gate ? 'שער ' + d.dep_gate : ''].filter(Boolean).join(', ');
-    if (gate) rows.push(['שער', gate]);
+    if (gate) rows.push(['יציאה', gate]);
     if (d.arr_time) rows.push(['נחיתה', hhmm(d.arr_time) + (d.arr_estimated && hhmm(d.arr_estimated) !== hhmm(d.arr_time) ? ' ← צפויה ' + hhmm(d.arr_estimated) : '')]);
+    if (d.arr_terminal || d.arr_gate) rows.push(['בנחיתה', [d.arr_terminal ? 'טרמינל ' + d.arr_terminal : '', d.arr_gate ? 'שער ' + d.arr_gate : ''].filter(Boolean).join(', ')]);
     if (d.arr_baggage) rows.push(['מסוע מזוודות', d.arr_baggage]);
     const grid = el('div', { className: 'lf-grid' });
     rows.forEach(r => { grid.appendChild(el('span', { className: 'lf-k' }, r[0])); grid.appendChild(el('strong', null, r[1])); });
