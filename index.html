@@ -501,6 +501,10 @@
   .entry-warn { background: var(--sand); border-radius: 14px; padding: 10px 14px; margin: 10px 0; font-size: .95rem; }
   .fact .k { font-size: .9rem !important; letter-spacing: .1em !important; color: var(--accent) !important; font-weight: 800 !important; }
 .fact .v { font-size: 1.3rem !important; }
+.fact-diff .v { display: flex; flex-direction: column; gap: 4px; }
+.fact-big { font-size: 2rem; font-weight: 800; line-height: 1.1; background: var(--sunset); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.fact-dir { font-size: .95rem; font-weight: 600; color: var(--text); line-height: 1.4; }
+.fact-ex { font-size: .85rem; font-weight: 400; color: var(--muted); }
 .fact-clock .v { display: flex; flex-direction: column; gap: 2px; }
 .fact-time { direction: ltr; text-align: start; font-family: var(--font-mono); font-size: 1.9rem; font-weight: 800; letter-spacing: .04em; background: var(--sunset); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .fact-clock .v small { font-size: .9rem; font-weight: 600; color: var(--muted); }
@@ -508,6 +512,28 @@
 .ft-leg { padding: 16px; border-radius: 24px; border: 1px solid var(--border); background: var(--soft); }
 .ft-leg-title { font: 800 .8rem var(--font-mono); letter-spacing: .18em; color: var(--accent); margin-bottom: 12px; }
 .ft-add { width: 100%; border-style: dashed; }
+/* ---------- הדרכונים שלי ---------- */
+.pp-body { display: grid; gap: 14px; }
+.pp-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.pp-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 18px; border-radius: 22px; background: var(--soft); border: 1px solid var(--border); color: var(--text); font-weight: 800; text-align: start; }
+.pp-chip small { font-weight: 400; color: var(--muted); font-size: .8rem; }
+.pp-chip.active { background: var(--sunset); color: var(--ink-on-sunset); border-color: transparent; box-shadow: 0 10px 24px -8px rgba(255, 111, 145, .7); }
+.pp-chip.active small { color: var(--ink-on-sunset); opacity: .8; }
+.pp-form { display: grid; gap: 12px; padding: 16px; border-radius: 24px; background: var(--soft); border: 1px solid var(--border); }
+.pp-cols { display: grid; gap: 14px; grid-template-columns: 1fr; }
+.pp-cols.multi { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.pp-col { padding: 16px; border-radius: 24px; background: var(--soft); border: 1px solid var(--border); display: grid; gap: 8px; align-content: start; }
+.pp-col-title { font-weight: 800; margin-bottom: 4px; }
+.pp-row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; align-items: start; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--border); background: var(--card); line-height: 1.5; }
+.pp-row b { font: 800 .72rem var(--font-mono); letter-spacing: .12em; color: var(--muted); padding-top: 3px; }
+.pp-row.ok { border-color: color-mix(in srgb, var(--ok) 55%, transparent); background: color-mix(in srgb, var(--ok) 10%, var(--card)); }
+.pp-row.ok b::before { content: "✅ "; }
+.pp-row.warn { border-color: color-mix(in srgb, var(--sun) 60%, transparent); background: color-mix(in srgb, var(--sun) 12%, var(--card)); }
+.pp-row.warn b::before { content: "⚠️ "; }
+.pp-row.bad { border-color: color-mix(in srgb, var(--danger) 60%, transparent); background: color-mix(in srgb, var(--danger) 12%, var(--card)); }
+.pp-row.bad b::before { content: "⛔ "; }
+.pp-row.info b::before { content: "ℹ️ "; }
+@media (max-width: 480px) { .pp-row { grid-template-columns: 1fr; gap: 2px; } }
 .entry-links { display: grid; gap: 8px; margin: 10px 0; }
   .entry-links a {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -1193,7 +1219,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
   main > * { grid-column: 2 / -1; min-width: 0; margin-bottom: 22px; }
   main > #accountBar, main > .hero, main > #sharedBar, main > .site-footer { grid-column: 1 / -1; }
   main > .card[data-tab="dest"], main > .card[data-tab="before"] { grid-column: auto; }
-  main > #weather, main > #budgetSection, main > #flightSection, main > #attrSection { grid-column: 2 / -1; }
+  main > #weather, main > #budgetSection, main > #flightSection, main > #attrSection, main > #passportSection { grid-column: 2 / -1; }
   main > .tabbar { grid-column: 1; grid-row: 3 / span 40; align-self: start; position: sticky; top: 24px; bottom: auto; margin: 0 0 22px; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 34px; }
   main > .tabbar.hidden { display: none; }
   .tabbar button { flex-direction: column; width: 100%; padding: 14px 4px; min-height: 80px; font-size: .8rem; }
@@ -1380,6 +1406,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
 
   <!-- ===== דרישות כניסה ובטיחות (קישורים רשמיים) ===== -->
   <section id="entrySection" class="card hidden" data-tab="before"></section>
+  <section id="passportSection" class="card hidden" data-tab="before"></section>
 
   <!-- ===== המלצות לאטרקציות (Wikivoyage) ===== -->
   <section id="quickSection" class="card hidden" data-tab="dest"></section>
@@ -1435,7 +1462,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
       <button type="button" class="secondary" id="packBtn">🎒 מצב אריזה</button>
       <button type="button" class="whatsapp" id="shareBtn">שתף בוואטסאפ</button>
       <div class="more-wrap">
-        <button type="button" class="secondary" id="moreBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="moreMenu">⋯ עוד</button>
+        <button type="button" class="secondary" id="moreBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="moreMenu">עוד ⋯</button>
         <div id="moreMenu" class="popover" role="menu" aria-hidden="true">
           <button type="button" role="menuitem" id="tplSaveBtn">💾 שמור כתבנית</button>
           <button type="button" role="menuitem" id="imageBtn">🖼️ שתף כתמונה</button>
@@ -2097,6 +2124,22 @@ function tzOffsetMinutes(tz, date) {
   const m = /GMT([+-])(\d{1,2}):?(\d{2})?/.exec(name);
   return m ? (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3] || 0)) : 0;
 }
+// הפרש שעות בצורה ברורה: מספר גדול, כיוון במילים, ודוגמה (כשבישראל 12:00, ביעד ...)
+function timeDiffParts(tz, startISO) {
+  try {
+    const date = parseISO(startISO);
+    const diff = (tzOffsetMinutes(tz, date) - tzOffsetMinutes('Asia/Jerusalem', date)) / 60;
+    if (diff === 0) return { big: 'אותה שעה', dir: 'כמו בישראל', ex: '' };
+    const n = Math.abs(diff);
+    const nTxt = Number.isInteger(n) ? String(n) : n.toFixed(1);
+    const t = ((12 + diff) % 24 + 24) % 24;
+    const hh = Math.floor(t), mm = Math.round((t - hh) * 60);
+    const clock = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+    const dayNote = 12 + diff < 0 ? ' (יום קודם)' : 12 + diff >= 24 ? ' (למחרת)' : '';
+    return { big: nTxt + (n === 1 ? ' שעה' : ' שעות'), dir: diff > 0 ? 'קדימה מישראל (השעה ביעד מאוחרת יותר)' : 'אחורה מישראל (השעה ביעד מוקדמת יותר)', ex: 'כשבישראל 12:00, ביעד ' + clock + dayNote };
+  } catch (e) { return null; }
+}
+
 function timeDiffText(tz, startISO) {
   try {
     const date = parseISO(startISO);
@@ -2398,16 +2441,20 @@ function renderEntry() {
       items.push(['מתח', plug.v + ', ' + plug.f + ' (בישראל: 230V, 50Hz)']);
     }
     if (meta.tz && trip.start) {
-      const diff = timeDiffText(meta.tz, trip.start);
-      if (diff) items.push(['הפרש שעות מישראל', diff]);
+      const parts = timeDiffParts(meta.tz, trip.start);
+      if (parts) items.push(['הפרש שעות מישראל', '', 'diff', parts]);
     }
     if (meta.tz) items.push(['שעה מקומית ביעד', '', 'clock']);
     if (items.length) {
       factsBox.appendChild(el('div', { className: 'entry-sub' }, 'חשמל ושעון: מה כדאי לדעת לפני האריזה'));
       const grid = el('div', { className: 'facts' });
-      items.forEach(([k, v, kind]) => {
-        const cell = el('div', { className: 'fact' + (kind === 'clock' ? ' fact-clock' : '') });
+      items.forEach(([k, v, kind, extra]) => {
+        const cell = el('div', { className: 'fact' + (kind === 'clock' ? ' fact-clock' : '') + (kind === 'diff' ? ' fact-diff' : '') });
         const val = el('div', { className: 'v' }, v);
+        if (kind === 'diff' && extra) {
+          val.append(el('span', { className: 'fact-big' }, extra.big), el('small', { className: 'fact-dir' }, extra.dir));
+          if (extra.ex) val.appendChild(el('small', { className: 'fact-ex' }, extra.ex));
+        }
         cell.append(el('div', { className: 'k' }, k), val);
         grid.appendChild(cell);
         if (kind === 'clock') startLocalClock(val, meta.tz);
@@ -2898,6 +2945,248 @@ function flightForm(body, f, key, defDate) {
 }
 
 /* =========================================================
+   הדרכונים שלי: כמה דרכונים, דרישות לפי יעד, והשוואה ביניהם
+   המידע על הדרכון (מדינה, שם, הנפקה ותוקף) נשמר רק במכשיר ובחשבון שלך. בלי מספר דרכון.
+   הכללים מוכרים וכלליים, ולא מחליפים בדיקה באתר הרשמי של היעד.
+   ========================================================= */
+
+const PASSPORT_KEY = STORAGE_KEY + '-passports';
+const PASSPORT_MAX = 6;
+let passportCompare = false;
+let passportEditing = null;     // null = לא עורכים, 'new' = דרכון חדש, אחרת מזהה
+let passportToken = 0;
+
+function loadPassports() {
+  try { const a = JSON.parse(localStorage.getItem(PASSPORT_KEY)); return Array.isArray(a) ? a.filter(p => p && p.id && p.cc) : []; } catch (e) { return []; }
+}
+function savePassports(list) {
+  try { localStorage.setItem(PASSPORT_KEY, JSON.stringify(list.slice(0, PASSPORT_MAX))); } catch (e) {}
+  scheduleCloudPush();
+}
+
+const SCHENGEN = 'AT BE CH CZ DE DK EE ES FI FR GR HR HU IS IT LI LT LU LV MT NL NO PL PT SE SI SK'.split(' ');
+const EU_EEA = 'AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE IS LI NO CH'.split(' ');
+
+// כללי תוקף ליעדים נפוצים: months = חודשים נדרשים אחרי (from: end = היציאה מהיעד, start = הכניסה), stay = מספיק שיהיה תקף עד סוף השהייה
+const DEST_RULES = (function () {
+  const R = {};
+  const set = (ccs, r) => ccs.forEach(cc => { R[cc] = r; });
+  set(SCHENGEN, { months: 3, from: 'end', issued10: true, blank: 2, ins: 'rec', note: 'באזור שנגן נדרש דרכון שהונפק ב-10 השנים האחרונות ותקף 3 חודשים אחרי היציאה.', url: 'https://travel-europe.europa.eu/etias_en' });
+  set(['US'], { stay: true, blank: 0, ins: 'rec', note: 'ביטוח בריאות מומלץ מאוד: הטיפול הרפואי בארה"ב יקר מאוד.', url: 'https://travel.state.gov' });
+  set(['GB'], { stay: true, blank: 0, ins: 'rec', note: 'נדרש רישום מקוון (ETA) לפני הנסיעה.', url: 'https://www.gov.uk/check-uk-visa' });
+  set(['TH'], { months: 6, from: 'start', blank: 2, ins: 'rec', note: 'נדרש רישום מקוון מראש (TDAC).', url: 'https://tdac.immigration.go.th' });
+  set(['JP'], { stay: true, blank: 1, ins: 'rec', note: '', url: 'https://www.mofa.go.jp/j_info/visit/visa/' });
+  set(['AE'], { months: 6, from: 'start', blank: 1, ins: 'rec', note: '', url: 'https://u.ae/en/information-and-services/visa-and-emirates-id' });
+  set(['TR'], { months: 5, from: 'start', blank: 0, ins: 'rec', note: 'נדרש תוקף של כ-150 יום מיום הכניסה.', url: 'https://www.evisa.gov.tr' });
+  set(['EG'], { months: 6, from: 'start', blank: 1, ins: 'rec', note: '', url: 'https://www.egypt.travel' });
+  set(['IN'], { months: 6, from: 'start', blank: 2, ins: 'rec', note: 'בדרך כלל נדרשת ויזה אלקטרונית.', url: 'https://indianvisaonline.gov.in' });
+  set(['ID'], { months: 6, from: 'start', blank: 2, ins: 'rec', note: '', url: 'https://molina.imigrasi.go.id' });
+  set(['VN'], { months: 6, from: 'start', blank: 2, ins: 'rec', note: '', url: 'https://evisa.gov.vn' });
+  set(['SG'], { months: 6, from: 'start', blank: 1, ins: 'rec', note: 'נדרש כרטיס הגעה דיגיטלי (SG Arrival Card).', url: 'https://eservices.ica.gov.sg' });
+  set(['MY'], { months: 6, from: 'start', blank: 1, ins: 'rec', note: '', url: 'https://www.imi.gov.my' });
+  set(['PH'], { months: 6, from: 'start', blank: 1, ins: 'rec', note: '', url: 'https://immigration.gov.ph' });
+  set(['CN'], { months: 6, from: 'start', blank: 2, ins: 'rec', note: '', url: 'https://www.visaforchina.cn' });
+  set(['KR'], { stay: true, blank: 0, ins: 'rec', note: 'ייתכן שנדרש רישום מקוון (K-ETA).', url: 'https://www.k-eta.go.kr' });
+  set(['AU'], { stay: true, blank: 0, ins: 'rec', note: 'נדרש אישור מקוון (ETA או eVisitor) לפני הנסיעה.', url: 'https://immi.homeaffairs.gov.au' });
+  set(['NZ'], { months: 3, from: 'end', blank: 0, ins: 'rec', note: 'נדרש רישום מקוון (NZeTA).', url: 'https://www.immigration.govt.nz' });
+  set(['CA'], { stay: true, blank: 0, ins: 'rec', note: 'נדרש רישום מקוון (eTA) למי שמגיע בטיסה.', url: 'https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada.html' });
+  set(['MX'], { stay: true, blank: 0, ins: 'rec', note: '', url: 'https://www.inm.gob.mx' });
+  set(['BR', 'AR', 'PE', 'CO', 'CL'], { months: 6, from: 'start', blank: 1, ins: 'rec', note: '', url: '' });
+  set(['CU'], { months: 6, from: 'start', blank: 2, ins: 'req', note: 'בקובה נדרש ביטוח בריאות תקף לכל המשך השהייה.', url: '' });
+  set(['ZA'], { months: 1, from: 'end', blank: 2, ins: 'rec', note: 'נדרשים לפחות 2 עמודים ריקים ותוקף של 30 יום אחרי היציאה.', url: 'https://www.dha.gov.za' });
+  set(['MA', 'JO', 'TN'], { months: 6, from: 'start', blank: 1, ins: 'rec', note: '', url: '' });
+  return R;
+})();
+const DEFAULT_RULE = { months: 6, from: 'start', blank: 1, ins: 'rec', note: 'אין לי כלל מדויק ליעד הזה. תוקף של 6 חודשים הוא הכלל הנפוץ ביותר, ולכן מציגים אותו כהערכה.', url: '', generic: true };
+
+function destRule(cc) { return DEST_RULES[cc] || DEFAULT_RULE; }
+
+// האם הדרכון נותן כניסה ליעד: לישראלי יש טבלה רשמית. לדרכונים נפוצים אחרים יש מיפוי קצר. אחרת לא יודעים.
+function entryFor(pcc, dcc) {
+  if (pcc === 'IL') {
+    const row = VISA_TABLE[dcc];
+    if (!row) return { k: 'unknown', text: 'לא נמצא בטבלת הוויזות' };
+    return row.s === 'e' ? { k: 'free', text: 'פטור מוויזה לתיירות' + (row.t ? '. ' + row.t : '') } : { k: 'visa', text: 'נדרשת ויזה לתיירות' + (row.t ? '. ' + row.t : '') };
+  }
+  if (pcc === dcc) return { k: 'home', text: 'המדינה שלך, אין צורך בוויזה' };
+  const eu = EU_EEA.includes(pcc), us = pcc === 'US', gb = pcc === 'GB';
+  if (!eu && !us && !gb) return { k: 'unknown', text: 'אין לי מידע על הדרכון הזה ליעד. בדקי באתר הרשמי' };
+  if (SCHENGEN.includes(dcc)) return eu ? { k: 'free', text: 'תנועה חופשית' } : { k: 'free', text: 'פטור מוויזה עד 90 יום (בקרוב ETIAS)' };
+  if (dcc === 'US') return { k: 'eta', text: 'נדרש אישור ESTA מראש' };
+  if (dcc === 'GB') return { k: 'eta', text: 'נדרש אישור ETA מראש' };
+  if (dcc === 'TH') return { k: 'free', text: 'פטור מוויזה עד 60 יום, ונדרש רישום TDAC' };
+  if (['JP', 'AE', 'SG', 'TR', 'MX'].includes(dcc)) return { k: 'free', text: 'פטור מוויזה לשהייה קצרה' };
+  if (dcc === 'CA') return us ? { k: 'free', text: 'פטור מוויזה' } : { k: 'eta', text: 'נדרש אישור eTA מראש' };
+  if (dcc === 'AU') return { k: 'eta', text: 'נדרש אישור מקוון (ETA או eVisitor)' };
+  return { k: 'unknown', text: 'אין לי מידע ליעד הזה. בדקי באתר הרשמי' };
+}
+
+const REG_NAMES = (function () { try { return new Intl.DisplayNames(['he'], { type: 'region' }); } catch (e) { return null; } })();
+function regionName(cc) { try { return (REG_NAMES && REG_NAMES.of(cc)) || cc; } catch (e) { return cc; } }
+function passportCountryList() {
+  const set = new Set(Object.keys(VISA_TABLE).concat(['IL']));
+  return [...set].map(cc => ({ cc, name: regionName(cc) })).sort((a, b) => a.name.localeCompare(b.name, 'he'));
+}
+function addMonthsISO(iso, months) { const d = parseISO(iso); d.setMonth(d.getMonth() + months); return d; }
+
+// בדיקת דרכון מול כלל ויעד: מחזיר שורות {k:'ok'|'warn'|'bad'|'info', t:'טקסט'}
+function checkPassport(p, rule, trip) {
+  const rows = [];
+  const exp = p.expiry ? parseISO(p.expiry) : null;
+  const end = parseISO(trip.end), start = parseISO(trip.start);
+  let need, needTxt;
+  if (rule.stay) { need = end; needTxt = 'נדרש תוקף עד סוף הטיול (' + fmtDate(trip.end) + '), ומומלץ חצי שנה אחריו'; }
+  else { need = addMonthsISO(rule.from === 'start' ? trip.start : trip.end, rule.months); needTxt = 'תקף לפחות עד ' + fmtDate(isoOf(need)) + ' (' + rule.months + ' חודשים ' + (rule.from === 'start' ? 'מהכניסה' : 'אחרי היציאה') + ')'; }
+  if (!exp) rows.push({ k: 'warn', l: 'תוקף', t: 'לא הוזן תאריך תוקף. ' + needTxt });
+  else if (exp < end) rows.push({ k: 'bad', l: 'תוקף', t: 'הדרכון פג לפני סוף הטיול (' + fmtDate(p.expiry) + ')' });
+  else if (exp < need) rows.push({ k: 'bad', l: 'תוקף', t: 'התוקף (' + fmtDate(p.expiry) + ') קצר מדי. ' + needTxt });
+  else if (rule.stay && exp < addMonthsISO(trip.end, 6)) rows.push({ k: 'warn', l: 'תוקף', t: 'תקף עד ' + fmtDate(p.expiry) + ', מספיק לטיול, אבל פחות מחצי שנה אחרי החזרה. כדאי לוודא מול היעד' });
+  else rows.push({ k: 'ok', l: 'תוקף', t: 'תקף עד ' + fmtDate(p.expiry) + ', מספיק לטיול. ' + needTxt });
+  if (rule.issued10) {
+    if (!p.issue) rows.push({ k: 'warn', l: 'הנפקה', t: 'לא הוזן תאריך הנפקה. נדרש דרכון שהונפק ב-10 השנים האחרונות' });
+    else {
+      const limit = new Date(end); limit.setFullYear(limit.getFullYear() - 10);
+      rows.push(parseISO(p.issue) < limit ? { k: 'bad', l: 'הנפקה', t: 'הונפק ב-' + fmtDate(p.issue) + ', לפני יותר מ-10 שנים' } : { k: 'ok', l: 'הנפקה', t: 'הונפק ב-' + fmtDate(p.issue) + ', בתוך 10 שנים' });
+    }
+  }
+  rows.push({ k: 'info', l: 'עמודים ריקים', t: rule.blank ? 'מומלץ לפחות ' + rule.blank + ' עמודים ריקים בדרכון' : 'אין דרישה מיוחדת' });
+  rows.push({ k: rule.ins === 'req' ? 'warn' : 'info', l: 'ביטוח בריאות', t: rule.ins === 'req' ? 'נדרש ביטוח בריאות תקף' : 'לא נדרש בדרך כלל, אבל מומלץ מאוד' });
+  return rows;
+}
+function isoOf(d) { const z = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); }
+
+function renderPassports() {
+  const box = $('passportSection');
+  if (!box) return;
+  box.replaceChildren();
+  const token = ++passportToken;
+  if (!state || sharedMode) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  const list = loadPassports();
+  if (state.passportId && !list.some(p => p.id === state.passportId)) delete state.passportId;
+  const active = list.find(p => p.id === state.passportId) || list[0] || null;
+
+  box.appendChild(el('strong', null, '🛂 הדרכונים שלי'));
+  const body = el('div', { className: 'pp-body' });
+  box.appendChild(body);
+
+  if (!list.length && passportEditing !== 'new') {
+    body.appendChild(el('p', { className: 'note' }, 'הוסיפי את הדרכון שלך (או כמה), ותראי מה נדרש ליעד: תוקף, עמודים ריקים, ביטוח ועוד. אפשר גם להשוות בין דרכונים.'));
+  }
+
+  // בחירת דרכון
+  if (list.length) {
+    const chips = el('div', { className: 'pp-chips', role: 'radiogroup', 'aria-label': 'בחירת דרכון' });
+    list.forEach(p => {
+      const b = el('button', { type: 'button', className: 'pp-chip' + (active && p.id === active.id ? ' active' : ''), role: 'radio', 'aria-checked': String(!!active && p.id === active.id) },
+        '🛂 ' + (p.label || regionName(p.cc)));
+      b.appendChild(el('small', null, regionName(p.cc)));
+      b.addEventListener('click', () => { state.passportId = p.id; save(); renderPassports(); });
+      chips.appendChild(b);
+    });
+    body.appendChild(chips);
+  }
+
+  // טופס הוספה/עריכה
+  if (passportEditing) {
+    const cur = passportEditing === 'new' ? null : list.find(p => p.id === passportEditing);
+    const form = el('form', { className: 'pp-form', autocomplete: 'off' });
+    const sel = el('select', { name: 'cc', 'aria-label': 'מדינת הדרכון' });
+    passportCountryList().forEach(c => { const o = el('option', { value: c.cc }, c.name); sel.appendChild(o); });
+    sel.value = cur ? cur.cc : 'IL';
+    const label = el('input', { type: 'text', name: 'label', maxLength: 30, placeholder: 'שם, למשל: הדרכון שלי' }); if (cur && cur.label) label.value = cur.label;
+    const issue = el('input', { type: 'date', name: 'issue' }); if (cur && cur.issue) issue.value = cur.issue;
+    const expiry = el('input', { type: 'date', name: 'expiry' }); if (cur && cur.expiry) expiry.value = cur.expiry;
+    const fld = (t, n) => { const w = el('div'); w.append(el('label', null, t), n); return w; };
+    const r1 = el('div', { className: 'row' }); r1.append(fld('מדינת הדרכון', sel), fld('שם (לא חובה)', label));
+    const r2 = el('div', { className: 'row' }); r2.append(fld('תאריך הנפקה', issue), fld('תאריך תוקף', expiry));
+    const err = el('div', { className: 'dup-error', role: 'alert' });
+    const acts = el('div', { className: 'actions' });
+    const saveB = el('button', { type: 'submit', className: 'primary' }, 'שמור דרכון');
+    const cancel = el('button', { type: 'button', className: 'secondary' }, 'ביטול');
+    cancel.addEventListener('click', () => { passportEditing = null; renderPassports(); });
+    acts.append(saveB, cancel);
+    form.append(r1, r2, err, acts);
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      if (!expiry.value) { err.textContent = 'כדי לבדוק תוקף צריך להזין תאריך תוקף.'; expiry.focus(); return; }
+      if (issue.value && issue.value > expiry.value) { err.textContent = 'תאריך ההנפקה צריך להיות לפני התוקף.'; return; }
+      const all = loadPassports();
+      const obj = { id: cur ? cur.id : 'p' + Date.now().toString(36), cc: sel.value, label: label.value.trim(), issue: issue.value, expiry: expiry.value };
+      const idx = all.findIndex(p => p.id === obj.id);
+      if (idx >= 0) all[idx] = obj; else all.push(obj);
+      savePassports(all);
+      state.passportId = obj.id; save();
+      passportEditing = null;
+      renderPassports();
+    });
+    body.appendChild(form);
+  }
+
+  // פעולות
+  const acts = el('div', { className: 'actions' });
+  if (list.length < PASSPORT_MAX && !passportEditing) {
+    const add = el('button', { type: 'button', className: 'secondary' }, '➕ הוסף דרכון');
+    add.addEventListener('click', () => { passportEditing = 'new'; renderPassports(); });
+    acts.appendChild(add);
+  }
+  if (active && !passportEditing) {
+    const edit = el('button', { type: 'button', className: 'secondary' }, '✏️ ערוך');
+    edit.addEventListener('click', () => { passportEditing = active.id; renderPassports(); });
+    const del = el('button', { type: 'button', className: 'secondary' }, '🗑️ הסר');
+    del.addEventListener('click', () => { savePassports(loadPassports().filter(p => p.id !== active.id)); delete state.passportId; save(); renderPassports(); });
+    acts.append(edit, del);
+  }
+  if (list.length >= 2 && !passportEditing) {
+    const cmp = el('button', { type: 'button', className: 'secondary' }, passportCompare ? 'חזרה לדרכון אחד' : '⚖️ השווה דרכונים');
+    cmp.addEventListener('click', () => { passportCompare = !passportCompare; renderPassports(); });
+    acts.appendChild(cmp);
+  }
+  body.appendChild(acts);
+
+  // דרישות ליעד
+  const out = el('div', { className: 'pp-out' });
+  body.appendChild(out);
+  if (active && !passportEditing) {
+    out.appendChild(el('div', { className: 'note' }, 'בודקת מול היעד...'));
+    resolvePlaceMeta(state.trip).then(meta => {
+      if (token !== passportToken) return;
+      out.replaceChildren();
+      const dcc = meta.cc;
+      if (!dcc) { out.appendChild(el('div', { className: 'note' }, 'לא זיהיתי את מדינת היעד, ולכן אי אפשר לבדוק דרישות.')); return; }
+      const rule = destRule(dcc);
+      const dest = placeCountry(state.trip.place) || regionName(dcc);
+      const cols = passportCompare ? list : [active];
+      out.appendChild(el('div', { className: 'entry-sub' }, 'הדרישות ל' + dest));
+      const grid = el('div', { className: 'pp-cols' + (cols.length > 1 ? ' multi' : '') });
+      cols.forEach(p => {
+        const col = el('div', { className: 'pp-col' });
+        col.appendChild(el('div', { className: 'pp-col-title' }, '🛂 ' + (p.label || regionName(p.cc)) + ' · ' + regionName(p.cc)));
+        const ent = entryFor(p.cc, dcc);
+        col.appendChild(el('div', { className: 'pp-row ' + (ent.k === 'free' || ent.k === 'home' ? 'ok' : ent.k === 'unknown' ? 'warn' : 'bad') }, ''));
+        const entRow = col.lastChild;
+        entRow.append(el('b', null, 'כניסה'), el('span', null, ent.text));
+        checkPassport(p, rule, state.trip).forEach(r => {
+          const row = el('div', { className: 'pp-row ' + r.k });
+          row.append(el('b', null, r.l), el('span', null, r.t));
+          col.appendChild(row);
+        });
+        grid.appendChild(col);
+      });
+      out.appendChild(grid);
+      if (rule.note) out.appendChild(el('div', { className: 'note' }, rule.note));
+      out.appendChild(el('div', { className: 'attr-src' }, 'הכללים כלליים ועלולים להשתנות, ולכן הם הערכה בלבד. תמיד ודאי באתר הרשמי של היעד או של חברת התעופה לפני הנסיעה.' + (rule.generic ? ' ליעד הזה אין כלל מדויק, ומוצג הכלל הנפוץ.' : '')));
+      const links = el('div', { className: 'attr-links' });
+      if (rule.url) links.appendChild(el('a', { href: rule.url, target: '_blank', rel: 'noopener noreferrer' }, '🌐 אתר רשמי'));
+      const pn = regionName(active.cc);
+      links.appendChild(el('a', { href: 'https://www.google.com/search?q=' + encodeURIComponent('entry requirements ' + (VISA_TABLE[dcc] ? VISA_TABLE[dcc].n : dest) + ' for ' + pn + ' passport holders'), target: '_blank', rel: 'noopener noreferrer' }, '🔎 חיפוש דרישות כניסה'));
+      out.appendChild(links);
+    });
+  }
+  makeCollapsible(box, 'passports', 1, false);
+}
+
+/* =========================================================
    תזכורות ביומן: קובץ iCalendar (.ics) שנפתח באפליקציית היומן של הטלפון
    ========================================================= */
 
@@ -3272,6 +3561,7 @@ function renderWeather() {
   updateWelcome();
   renderTasks();
   renderEntry();
+  renderPassports();
   renderFlight();
   renderQuick();
   renderBudget();
@@ -5790,7 +6080,7 @@ async function signOutUser() {
   clearTimeout(cloudTimer);
   try { await fbSdk().auth().signOut(); } catch (e) {}
   // התנתקות מוחקת את כל המידע מהמכשיר הזה (הוא נשאר בענן) וחוזרת למסך הנחיתה
-  [STORAGE_KEY, HISTORY_KEY, FAV_KEY, SYNC_META_KEY, TPL_KEY, WELCOME_KEY].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+  [STORAGE_KEY, HISTORY_KEY, FAV_KEY, SYNC_META_KEY, TPL_KEY, WELCOME_KEY, PASSPORT_KEY].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
   state = null;
   renderWeather();
   renderList();
@@ -5809,7 +6099,7 @@ function cloudUrl(token) {
 }
 
 function localHasData() {
-  return !!(state || loadHistory().length || loadFavs().length || loadTemplates().length);
+  return !!(state || loadHistory().length || loadFavs().length || loadTemplates().length || loadPassports().length);
 }
 
 function buildCloudPayload() {
@@ -5818,6 +6108,7 @@ function buildCloudPayload() {
     history: loadHistory(),
     favorites: loadFavs(),
     templates: loadTemplates(),
+    passports: loadPassports(),
     updatedAt: Date.now()
   };
 }
@@ -5873,6 +6164,7 @@ function applyCloudToDevice(c) {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(c.history));
     localStorage.setItem(FAV_KEY, JSON.stringify(c.favorites));
     localStorage.setItem(TPL_KEY, JSON.stringify(c.templates || []));
+    localStorage.setItem(PASSPORT_KEY, JSON.stringify(c.passports || []));
     localStorage.setItem(SYNC_META_KEY, JSON.stringify({ uid: cloudUser.uid, at: c.updatedAt }));
   } catch (e) {}
   state = c.current;
@@ -5904,6 +6196,9 @@ function mergeCloudIntoDevice(c) {
   const tpls = loadTemplates();
   (c.templates || []).forEach(t => { if (tpls.length < TPL_MAX && !tpls.some(x => x.name === t.name)) tpls.push(t); });
   try { localStorage.setItem(TPL_KEY, JSON.stringify(tpls)); } catch (e) {}
+  const pps = loadPassports();
+  (c.passports || []).forEach(x => { if (pps.length < PASSPORT_MAX && !pps.some(y => y.id === x.id)) pps.push(x); });
+  try { localStorage.setItem(PASSPORT_KEY, JSON.stringify(pps)); } catch (e) {}
   cloudApplying = false;
   if (state) applyStateToPage();
   else { renderWeather(); renderList(); renderPast(); }
@@ -6254,7 +6549,7 @@ function makeCollapsible(box, key, headCount, defaultCollapsed) {
 (function () {
   const main = document.querySelector('main');
   if (!main) return;
-  const FULL = ['weather', 'budgetSection', 'flightSection', 'attrSection', 'listSection', 'tripForm', 'favSection', 'pastSection', 'tplSection', 'sharedBar'];
+  const FULL = ['weather', 'budgetSection', 'passportSection', 'flightSection', 'attrSection', 'listSection', 'tripForm', 'favSection', 'pastSection', 'tplSection', 'sharedBar'];
   let queued = false;
   function balance() {
     queued = false;
