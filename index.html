@@ -739,6 +739,11 @@
   .ft-pass + .attr-links { margin-top: 10px; }
   .ft-form .row { margin-top: 6px; }
   .shared-mode #flightSection { display: none !important; }
+
+  .lf-box { margin-top: 10px; padding: 12px 14px; border: 1.5px dashed var(--stamp); border-radius: 10px; }
+  .lf-title { font-weight: 800; margin-bottom: 6px; }
+  .lf-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
+  .lf-k { color: var(--muted); }
 </style>
 </head>
 <body>
@@ -2193,6 +2198,50 @@ function fmtNum(n) {
    ========================================================= */
 
 let flightTimer = null;
+let liveTimer = null;
+
+// כתובת השרת הקטן שמביא סטטוס טיסה חי (ראו worker/flight-proxy.js). ריק = ווידג'ט חי כבוי.
+const FLIGHT_PROXY = '';
+
+const FLIGHT_STATUS_HE = { scheduled: 'מתוכננת', active: 'באוויר', 'en-route': 'באוויר', landed: 'נחתה', cancelled: 'בוטלה', incident: 'אירוע חריג', diverted: 'הוסטה' };
+const hhmm = (v) => { const m = /(\d{2}:\d{2})/.exec(String(v || '')); return m ? m[1] : ''; };
+
+// סטטוס חי מהשרת הקטן. מתעדכן כל 3 דקות כל עוד הכרטיס על המסך.
+function startLiveFlight(code, box) {
+  clearInterval(liveTimer);
+  if (!FLIGHT_PROXY || !code) return;
+  const draw = (state_, d) => {
+    box.replaceChildren();
+    box.appendChild(el('div', { className: 'lf-title' }, '🔴 סטטוס חי'));
+    if (state_ === 'loading') { box.appendChild(el('div', { className: 'note' }, 'בודקת מול נתוני הטיסות...')); return; }
+    if (state_ === 'error') { box.appendChild(el('div', { className: 'note' }, 'לא הצלחתי לקבל סטטוס כרגע. נסה שוב עוד רגע, או בדקי באחד הקישורים.')); return; }
+    if (!d || !d.found) { box.appendChild(el('div', { className: 'note' }, 'לא נמצאו נתונים חיים לטיסה הזו. ייתכן שהיא עוד רחוקה, ושהמידע יופיע קרוב למועד.')); return; }
+    const rows = [];
+    const status = FLIGHT_STATUS_HE[d.status] || d.status;
+    if (status) rows.push(['סטטוס', status]);
+    if (d.dep_delayed > 0) rows.push(['עיכוב', 'מתעכבת ' + d.dep_delayed + ' דקות']);
+    else if (d.dep_time) rows.push(['עיכוב', 'בזמן']);
+    if (d.dep_time) rows.push(['המראה', hhmm(d.dep_time) + (d.dep_estimated && hhmm(d.dep_estimated) !== hhmm(d.dep_time) ? ' ← צפויה ' + hhmm(d.dep_estimated) : '')]);
+    const gate = [d.dep_terminal ? 'טרמינל ' + d.dep_terminal : '', d.dep_gate ? 'שער ' + d.dep_gate : ''].filter(Boolean).join(', ');
+    if (gate) rows.push(['שער', gate]);
+    if (d.arr_time) rows.push(['נחיתה', hhmm(d.arr_time) + (d.arr_estimated && hhmm(d.arr_estimated) !== hhmm(d.arr_time) ? ' ← צפויה ' + hhmm(d.arr_estimated) : '')]);
+    if (d.arr_baggage) rows.push(['מסוע מזוודות', d.arr_baggage]);
+    const grid = el('div', { className: 'lf-grid' });
+    rows.forEach(r => { grid.appendChild(el('span', { className: 'lf-k' }, r[0])); grid.appendChild(el('strong', null, r[1])); });
+    box.appendChild(grid);
+    box.appendChild(el('div', { className: 'attr-src' }, 'עודכן ב-' + new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) + ' · נתונים: AirLabs. תמיד כדאי לוודא גם בלוחות בשדה.'));
+  };
+  const load = async () => {
+    try {
+      const res = await fetchWithTimeout(FLIGHT_PROXY + '?flight=' + encodeURIComponent(code), 10000);
+      if (!res.ok) throw new Error('live ' + res.status);
+      draw('ok', await res.json());
+    } catch (e) { draw('error'); }
+  };
+  draw('loading');
+  load();
+  liveTimer = setInterval(() => { if (!box.isConnected) { clearInterval(liveTimer); return; } load(); }, 180000);
+}
 const FLIGHT_RE = /^[A-Za-z0-9]{2}\s?\d{1,4}[A-Za-z]?$/;
 
 function flightDeparture(f) {
@@ -2205,6 +2254,7 @@ function flightCode(f) { return String(f.number || '').replace(/\s+/g, '').toUpp
 
 function renderFlight() {
   clearInterval(flightTimer);
+  clearInterval(liveTimer);
   const box = $('flightSection');
   box.replaceChildren();
   if (!state || daysFromToday(state.trip.end) < 0) { box.classList.add('hidden'); return; }
@@ -2245,6 +2295,7 @@ function renderFlight() {
       flightTimer = setInterval(() => { if (!clock.isConnected) { clearInterval(flightTimer); return; } tick(); }, 20000);
     }
     body.appendChild(pass);
+    if (FLIGHT_PROXY) { const live = el('div', { className: 'lf-box' }); body.appendChild(live); startLiveFlight(code, live); }
     const links = el('div', { className: 'attr-links' });
     links.appendChild(link('🔴 סטטוס חי (Flightradar24)', 'https://www.flightradar24.com/data/flights/' + encodeURIComponent(code.toLowerCase())));
     links.appendChild(link('🔎 סטטוס בגוגל', 'https://www.google.com/search?q=' + encodeURIComponent(code + ' flight status')));
