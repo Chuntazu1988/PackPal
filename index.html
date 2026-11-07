@@ -531,6 +531,24 @@
   .past-row > .secondary { flex: 1 1 auto; min-height: 44px; }
   .past-row > .rename-btn, .past-row > .del { min-width: 44px; min-height: 44px; }
 }
+/* ---------- ארנק מסמכים ---------- */
+.dc-body { display: grid; gap: 14px; }
+.dc-add { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.dc-add select { flex: 1 1 160px; }
+.dc-pick { flex: 1 1 160px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 18px; min-height: 48px; border-radius: 999px; background: var(--sunset); color: var(--ink-on-sunset); font-weight: 800; cursor: pointer; box-shadow: 0 12px 26px -10px rgba(255, 111, 145, .7); transition: transform .2s; }
+.dc-pick:hover { transform: translateY(-3px); }
+.dc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.dc-tile { display: grid; gap: 8px; padding: 10px; border-radius: 22px; background: var(--soft); border: 1px solid var(--border); }
+.dc-thumb { position: relative; display: grid; place-items: center; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); background: var(--card); padding: 0; cursor: pointer; }
+.dc-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
+.dc-thumb:hover img { transform: scale(1.06); }
+.dc-pdf { font: 800 1.1rem var(--font-mono); letter-spacing: .1em; color: var(--accent); }
+.dc-info { display: grid; gap: 2px; min-width: 0; }
+.dc-cat { font: 700 .72rem var(--font-mono); letter-spacing: .1em; color: var(--accent); }
+.dc-name { overflow-wrap: anywhere; }
+.dc-info small { color: var(--muted); }
+.dc-acts { display: flex; gap: 8px; }
+.dc-acts button { flex: 1; min-height: 40px; }
 .pp-body { display: grid; gap: 14px; }
 .pp-chips { display: flex; flex-wrap: wrap; gap: 10px; }
 .pp-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 18px; border-radius: 22px; background: var(--soft); border: 1px solid var(--border); color: var(--text); font-weight: 800; text-align: start; }
@@ -1323,7 +1341,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
   main > * { grid-column: 2 / -1; min-width: 0; margin-bottom: 22px; }
   main > #accountBar, main > #passportWarn, main > .hero, main > #sharedBar, main > .site-footer { grid-column: 1 / -1; }
   main > .card[data-tab="dest"], main > .card[data-tab="before"] { grid-column: auto; }
-  main > #weather, main > #hotelSection, main > #nearbySection, main > #airportSection, main > #transSection, main > #budgetSection, main > #flightSection, main > #attrSection, main > #passportSection { grid-column: 2 / -1; }
+  main > #weather, main > #docsSection, main > #hotelSection, main > #nearbySection, main > #airportSection, main > #transSection, main > #budgetSection, main > #flightSection, main > #attrSection, main > #passportSection { grid-column: 2 / -1; }
   main > .tabbar { grid-column: 1; grid-row: 3 / span 40; align-self: start; position: sticky; top: 24px; bottom: auto; margin: 0 0 22px; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 34px; }
   main > .tabbar.hidden { display: none; }
   .tabbar button { flex-direction: column; width: 100%; padding: 14px 4px; min-height: 80px; font-size: .8rem; }
@@ -1522,6 +1540,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
   <!-- ===== דרישות כניסה ובטיחות (קישורים רשמיים) ===== -->
   <section id="entrySection" class="card hidden" data-tab="before"></section>
   <section id="passportSection" class="card hidden" data-tab="before"></section>
+  <section id="docsSection" class="card hidden" data-tab="before"></section>
 
   <!-- ===== המלצות לאטרקציות (Wikivoyage) ===== -->
   <section id="quickSection" class="card hidden" data-tab="dest"></section>
@@ -3724,6 +3743,146 @@ function renderNearby() {
 }
 
 /* =========================================================
+   ארנק מסמכים: אישורי טיסה, מלון, ביטוח וצילום דרכון. נשמר רק במכשיר הזה (IndexedDB) ועובד גם בלי אינטרנט.
+   ========================================================= */
+
+const DOCS_DB = 'packpal-docs';
+const DOCS_STORE = 'docs';
+const DOCS_MAX = 30;
+const DOCS_MAX_BYTES = 12 * 1024 * 1024;
+const DOC_CATS = [
+  { id: 'flight', icon: '✈️', name: 'טיסה' },
+  { id: 'hotel', icon: '🏨', name: 'מלון' },
+  { id: 'insurance', icon: '🛡️', name: 'ביטוח' },
+  { id: 'passport', icon: '🛂', name: 'דרכון / ויזה' },
+  { id: 'other', icon: '📎', name: 'אחר' }
+];
+let docsUrls = [];
+
+function docsDb() {
+  return new Promise((res, rej) => {
+    if (!window.indexedDB) { rej(new Error('no idb')); return; }
+    const r = indexedDB.open(DOCS_DB, 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore(DOCS_STORE, { keyPath: 'id' }); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function docsTx(mode, fn) {
+  const db = await docsDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(DOCS_STORE, mode);
+    const out = fn(tx.objectStore(DOCS_STORE));
+    tx.oncomplete = () => { db.close(); res(out && out.result !== undefined ? out.result : undefined); };
+    tx.onerror = () => { db.close(); rej(tx.error); };
+    tx.onabort = () => { db.close(); rej(tx.error); };
+  });
+}
+const docsAll = () => docsTx('readonly', s => s.getAll());
+const docsPut = d => docsTx('readwrite', s => s.put(d));
+const docsDel = id => docsTx('readwrite', s => s.delete(id));
+const docsClear = () => docsTx('readwrite', s => s.clear());
+
+// תמונות מוקטנות כדי לחסוך מקום: עד 1600 פיקסלים, JPEG
+async function shrinkImage(file) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    if (k === 1 && file.size < 900 * 1024) return file;
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+    return blob && blob.size < file.size ? blob : file;
+  } catch (e) { return file; }
+}
+const fmtSize = b => b < 1024 * 1024 ? Math.max(1, Math.round(b / 1024)) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
+
+let docsCat = 'flight';
+async function renderDocs() {
+  const box = $('docsSection');
+  if (!box) return;
+  docsUrls.forEach(u => URL.revokeObjectURL(u)); docsUrls = [];
+  box.replaceChildren();
+  if (!state || sharedMode) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  box.appendChild(el('strong', null, '🗂️ ארנק המסמכים שלי'));
+  const body = el('div', { className: 'dc-body' });
+  box.appendChild(body);
+
+  let list = [];
+  try { list = await docsAll(); } catch (e) {
+    body.appendChild(el('p', { className: 'note' }, 'הדפדפן הזה לא מאפשר לשמור מסמכים (אולי מצב גלישה פרטית).'));
+    makeCollapsible(box, 'docs', 1, false); return;
+  }
+  list.sort((a, b) => (b.added || 0) - (a.added || 0));
+
+  body.appendChild(el('p', { className: 'note' }, 'שומרים כאן אישורי טיסה, הזמנת מלון, ביטוח וצילום דרכון, ופותחים אותם גם בלי אינטרנט. המסמכים נשמרים רק במכשיר הזה, לא בענן, ויימחקו בהתנתקות.'));
+
+  // הוספה
+  const add = el('div', { className: 'dc-add' });
+  const sel = el('select', { 'aria-label': 'סוג המסמך' });
+  DOC_CATS.forEach(c => sel.appendChild(el('option', { value: c.id }, c.icon + ' ' + c.name)));
+  sel.value = docsCat;
+  sel.addEventListener('change', () => { docsCat = sel.value; });
+  const file = el('input', { type: 'file', accept: 'image/*,application/pdf', multiple: true, className: 'sr-only', id: 'docsFile' });
+  const pick = el('label', { className: 'dc-pick', for: 'docsFile', role: 'button', tabIndex: 0 }, '➕ הוסף מסמך');
+  pick.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); file.click(); } });
+  const msg = el('div', { className: 'dup-error', role: 'status' });
+  file.addEventListener('change', async () => {
+    const files = [...file.files];
+    if (!files.length) return;
+    msg.textContent = 'שומרת...';
+    let have = list.length, saved = 0, skipped = '';
+    for (const f of files) {
+      if (have >= DOCS_MAX) { skipped = 'אפשר לשמור עד ' + DOCS_MAX + ' מסמכים.'; break; }
+      if (!/^image\//.test(f.type) && f.type !== 'application/pdf') { skipped = 'רק תמונות ו-PDF.'; continue; }
+      const blob = /^image\//.test(f.type) ? await shrinkImage(f) : f;
+      if (blob.size > DOCS_MAX_BYTES) { skipped = 'קובץ גדול מדי (עד 12MB).'; continue; }
+      try {
+        await docsPut({ id: 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: f.name.replace(/\.[^.]+$/, ''), cat: sel.value, mime: blob.type || f.type, size: blob.size, added: Date.now(), blob: blob });
+        saved++; have++;
+      } catch (e) { skipped = 'לא הצלחתי לשמור (אין מקום במכשיר?).'; }
+    }
+    msg.textContent = (saved ? 'נשמרו ' + saved + '. ' : '') + skipped;
+    renderDocs();
+  });
+  add.append(sel, pick, file);
+  body.append(add, msg);
+
+  // רשימה
+  if (!list.length) { body.appendChild(el('p', { className: 'note' }, 'עדיין אין מסמכים.')); }
+  else {
+    const grid = el('div', { className: 'dc-grid' });
+    list.forEach(d => {
+      const cat = DOC_CATS.find(c => c.id === d.cat) || DOC_CATS[4];
+      const tile = el('div', { className: 'dc-tile' });
+      const thumb = el('button', { type: 'button', className: 'dc-thumb', 'aria-label': 'פתח את ' + d.name });
+      if (/^image\//.test(d.mime)) {
+        const u = URL.createObjectURL(d.blob); docsUrls.push(u);
+        thumb.appendChild(el('img', { src: u, alt: '' }));
+      } else thumb.appendChild(el('span', { className: 'dc-pdf' }, '📄 PDF'));
+      thumb.addEventListener('click', () => { const u = URL.createObjectURL(d.blob); window.open(u, '_blank', 'noopener'); setTimeout(() => URL.revokeObjectURL(u), 60000); });
+      const info = el('div', { className: 'dc-info' });
+      info.append(el('span', { className: 'dc-cat' }, cat.icon + ' ' + cat.name), el('b', { className: 'dc-name' }, d.name), el('small', null, fmtSize(d.size)));
+      const acts = el('div', { className: 'dc-acts' });
+      const ren = el('button', { type: 'button', className: 'secondary', 'aria-label': 'שנה שם: ' + d.name }, '✏️');
+      ren.addEventListener('click', async () => {
+        const n = prompt('שם חדש למסמך:', d.name);
+        if (n && n.trim()) { d.name = n.trim().slice(0, 60); await docsPut(d); renderDocs(); }
+      });
+      const del = el('button', { type: 'button', className: 'secondary', 'aria-label': 'מחק: ' + d.name }, '🗑️');
+      del.addEventListener('click', async () => { if (confirm('למחוק את "' + d.name + '"?')) { await docsDel(d.id); renderDocs(); } });
+      acts.append(ren, del);
+      tile.append(thumb, info, acts);
+      grid.appendChild(tile);
+    });
+    body.appendChild(grid);
+  }
+  makeCollapsible(box, 'docs', 1, false);
+}
+
+/* =========================================================
    תזכורות ביומן: קובץ iCalendar (.ics) שנפתח באפליקציית היומן של הטלפון
    ========================================================= */
 
@@ -4099,6 +4258,7 @@ function renderWeather() {
   renderTasks();
   renderEntry();
   renderPassports();
+  renderDocs();
   renderHotel();
   renderFlight();
   renderQuick();
@@ -6615,6 +6775,11 @@ async function signInWithGoogle() {
 }
 
 async function signOutUser() {
+  try {
+    const nDocs = (await docsAll()).length;
+    if (nDocs && !confirm('בארנק המסמכים יש ' + nDocs + ' מסמכים שנשמרים רק במכשיר הזה. בהתנתקות הם יימחקו ולא ניתן יהיה לשחזר אותם. להמשיך?')) return;
+    await docsClear();
+  } catch (e) {}
   cloudUser = null;
   cloudReady = false;
   clearTimeout(cloudTimer);
@@ -7092,7 +7257,7 @@ function makeCollapsible(box, key, headCount, defaultCollapsed) {
 (function () {
   const main = document.querySelector('main');
   if (!main) return;
-  const FULL = ['weather', 'hotelSection', 'nearbySection', 'budgetSection', 'airportSection', 'transSection', 'passportSection', 'flightSection', 'attrSection', 'listSection', 'tripForm', 'favSection', 'pastSection', 'tplSection', 'sharedBar'];
+  const FULL = ['weather', 'docsSection', 'hotelSection', 'nearbySection', 'budgetSection', 'airportSection', 'transSection', 'passportSection', 'flightSection', 'attrSection', 'listSection', 'tripForm', 'favSection', 'pastSection', 'tplSection', 'sharedBar'];
   let queued = false;
   function balance() {
     queued = false;
@@ -7145,7 +7310,7 @@ function makeCollapsible(box, key, headCount, defaultCollapsed) {
   const input = $('siteSearch'), resBox = $('siteResults'), tools = $('siteTools'), tabBar = $('tabBar'), allBtn = $('expandAllBtn');
   if (!input || !resBox || !tools || !tabBar || !allBtn) return;
   const TAB_NAMES = { list: 'אריזה', before: 'לפני הטיסה', dest: 'היעד', more: 'הטיולים שלי' };
-  const CAND = '.task, .fact, .pp-row, .entry-links a, .nb-item, .ht-row, .vnote, .note, .attr-item, .quick-tile, .lf-grid strong, .past-row, .tpl-row, .visa-box, .budget-line, p, li, h3, small';
+  const CAND = '.task, .fact, .pp-row, .entry-links a, .nb-item, .ht-row, .vnote, .note, .attr-item, .quick-tile, .lf-grid strong, .past-row, .tpl-row, .visa-box, .budget-line, .dc-name, p, li, h3, small';
 
   const syncTools = () => tools.classList.toggle('hidden', tabBar.classList.contains('hidden'));
   new MutationObserver(syncTools).observe(tabBar, { attributes: true, attributeFilter: ['class'] });
