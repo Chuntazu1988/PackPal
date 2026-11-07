@@ -3445,7 +3445,7 @@ function renderHotel() {
     if (h.phone) acts.appendChild(el('a', { href: 'tel:' + cleanPhone(h.phone), className: 'ht-btn' }, '📞 התקשר'));
     const site = safeWebUrl(h.website);
     if (site) acts.appendChild(el('a', { href: site, target: '_blank', rel: 'noopener noreferrer', className: 'ht-btn' }, '🌐 האתר הרשמי'));
-    const edit = el('button', { type: 'button', className: 'secondary' }, '✏️ ערוך');
+    const edit = el('button', { type: 'button', className: 'secondary' }, '🔄 החלף מלון');
     edit.addEventListener('click', () => { hotelEditing = true; renderHotel(); });
     const del = el('button', { type: 'button', className: 'secondary' }, '🗑️ הסר');
     del.addEventListener('click', () => { delete state.hotel; save(); renderHotel(); });
@@ -3453,69 +3453,44 @@ function renderHotel() {
     card.appendChild(acts);
     body.appendChild(card);
   } else {
-    if (!h) body.appendChild(el('p', { className: 'note' }, 'הוסיפי את פרטי המלון, ותראי כאן את חזית המלון, כתובת, טלפון וקישור לגוגל מפות.'));
+    if (!h) body.appendChild(el('p', { className: 'note' }, 'כתבי רק את שם המלון: כתובת, טלפון, אתר רשמי, תמונת חזית וקישור לגוגל מפות יופיעו כאן לבד.'));
     const form = el('form', { className: 'ht-form', autocomplete: 'off' });
-    const fld = (label, name, attrs, val) => {
-      const w = el('div'); const inp = el('input', Object.assign({ name: name }, attrs)); if (val) inp.value = val;
-      w.append(el('label', null, label), inp); return [w, inp];
-    };
-    const [w1, name] = fld('שם המלון', 'name', { type: 'text', maxLength: 80, placeholder: 'למשל: Hotel Lutetia' }, h && h.name);
+    const wrap = el('div', { className: 'ht-name-wrap' });
+    const label = el('label', null, 'שם המלון');
+    const name = el('input', { type: 'text', name: 'name', maxLength: 80, placeholder: 'מקלידים רק את שם המלון, והפרטים מושלמים לבד' });
+    if (h && h.name) name.value = h.name;
     const sug = el('ul', { className: 'ht-suggest hidden', role: 'listbox', 'aria-label': 'הצעות מלונות' });
     name.setAttribute('role', 'combobox'); name.setAttribute('aria-autocomplete', 'list'); name.setAttribute('aria-expanded', 'false');
-    w1.style.position = 'relative'; w1.appendChild(sug);
-    const [w2, address] = fld('כתובת', 'address', { type: 'text', maxLength: 160 }, h && h.address);
-    const [w3, phone] = fld('טלפון', 'phone', { type: 'tel', maxLength: 30, placeholder: '+33 1 23 45 67 89' }, h && h.phone);
-    const [w4, photo] = fld('קישור לתמונת חזית (לא חובה)', 'photo', { type: 'url', maxLength: 600, placeholder: 'https://...' }, h && h.photo);
-    const [w5, website] = fld('האתר הרשמי של המלון (לא חובה)', 'website', { type: 'text', inputMode: 'url', maxLength: 300, placeholder: 'www.hotel.com' }, h && h.website);
-    const r1 = el('div', { className: 'row' }); r1.append(w1, w2);
-    const r2 = el('div', { className: 'row' }); r2.append(w3, w4);
-    const r3 = el('div', { className: 'row' }); r3.append(w5);
+    wrap.style.position = 'relative';
+    wrap.append(label, name, sug);
     const msg = el('div', { className: 'dup-error', role: 'status' });
     const acts = el('div', { className: 'actions' });
-    if (HOTEL_PROXY) {
-      const find = el('button', { type: 'button', className: 'secondary' }, '🔎 מצא כתובת, טלפון וחזית');
-      find.addEventListener('click', async () => {
-        if (!name.value.trim()) { msg.textContent = 'כתבי קודם את שם המלון.'; name.focus(); return; }
-        msg.textContent = 'מחפשת...'; find.disabled = true;
-        try {
-          const d = await hotelLookup(name.value.trim(), placeCountry(state.trip.place) || state.trip.place);
-          if (!d) { msg.textContent = 'לא מצאתי את המלון. אפשר למלא ידנית.'; }
-          else {
-            if (d.name) name.value = d.name;
-            if (d.address) address.value = d.address;
-            if (d.phone) phone.value = d.phone;
-            if (d.photo) photo.value = d.photo;
-            if (d.website) website.value = d.website;
-            form.dataset.maps = d.mapsUrl || '';
-            msg.textContent = 'נמצא. אפשר לערוך לפני השמירה.';
-          }
-        } catch (e) { msg.textContent = 'החיפוש לא זמין כרגע. אפשר למלא ידנית.'; }
-        find.disabled = false;
-      });
-      acts.appendChild(find);
-    }
-    const saveB = el('button', { type: 'submit', className: 'primary' }, 'שמור מלון');
+    const saveB = el('button', { type: 'submit', className: 'primary' }, 'הוסף מלון');
     const cancel = el('button', { type: 'button', className: 'secondary' }, 'ביטול');
     cancel.addEventListener('click', () => { hotelEditing = false; renderHotel(); });
     acts.append(saveB);
     if (h) acts.appendChild(cancel);
-    // השלמה אוטומטית: מקלידים שם, בוחרים הצעה, וכל הפרטים מתמלאים
-    let sugTimer = null, sugList = [], sugSeq = 0;
+    form.append(wrap, msg, acts);
+
+    let sugTimer = null, sugList = [], sugSeq = 0, busy = false;
     const hideSug = () => { sug.classList.add('hidden'); name.setAttribute('aria-expanded', 'false'); };
-    const applyHotel = async (d) => {
-      hideSug();
-      name.value = d.name || name.value;
-      if (d.address) address.value = d.address;
-      if (d.phone) phone.value = d.phone;
-      if (d.website) website.value = d.website;
-      if (d.photo) photo.value = d.photo;
-      form.dataset.maps = d.mapsUrl || '';
-      form.dataset.lat = d.lat || ''; form.dataset.lon = d.lon || '';
-      msg.textContent = 'הפרטים הושלמו אוטומטית. אפשר לערוך לפני השמירה.';
-      if (!d.photo && d.wikidata) {
-        const ph = await commonsFromWikidata(d.wikidata);
-        if (ph && !photo.value) { photo.value = ph; }
-      }
+    // בחירת מלון: שומרים את כל הפרטים שנמצאו, בלי הזנה ידנית
+    const commit = async (d) => {
+      if (busy) return;
+      busy = true; hideSug();
+      msg.textContent = 'משלימה את פרטי המלון...';
+      const obj = { name: d.name || name.value.trim() };
+      ['address', 'phone', 'website', 'photo', 'mapsUrl'].forEach(k => { if (d[k]) obj[k] = d[k]; });
+      if (d.lat && d.lon) { obj.lat = d.lat; obj.lon = d.lon; }
+      if (!obj.photo && d.wikidata) { const ph = await commonsFromWikidata(d.wikidata); if (ph) obj.photo = ph; }
+      state.hotel = obj; save();
+      hotelEditing = false;
+      renderHotel();
+    };
+    const search = async () => {
+      const text = name.value.trim();
+      if (text.length < 3) return [];
+      return hotelSuggest(text, placeCountry(state.trip.place) || state.trip.place);
     };
     const runSuggest = async () => {
       const text = name.value.trim();
@@ -3523,43 +3498,30 @@ function renderHotel() {
       const seq = ++sugSeq;
       msg.textContent = 'מחפשת מלון...';
       try {
-        const list = await hotelSuggest(text, placeCountry(state.trip.place) || state.trip.place);
+        const list = await search();
         if (seq !== sugSeq) return;
-        sugList = list;
-        sug.replaceChildren();
-        msg.textContent = '';
-        if (!list.length) { msg.textContent = 'לא מצאתי את המלון. אפשר למלא ידנית.'; hideSug(); return; }
+        sugList = list; sug.replaceChildren(); msg.textContent = '';
+        if (!list.length) { msg.textContent = 'לא מצאתי פרטים למלון הזה. אפשר להוסיף אותו רק בשם.'; hideSug(); return; }
         list.forEach(d => {
           const li = el('li', { className: 'ht-sug', role: 'option' });
           li.append(el('b', null, d.name), el('small', null, d.address));
-          li.addEventListener('mousedown', (ev) => { ev.preventDefault(); applyHotel(d); });
+          li.addEventListener('mousedown', (ev) => { ev.preventDefault(); commit(d); });
           sug.appendChild(li);
         });
         sug.classList.remove('hidden'); name.setAttribute('aria-expanded', 'true');
-      } catch (e) { if (seq === sugSeq) { msg.textContent = 'החיפוש האוטומטי לא זמין כרגע. אפשר למלא ידנית.'; hideSug(); } }
+      } catch (e) { if (seq === sugSeq) { msg.textContent = 'החיפוש האוטומטי לא זמין כרגע. אפשר להוסיף את המלון בשם בלבד.'; hideSug(); } }
     };
     name.addEventListener('input', () => { clearTimeout(sugTimer); sugTimer = setTimeout(runSuggest, 650); });
-    name.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter' && !sug.classList.contains('hidden') && sugList[0]) { ev.preventDefault(); applyHotel(sugList[0]); }
-      else if (ev.key === 'Escape') hideSug();
-    });
+    name.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') hideSug(); });
     name.addEventListener('blur', () => setTimeout(hideSug, 150));
-    form.append(r1, r2, r3, msg, acts);
-    form.addEventListener('submit', (ev) => {
+    form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
-      if (!name.value.trim()) { msg.textContent = 'כתבי את שם המלון.'; name.focus(); return; }
-      const obj = { name: name.value.trim(), address: address.value.trim(), phone: phone.value.trim() };
-      const ph = safeImgUrl(photo.value.trim()); if (ph) obj.photo = ph;
-      if (website.value.trim()) {
-        const w = safeWebUrl(website.value);
-        if (!w) { msg.textContent = 'כתובת האתר לא נראית תקינה. למשל: www.hotel.com'; website.focus(); return; }
-        obj.website = w;
-      }
-      const mu = form.dataset.maps || (h && h.mapsUrl); if (mu) obj.mapsUrl = mu;
-      if (form.dataset.lat && form.dataset.lon) { obj.lat = parseFloat(form.dataset.lat); obj.lon = parseFloat(form.dataset.lon); }
-      state.hotel = obj; save();
-      hotelEditing = false;
-      renderHotel();
+      const text = name.value.trim();
+      if (!text) { msg.textContent = 'כתבי את שם המלון.'; name.focus(); return; }
+      msg.textContent = 'משלימה את פרטי המלון...';
+      let list = sugList;
+      try { if (!list.length) list = await search(); } catch (e) { list = []; }
+      if (list[0]) commit(list[0]); else commit({ name: text });
     });
     body.appendChild(form);
   }
