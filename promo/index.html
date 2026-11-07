@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PackPal – The Pitch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070913;--line:rgba(255,255,255,.13);--text:#f4f5ff;--mut:#aab2d8;--cy:#35e0ff;--pk:#ff5fa8;--or:#ffb35c;--vi:#a46bff;--gr:#3ee59a;
+  --grad:linear-gradient(135deg,var(--or),var(--pk) 55%,var(--vi))}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:Inter,"Segoe UI",system-ui,sans-serif;user-select:none}
+.bg{position:fixed;inset:0;overflow:hidden;z-index:0}
+.bg i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.55;animation:drift 18s ease-in-out infinite alternate}
+.bg i:nth-child(1){width:55vw;height:55vw;left:-12vw;top:-18vw;background:#3b2bd1}
+.bg i:nth-child(2){width:45vw;height:45vw;right:-10vw;bottom:-14vw;background:#c2237e;animation-delay:-6s}
+.bg i:nth-child(3){width:30vw;height:30vw;left:40vw;top:30vh;background:#0aa6c4;opacity:.3;animation-delay:-11s}
+@keyframes drift{to{transform:translate(6vw,5vh) scale(1.18)}}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.fz{font-family:"Baloo 2",Inter,sans-serif}
+#fall{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+#fall span{position:absolute;bottom:-60px;opacity:.5;animation:rise linear infinite}
+@keyframes rise{to{transform:translateY(-115vh) rotate(360deg)}}
+#conf{position:fixed;inset:0;z-index:20;pointer-events:none}
+
+.slide{position:fixed;inset:0 0 190px 0;z-index:2;display:flex;flex-direction:column;justify-content:center;padding:3vh 7vw;opacity:0;pointer-events:none;transition:opacity .5s}
+.slide.on{opacity:1;pointer-events:auto}
+.slide.ph{padding-right:calc(7vw + min(calc((100vh - 220px)*.484),360px) + 5vw)}
+.slide.cen{align-items:center;text-align:center}
+.kicker{color:var(--cy);font-weight:800;letter-spacing:.2em;text-transform:uppercase;font-size:clamp(11px,1.1vw,15px);margin-bottom:1.4vh}
+h1{font-family:"Baloo 2",sans-serif;font-size:clamp(46px,8vw,130px);line-height:.95;letter-spacing:-.03em;font-weight:800}
+h2{font-family:"Baloo 2",sans-serif;font-size:clamp(30px,4.8vw,78px);line-height:1;letter-spacing:-.02em;font-weight:800}
+.sub{margin-top:1.8vh;color:var(--mut);font-size:clamp(15px,1.8vw,27px);max-width:30em;line-height:1.35}
+.pop>*{opacity:0;transform:translateY(30px) scale(.95)}
+.on .pop>*{animation:up .8s cubic-bezier(.2,1.2,.3,1) forwards}
+.on .pop>*:nth-child(2){animation-delay:.3s}.on .pop>*:nth-child(3){animation-delay:.6s}.on .pop>*:nth-child(4){animation-delay:.9s}.on .pop>*:nth-child(5){animation-delay:1.2s}
+@keyframes up{to{opacity:1;transform:none}}
+.big{font-size:clamp(70px,11vw,170px);display:inline-block;animation:bob 2.4s ease-in-out infinite;cursor:pointer;filter:drop-shadow(0 20px 40px rgba(255,95,168,.5))}
+@keyframes bob{50%{transform:translateY(-14px) rotate(5deg)}}
+.row{display:grid;gap:1.6vw;margin-top:3.4vh;width:100%;max-width:1100px}
+.c3{grid-template-columns:repeat(3,1fr)}
+.tile{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.03));border:1px solid var(--line);border-radius:26px;padding:2.4vh 1.2vw;text-align:center;backdrop-filter:blur(10px);cursor:pointer;transition:transform .25s,box-shadow .25s}
+.tile:hover{box-shadow:0 20px 60px rgba(255,95,168,.3)}
+.tile .em{font-size:clamp(34px,4.4vw,66px);display:block;margin-bottom:.6vh;transition:transform .3s}
+.tile:hover .em{transform:scale(1.25) rotate(-8deg)}
+.tile b{display:block;font-size:clamp(15px,1.7vw,26px);font-family:"Baloo 2";margin-bottom:.4vh}
+.tile span.t{color:var(--mut);font-size:clamp(12px,1.15vw,17px)}
+.tile.jk{background:linear-gradient(135deg,rgba(255,95,168,.35),rgba(164,107,255,.3))}
+.tile .joke{display:none;color:#ffe3f1;font-size:clamp(12px,1.2vw,17px);font-style:italic}
+.tile.jk .joke{display:block}.tile.jk .t{display:none}
+.scale{margin-top:3vh;font-family:"Baloo 2";font-size:clamp(40px,7vw,110px);font-weight:800;color:#ff6b6b;animation:shk .5s infinite}
+@keyframes shk{25%{transform:rotate(-3deg) scale(1.03)}75%{transform:rotate(3deg) scale(1.03)}}
+.strike{position:relative;display:inline-block}
+.on .strike::after{content:"";position:absolute;left:-2%;top:54%;height:.09em;width:0;background:var(--pk);border-radius:9px;animation:sl .8s 1.4s forwards}
+@keyframes sl{to{width:104%}}
+.cta{margin-top:3vh;display:inline-block;text-decoration:none;color:#150b20;background:var(--grad);font-family:"Baloo 2";font-weight:800;font-size:clamp(18px,2vw,30px);padding:1.4vh 2.6vw;border-radius:99px;box-shadow:0 14px 50px rgba(255,95,168,.55);animation:bump 1.4s infinite;cursor:pointer;border:0}
+@keyframes bump{50%{transform:scale(1.07)}}
+.drop{position:absolute;font-size:clamp(34px,5vw,70px);animation:fallin 1s cubic-bezier(.3,1.5,.5,1) both;cursor:pointer}
+@keyframes fallin{from{transform:translateY(-120vh) rotate(-200deg)}}
+.chaos{position:relative;width:100%;max-width:900px;height:40vh}
+
+#hero{position:fixed;z-index:4;width:clamp(120px,15vw,230px);bottom:175px;left:3vw;transition:left .9s cubic-bezier(.3,1.2,.4,1);cursor:pointer;filter:drop-shadow(0 20px 30px rgba(0,0,0,.35))}
+#hero svg{width:100%;display:block;overflow:visible}
+#bubble{position:absolute;left:50%;top:-14px;transform:translate(-50%,-100%) scale(0);background:#fff;color:#1a1530;font-family:"Baloo 2";font-weight:700;padding:8px 14px;border-radius:16px;font-size:clamp(12px,1.2vw,17px);white-space:nowrap;transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+#bubble.show{transform:translate(-50%,-100%) scale(1)}
+#bubble::after{content:"";position:absolute;left:50%;bottom:-8px;width:16px;height:16px;background:#fff;transform:translateX(-50%) rotate(45deg)}
+.bodyg{animation:idle 3s ease-in-out infinite}
+@keyframes idle{50%{transform:translateY(-4px)}}
+.eyes{animation:blink 4s infinite;transform-origin:100px 92px}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+.m,.x{display:none}
+.armL,.armR,.headg,.bL,.bR{transition:transform .5s cubic-bezier(.3,1.5,.5,1)}
+.armL{transform-origin:64px 152px}.armR{transform-origin:136px 152px}.headg{transform-origin:100px 135px}
+.bL{transform-origin:82px 76px}.bR{transform-origin:118px 76px}
+#hero[data-mood=confused] .m-c,#hero[data-mood=confused] .x-q{display:block}
+#hero[data-mood=confused] .headg{animation:tilt 2.2s ease-in-out infinite}
+#hero[data-mood=confused] .bL{transform:rotate(-14deg) translateY(-3px)}#hero[data-mood=confused] .bR{transform:rotate(10deg)}
+@keyframes tilt{50%{transform:rotate(-9deg)}}
+#hero[data-mood=panic] .m-p,#hero[data-mood=panic] .x-s,#hero[data-mood=panic] .x-e{display:block}
+#hero[data-mood=panic] .armL{transform:rotate(155deg)}#hero[data-mood=panic] .armR{transform:rotate(-155deg)}
+#hero[data-mood=panic] .bL{transform:rotate(14deg) translateY(-5px)}#hero[data-mood=panic] .bR{transform:rotate(-14deg) translateY(-5px)}
+#hero[data-mood=panic] .bodyg{animation:shake .25s infinite}
+@keyframes shake{25%{transform:translateX(-4px) rotate(-1.5deg)}75%{transform:translateX(4px) rotate(1.5deg)}}
+#hero[data-mood=relieved] .m-r,#hero[data-mood=relieved] .x-sp{display:block}
+#hero[data-mood=relieved] .armR{transform:rotate(-30deg)}
+#hero[data-mood=happy] .m-h,#hero[data-mood=happy] .x-sp{display:block}
+#hero[data-mood=happy] .armR{animation:wave .5s ease-in-out infinite alternate}#hero[data-mood=happy] .armL{transform:rotate(40deg)}
+#hero[data-mood=happy] .bodyg{animation:hop .7s ease-in-out infinite}
+@keyframes hop{50%{transform:translateY(-26px)}}
+@keyframes wave{from{transform:rotate(-135deg)}to{transform:rotate(-175deg)}}
+.x{font-family:"Baloo 2";font-weight:800}
+.x-q text{animation:fl 1.6s ease-in-out infinite}.x-q text:nth-child(2){animation-delay:.5s}
+@keyframes fl{50%{transform:translateY(-10px)}}
+.x-sp{animation:tw .8s ease-in-out infinite alternate;transform-origin:100px 60px}@keyframes tw{to{transform:scale(1.15) rotate(8deg)}}
+.x-s{animation:dp 1s infinite}@keyframes dp{to{transform:translateY(14px);opacity:0}}
+
+.phone{position:fixed;z-index:3;right:7vw;top:calc(50% - 95px);height:min(calc(100vh - 220px),740px);aspect-ratio:9/18.6;border-radius:44px;padding:10px;
+  background:linear-gradient(160deg,#343a70,#0b0d1e);box-shadow:0 0 0 2px #3f4580,0 40px 120px rgba(120,80,255,.5),0 0 90px rgba(53,224,255,.2);
+  transform:translate(140%,-50%) rotate(10deg);opacity:0;transition:transform .9s cubic-bezier(.2,1.1,.3,1),opacity .6s}
+.phone.in{transform:translate(0,-50%) rotate(0);opacity:1}
+.screen{position:relative;width:100%;height:100%;border-radius:34px;overflow:hidden;background:#0c0f20}
+.inner{position:absolute;left:0;top:0;width:360px;transform-origin:0 0;font-family:Inter,sans-serif;color:#eef0ff}
+.notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:32%;height:20px;background:#05060c;border-radius:0 0 14px 14px;z-index:9;pointer-events:none}
+.pg{position:absolute;inset:0;padding:42px 16px 16px;opacity:0;pointer-events:none;transition:opacity .45s,transform .45s;transform:translateX(30px);overflow:hidden auto;scrollbar-width:none}
+.pg::-webkit-scrollbar{display:none}
+.pg.on{opacity:1;pointer-events:auto;transform:none}
+.pg h3{font-family:"Baloo 2";font-size:25px;line-height:1.05;margin-bottom:10px}
+.pg small{color:#98a1cf}
+.card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:12px;margin-bottom:10px}
+.pill{display:inline-block;padding:7px 12px;border-radius:99px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-size:13px;margin:0 6px 7px 0;cursor:pointer;transition:.2s}
+.pill.on{background:var(--grad);color:#1b0d22;font-weight:700;border-color:transparent;transform:scale(1.05)}
+.btnm{display:block;width:100%;text-align:center;padding:13px;border-radius:16px;font-weight:800;background:var(--grad);color:#1b0d22;font-family:"Baloo 2";font-size:17px;cursor:pointer;box-shadow:0 8px 24px rgba(255,95,168,.45)}
+.btnm.pulse{animation:bump 1s infinite}
+#pgWiz{background:radial-gradient(300px 260px at 80% 0,#3a2a9e,transparent 70%),#0c0f20}
+.dots3{display:flex;gap:6px;margin-bottom:14px}.dots3 i{flex:1;height:5px;border-radius:9px;background:rgba(255,255,255,.15);transition:.4s}.dots3 i.on{background:var(--grad)}
+.inp{border:2px solid var(--cy);border-radius:16px;padding:14px;font-size:18px;box-shadow:0 0 22px rgba(53,224,255,.35);min-height:52px}
+.caret{display:inline-block;width:2px;height:1em;background:var(--cy);vertical-align:-2px;animation:cr 1s infinite}@keyframes cr{50%{opacity:0}}
+.sg{margin-top:10px}.sg div{padding:11px 12px;border-radius:12px;font-size:14px;cursor:pointer;transition:.2s}.sg div.sel{background:rgba(53,224,255,.18);outline:1px solid var(--cy)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12px}.cal b{color:#98a1cf;font-weight:600}.cal span{padding:9px 0;border-radius:9px;transition:.3s}.cal span.r{background:rgba(255,95,168,.35)}.cal span.e{background:var(--pk);font-weight:800}
+.spin{width:54px;height:54px;border-radius:50%;border:5px solid rgba(255,255,255,.15);border-top-color:var(--pk);animation:sp 1s linear infinite;margin:30px auto 12px}@keyframes sp{to{transform:rotate(360deg)}}
+#pgList{background:radial-gradient(300px 240px at 0 0,#10507a,transparent 70%),#0c0f20}
+.flip{display:flex;gap:6px;justify-content:center;margin:2px 0 10px}.flip div{background:#161a33;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:6px 8px;text-align:center;min-width:56px}
+.flip b{display:block;font-family:"Baloo 2";font-size:30px;line-height:1;color:#ffd266}.flip small{font-size:9px;text-transform:uppercase;letter-spacing:.1em}
+.ringw{display:flex;gap:12px;align-items:center}.ringc{--p:0;width:78px;height:78px;border-radius:50%;background:conic-gradient(var(--gr) calc(var(--p)*1%),rgba(255,255,255,.12) 0);display:grid;place-items:center;transition:.4s;flex:none}
+.ringc b{width:60px;height:60px;border-radius:50%;background:#12162b;display:grid;place-items:center;font-family:"Baloo 2";font-size:18px}
+.wbar{height:9px;border-radius:9px;background:rgba(255,255,255,.12);overflow:hidden;margin:6px 0 3px}.wbar i{display:block;height:100%;width:15%;background:linear-gradient(90deg,var(--cy),var(--gr));transition:width .5s}
+.it{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer;font-size:14px;transition:.2s}.it:hover{background:rgba(255,255,255,.05)}
+.cb{width:22px;height:22px;border-radius:7px;border:2px solid #6a73a8;display:grid;place-items:center;flex:none;transition:.25s;font-size:14px;color:transparent}
+.it.done .cb{background:var(--gr);border-color:var(--gr);color:#06281a;transform:scale(1.15)}.it.done .nm{text-decoration:line-through;opacity:.5}
+.it .kg{margin-left:auto;font-size:11px;color:#98a1cf}.cat{font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cy);margin:10px 0 2px}
+.toast{position:absolute;left:12px;right:12px;bottom:14px;background:#fff;color:#1c1636;border-radius:16px;padding:11px 14px;font-weight:700;font-size:13px;transform:translateY(160%);transition:transform .5s cubic-bezier(.3,1.5,.5,1);box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:5}.toast.show{transform:none}
+#pgFly{background:radial-gradient(300px 260px at 100% 0,#7a2a6a,transparent 70%),#0c0f20}
+.bp{background:linear-gradient(135deg,#ffb35c,#ff5fa8 60%,#a46bff);color:#1d0c26;border-radius:20px;padding:14px;margin-bottom:12px}
+.bp .rt{display:flex;justify-content:space-between;font-family:"Baloo 2";font-size:34px;font-weight:800;line-height:1}
+.track{position:relative;height:30px;margin:2px 4px}.track::before{content:"";position:absolute;left:0;right:0;top:14px;border-top:3px dashed rgba(29,12,38,.5)}
+.plane{position:absolute;top:2px;left:0;font-size:24px}
+.bp .meta{display:flex;justify-content:space-between;margin-top:8px;font-weight:800;font-size:13px}
+.warnc{background:rgba(255,107,107,.15);border:1px solid #ff6b6b;border-radius:14px;padding:10px 12px;font-size:13px;display:flex;gap:9px;align-items:center;margin-bottom:10px}
+.okc{background:rgba(62,229,154,.14);border-color:var(--gr)}
+#pgDest{background:radial-gradient(300px 260px at 0 100%,#0b5f6a,transparent 70%),#0c0f20}
+.wk{display:flex;gap:5px}.wk div{flex:1;text-align:center;background:rgba(255,255,255,.07);border-radius:14px;padding:8px 2px;font-size:11px}.wk div b{display:block;font-size:20px;margin:2px 0}.wk div.rain{background:rgba(53,150,255,.35);transform:translateY(-3px)}
+.hotel{height:110px;border-radius:14px;background:linear-gradient(180deg,#ff9a5c,#ff5fa8 55%,#4b2a8a);position:relative;overflow:hidden;margin-bottom:8px}
+.hotel::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46px;background:#1a1440;clip-path:polygon(0 60%,8% 60%,8% 20%,16% 20%,16% 50%,26% 50%,26% 0,36% 0,36% 40%,48% 40%,48% 15%,58% 15%,58% 55%,70% 55%,70% 25%,80% 25%,80% 50%,92% 50%,92% 30%,100% 30%,100% 100%,0 100%)}
+.hotel i{position:absolute;right:16px;top:12px;font-size:30px;font-style:normal;animation:bob 2s infinite}
+.donut{--a:60;width:92px;height:92px;border-radius:50%;background:conic-gradient(var(--pk) calc(var(--a)*1%),var(--cy) 0);display:grid;place-items:center;flex:none;transition:1s}.donut b{width:66px;height:66px;border-radius:50%;background:#12162b;display:grid;place-items:center;font-family:"Baloo 2";font-size:17px}
+.sos{display:flex;gap:8px}.sos div{flex:1;background:rgba(255,95,95,.18);border:1px solid rgba(255,95,95,.5);border-radius:14px;text-align:center;padding:9px;cursor:pointer}.sos b{font-family:"Baloo 2";font-size:26px;display:block}
+#pgTog{background:radial-gradient(300px 260px at 50% 0,#2a5a2a,transparent 70%),#0c0f20}
+.av{display:flex;margin-bottom:10px}.av span{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:24px;margin-right:-8px;border:3px solid #0c0f20}
+.wa{display:flex;align-items:center;gap:8px;background:#25d366;color:#05301a;font-weight:800;border-radius:14px;padding:11px;justify-content:center;margin-bottom:8px;cursor:pointer}
+.mini{background:linear-gradient(135deg,#ffb35c,#ff5fa8);color:#1d0c26;border-radius:14px;padding:10px;font-family:"Baloo 2";font-size:17px;font-weight:800;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+
+.subs{position:fixed;left:0;right:0;bottom:70px;z-index:8;display:flex;justify-content:center;padding:0 5vw;pointer-events:none}
+.subs div{max-width:980px;text-align:center;font-family:"Baloo 2",Inter,sans-serif;font-weight:700;font-size:clamp(20px,2.5vw,38px);line-height:1.2;text-shadow:0 3px 18px rgba(0,0,0,.8)}
+.subs span{display:inline-block;margin:0 .13em;color:rgba(255,255,255,.35);transition:color .15s,transform .2s}
+.subs span.p{color:#fff}
+.subs span.a{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;transform:scale(1.22) translateY(-3px);filter:drop-shadow(0 0 14px rgba(255,95,168,.8))}
+.ctl{position:fixed;left:0;right:0;bottom:0;z-index:9;height:62px;display:flex;align-items:center;gap:10px;padding:0 3vw;background:linear-gradient(0deg,rgba(7,9,19,.97),rgba(7,9,19,0))}
+.btn{cursor:pointer;border:1px solid var(--line);background:rgba(255,255,255,.08);color:var(--text);font:inherit;font-size:14px;padding:8px 14px;border-radius:12px}.btn:hover{background:rgba(255,255,255,.18)}
+.btn.pri{background:var(--grad);color:#150b20;font-weight:800;border:0;padding:11px 26px;font-size:17px;box-shadow:0 10px 30px rgba(255,95,168,.4)}
+.dots{flex:1;display:flex;gap:6px;justify-content:center}.dots button{cursor:pointer;width:100%;max-width:52px;height:8px;border:0;border-radius:9px;background:rgba(255,255,255,.18);padding:0;transition:.3s}
+.dots button.done{background:rgba(255,255,255,.55)}.dots button.cur{background:var(--grad);transform:scaleY(1.6)}
+.gate{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:24px;background:rgba(7,9,19,.92);backdrop-filter:blur(6px)}
+.gate.hide{display:none}.gate p{color:var(--mut);font-size:clamp(15px,1.8vw,21px);max-width:600px}
+@media (max-width:860px){
+  .slide.ph{padding-right:7vw;justify-content:flex-start;padding-top:3vh}
+  .slide.ph h2{font-size:30px}.slide.ph .sub{display:none}
+  .phone{right:50%;top:auto;bottom:210px;height:46vh;transform:translate(50%,130%)}.phone.in{transform:translate(50%,0)}
+  .c3{grid-template-columns:repeat(2,1fr);gap:8px}.tile{padding:10px 6px}.tile .em{font-size:28px}
+  #hero{width:90px;bottom:200px}#muteV,#muteM{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important}}
+</style>
+</head>
+<body>
+<div class="bg"><i></i><i></i><i></i></div><div id="fall"></div>
+
+<div class="gate" id="gate">
+  <div class="big">&#129523;</div>
+  <h1 class="grad">PackPal</h1>
+  <p>The pitch, as an interactive show. Sound on &mdash; Mia the traveler (and a narrator) will walk you through. Click everything.</p>
+  <button class="cta" id="startBtn">&#9654;&nbsp; Start the show</button>
+</div>
+
+<section class="slide cen" id="s0"><div class="pop" style="display:flex;flex-direction:column;align-items:center">
+  <div class="big" data-burst>&#129523;</div><h1 class="grad">PackPal</h1>
+  <div class="sub fz" style="font-size:clamp(20px,2.8vw,42px);color:#fff">Never forget your socks again.</div>
+  <div class="kicker" style="margin-top:3vh">Investor pitch &middot; click anything</div></div></section>
+<section class="slide cen" id="s1"><div class="pop" style="display:flex;flex-direction:column;align-items:center">
+  <div class="kicker">The problem</div><h2>Packing is <span class="grad">chaos</span></h2>
+  <div class="row c3">
+    <div class="tile"><span class="em">&#129523;</span><b>Too much</b><span class="t">&ldquo;Just in case&rdquo; isn't a strategy</span><span class="joke">Seven pairs of shoes for a 3-day trip. Respect. Also: no.</span></div>
+    <div class="tile"><span class="em">&#129702;</span><b>Too little</b><span class="t">Sandals. In the rain. In Tokyo.</span><span class="joke">Bold fashion choice. Soggy, but bold.</span></div>
+    <div class="tile"><span class="em">&#9878;&#65039;</span><b>The airport scale</b><span class="t">Two kilos over. Of course.</span><span class="joke">Wear everything. All of it. Now.</span></div>
+  </div><div class="scale">+2 kg</div></div></section>
+<section class="slide cen" id="s2"><div class="pop" style="display:flex;flex-direction:column;align-items:center;width:100%">
+  <div class="kicker">Meanwhile, in Tokyo...</div><h2>Forecast: <span class="grad">rain</span>.<br>You packed: <span class="strike">umbrella</span> sandals</h2>
+  <div class="chaos" id="chaos"></div></div></section>
+<section class="slide cen" id="s3"><div class="pop" style="display:flex;flex-direction:column;align-items:center">
+  <div class="kicker">Enter PackPal</div><h1 class="grad" style="font-size:clamp(40px,6.4vw,104px)">The list that<br>checks the weather</h1>
+  <div class="sub">Where you go. When. What you'll do. PackPal does the thinking &mdash; you do the vacation.</div></div></section>
+<section class="slide ph" id="s4"><div class="pop"><div class="kicker">Step 1 &middot; Plan</div><h2>Three taps.<br><span class="grad">That's it.</span></h2><div class="sub">Destination. Dates. Activities. (Go on &mdash; tap the phone.)</div></div></section>
+<section class="slide ph" id="s5"><div class="pop"><div class="kicker">Step 2 &middot; Pack</div><h2>A list that<br><span class="grad">gets you</span></h2><div class="sub">Live countdown. Weather-smart items. Weight that keeps you under the limit.</div></div></section>
+<section class="slide cen" id="s6"><div class="pop" style="display:flex;flex-direction:column;align-items:center">
+  <div class="kicker">More than a list</div><h2>Your whole <span class="grad">pre-trip brain</span></h2>
+  <div class="row c3" style="gap:1.2vw">
+    <div class="tile"><span class="em">&#128706;</span><b>Visas &amp; passports</b><span class="t">Expiry warnings included</span><span class="joke">Passport expires in 5 months? PackPal noticed. You didn't.</span></div>
+    <div class="tile"><span class="em">&#9992;&#65039;</span><b>Flights</b><span class="t">Countdown &amp; live status</span><span class="joke">Know the gate before the announcement does.</span></div>
+    <div class="tile"><span class="em">&#127976;</span><b>Hotel</b><span class="t">Auto-filled from its name</span><span class="joke">Type a name. Get the photo, address and map.</span></div>
+    <div class="tile"><span class="em">&#128181;</span><b>Budget</b><span class="t">How much cash to bring</span><span class="joke">More than you think. Less than you fear.</span></div>
+    <div class="tile"><span class="em">&#128506;&#65039;</span><b>Local guide</b><span class="t">Transport &amp; attractions</span><span class="joke">Which train? PackPal knows. Probably.</span></div>
+    <div class="tile"><span class="em">&#128101;</span><b>Together</b><span class="t">Pack as a group</span><span class="joke">Finally: evidence of who forgot the sunscreen.</span></div>
+  </div></div></section>
+<section class="slide ph" id="s7"><div class="pop"><div class="kicker">Before you fly</div><h2>No surprises<br><span class="grad">at the gate</span></h2><div class="sub">Entry rules, flights, passports, pre-flight checklist.</div></div></section>
+<section class="slide ph" id="s8"><div class="pop"><div class="kicker">At the destination</div><h2>A pocket guide,<br><span class="grad">built in</span></h2><div class="sub">Weather, hotel, budget and emergency numbers.</div></div></section>
+<section class="slide ph" id="s9"><div class="pop"><div class="kicker">Share &amp; sync</div><h2>Pack<br><span class="grad">together</span></h2><div class="sub">WhatsApp, boarding-pass images, shared trips.</div></div></section>
+<section class="slide cen" id="s10"><div class="pop" style="display:flex;flex-direction:column;align-items:center">
+  <div class="kicker">Why it wins</div><h2>Zero friction. <span class="grad">Zero download.</span></h2>
+  <div class="row c3">
+    <div class="tile"><span class="em">&#9889;</span><b>Opens instantly</b><span class="t">Any phone or computer</span><span class="joke">Faster than finding your boarding pass.</span></div>
+    <div class="tile"><span class="em">&#128274;</span><b>Private by default</b><span class="t">Trips stay on your device</span><span class="joke">Your sock list is nobody's business.</span></div>
+    <div class="tile"><span class="em">&#128176;</span><b>Free data sources</b><span class="t">Open weather &amp; maps</span><span class="joke">Low costs. High fives.</span></div>
+  </div></div></section>
+<section class="slide cen" id="s11"><div class="pop" style="display:flex;flex-direction:column;align-items:center">
+  <div class="big" data-burst>&#128268;</div><h1 class="grad">Pack smarter.<br>Travel lighter.</h1>
+  <div class="sub fz" style="color:#fff">PackPal &mdash; be the person who remembers the charger.</div>
+  <a class="cta" href="../index.html" target="_blank">Try the real app &#8594;</a></div></section>
+
+<div class="phone" id="phone"><div class="notch"></div><div class="screen" id="screenEl"><div class="inner" id="inner">
+  <div class="pg" id="pgWiz">
+    <div class="dots3"><i class="on"></i><i></i><i></i></div>
+    <div id="w1"><h3>Where to? &#9992;&#65039;</h3><div class="inp"><span id="destTxt"></span><span class="caret"></span></div>
+      <div class="sg" id="sg"><div data-v="Tokyo, Japan">&#127471;&#127477; Tokyo, Japan</div><div data-v="Kyoto, Japan">&#127471;&#127477; Kyoto, Japan</div><div data-v="Tokyo Disneyland">&#127905; Tokyo Disneyland</div></div></div>
+    <div id="w2" style="display:none"><h3>When? &#128197;</h3><div class="card"><div class="cal" id="cal"></div></div><div class="card" style="text-align:center"><b class="fz" style="font-size:22px">7 days</b><br><small>Forecast loaded for exactly these dates</small></div></div>
+    <div id="w3" style="display:none"><h3>What will you do? &#127890;</h3><div id="acts"></div><div class="btnm" id="goM" style="margin-top:14px">Build my list &#10024;</div></div>
+    <div id="w4" style="display:none;text-align:center"><div class="spin"></div><h3>Checking Tokyo's forecast...</h3><small>Rain Thursday. Cold mornings. Matching your activities.</small></div>
+  </div>
+  <div class="pg" id="pgList">
+    <small>Tokyo, Japan &middot; 7 days</small><h3>Ready for takeoff</h3>
+    <div class="flip"><div><b id="fd">29</b><small>days</small></div><div><b id="fh">05</b><small>hrs</small></div><div><b id="fm">09</b><small>min</small></div><div><b id="fs">40</b><small>sec</small></div></div>
+    <div class="card ringw"><div class="ringc" id="rg"><b id="rgt">0/10</b></div><div style="flex:1"><b>Luggage weight</b><div class="wbar"><i id="wb"></i></div><small id="wt">3.0 of 20 kg</small></div></div>
+    <div id="items"></div><div style="height:70px"></div>
+    <div class="toast" id="toast">&#9748; Rain Thursday &mdash; rain jacket added!</div>
+  </div>
+  <div class="pg" id="pgFly">
+    <h3>Before you fly</h3>
+    <div class="bp"><div class="rt"><span>TLV</span><span>HND</span></div><div class="track"><span class="plane" id="plane">&#9992;&#65039;</span></div>
+      <div class="rt" style="font-size:12px;font-weight:700"><span>Tel Aviv</span><span>Tokyo Haneda</span></div>
+      <div class="meta"><span>Gate B7</span><span>Seat 14A</span><span>Dec 7 &middot; 23:40</span></div></div>
+    <div class="warnc okc"><span style="font-size:22px">&#9989;</span><span><b>Entry rules checked</b><br><small>Visa &amp; passport requirements</small></span></div>
+    <div class="warnc"><span style="font-size:22px">&#9888;&#65039;</span><span><b>Passport expires in 5 months</b><br><small>Many countries want 6. Renew before you fly!</small></span></div>
+    <div class="cat">Pre-flight tasks</div>
+    <div class="it" data-t><span class="cb">&#10003;</span><span class="nm">Check in online</span></div>
+    <div class="it" data-t><span class="cb">&#10003;</span><span class="nm">Book airport transfer</span></div>
+    <div class="it" data-t><span class="cb">&#10003;</span><span class="nm">Exchange some cash</span></div>
+    <div class="it" data-t><span class="cb">&#10003;</span><span class="nm">Download offline maps</span></div>
+    <div style="height:30px"></div>
+  </div>
+  <div class="pg" id="pgDest">
+    <h3>Tokyo &#127471;&#127477;</h3>
+    <div class="card"><b>Weather for your stay</b><div class="wk" style="margin-top:8px" id="wk"></div></div>
+    <div class="card"><div class="hotel"><i>&#127984;</i></div><b>Hotel Sakura</b><br><small>&#128205; Shinjuku &middot; photo, address &amp; map auto-filled from the name</small></div>
+    <div class="card ringw"><div class="donut" id="dn"><b>$1.1k</b></div><div style="flex:1"><b>Spending money</b><br><small>Estimated for 7 days.<br>&#128179; 60% card &middot; &#128181; 40% cash</small></div></div>
+    <div class="card"><b>Emergency numbers</b><div class="sos" style="margin-top:8px"><div>&#128110;<b>110</b><small>Police</small></div><div>&#128657;<b>119</b><small>Ambulance</small></div></div></div>
+    <div class="card"><b>Getting around</b><br><small>&#128646; Narita Express &middot; &#128647; Metro day-pass &middot; &#128694; Walk Shibuya</small></div>
+    <div style="height:20px"></div>
+  </div>
+  <div class="pg" id="pgTog">
+    <h3>Tokyo crew &#128101;</h3>
+    <div class="av"><span style="background:#7a3df0">&#128105;</span><span style="background:#22c7e6">&#128104;</span><span style="background:#ff8a3d">&#129492;</span><span style="background:#3ee59a">&#128583;</span></div>
+    <div class="card" id="crew"><div class="it" data-t><span class="cb">&#10003;</span><span class="nm">Mia &middot; sunscreen</span></div><div class="it" data-t><span class="cb">&#10003;</span><span class="nm">Dan &middot; charger</span><span class="kg">&#128064; still empty</span></div><div class="it" data-t><span class="cb">&#10003;</span><span class="nm">Noa &middot; snacks</span></div></div>
+    <div class="wa">&#128172; Share on WhatsApp</div>
+    <div class="mini"><span>&#127915; Boarding-pass image</span><span>&#8599;</span></div>
+    <div class="mini" style="background:linear-gradient(135deg,#35e0ff,#a46bff)"><span>&#128197; Calendar reminders</span><span>&#8599;</span></div>
+    <div class="toast" id="toast2">&#128064; Dan just packed the charger. Miracle.</div>
+  </div>
+</div></div></div>
+
+<div id="hero" data-mood="confused"><div id="bubble">Hmm...</div>
+<svg viewBox="0 0 200 320" aria-label="Mia, the confused traveler">
+ <ellipse cx="100" cy="313" rx="64" ry="8" fill="rgba(0,0,0,.35)"/>
+ <g class="bodyg">
+  <rect x="72" y="212" width="20" height="86" rx="9" fill="#2b2f6b"/><rect x="108" y="212" width="20" height="86" rx="9" fill="#2b2f6b"/>
+  <ellipse cx="80" cy="300" rx="17" ry="9" fill="#ff8a3d"/><ellipse cx="120" cy="300" rx="17" ry="9" fill="#ff8a3d"/>
+  <g><rect x="140" y="226" width="46" height="66" rx="9" fill="#ff5fa8"/><rect x="152" y="212" width="22" height="18" rx="6" fill="none" stroke="#c23a7d" stroke-width="5"/><rect x="146" y="242" width="34" height="6" fill="#ffd0e6"/><rect x="146" y="256" width="34" height="6" fill="#ffd0e6"/><circle cx="152" cy="296" r="4" fill="#333"/><circle cx="176" cy="296" r="4" fill="#333"/></g>
+  <path d="M60 144 Q100 126 140 144 L148 224 Q100 238 52 224 Z" fill="#22c7e6"/><path d="M84 214 h32 v14 h-32z" fill="#17a6c4"/><path d="M92 140 q8 14 16 0" stroke="#0e86a0" stroke-width="4" fill="none"/>
+  <g class="armL"><rect x="44" y="146" width="22" height="72" rx="11" fill="#22c7e6"/><circle cx="55" cy="222" r="11" fill="#ffcf9f"/></g>
+  <g class="armR"><rect x="134" y="146" width="22" height="72" rx="11" fill="#22c7e6"/><circle cx="145" cy="222" r="11" fill="#ffcf9f"/></g>
+  <g class="headg">
+   <path d="M50 96 Q44 24 100 24 Q156 24 150 96 Q154 146 134 156 L66 156 Q46 146 50 96Z" fill="#7a3df0"/>
+   <rect x="90" y="120" width="20" height="30" rx="6" fill="#f0b98a"/>
+   <circle cx="100" cy="90" r="42" fill="#ffcf9f"/>
+   <path d="M56 84 Q64 38 104 44 Q142 48 146 86 Q122 62 98 68 Q74 70 56 84Z" fill="#9a5bff"/>
+   <circle cx="72" cy="102" r="8" fill="#ff9fb8" opacity=".6"/><circle cx="128" cy="102" r="8" fill="#ff9fb8" opacity=".6"/>
+   <g class="eyes"><ellipse cx="82" cy="92" rx="8" ry="10" fill="#fff"/><ellipse cx="118" cy="92" rx="8" ry="10" fill="#fff"/><circle cx="84" cy="94" r="5" fill="#2a1a4a"/><circle cx="116" cy="94" r="5" fill="#2a1a4a"/><circle cx="86" cy="91" r="1.8" fill="#fff"/><circle cx="118" cy="91" r="1.8" fill="#fff"/></g>
+   <path class="bL" d="M70 76 q12 -8 24 0" stroke="#4a2490" stroke-width="4" fill="none" stroke-linecap="round"/><path class="bR" d="M106 76 q12 -8 24 0" stroke="#4a2490" stroke-width="4" fill="none" stroke-linecap="round"/>
+   <path class="m m-c" d="M84 118 q8 -6 16 0 t16 0" stroke="#7a2a4a" stroke-width="4" fill="none" stroke-linecap="round"/>
+   <ellipse class="m m-p" cx="100" cy="120" rx="10" ry="12" fill="#7a2a4a"/>
+   <path class="m m-r" d="M86 114 q14 12 28 0" stroke="#7a2a4a" stroke-width="4" fill="none" stroke-linecap="round"/>
+   <path class="m m-h" d="M82 110 q18 28 36 0 z" fill="#7a2a4a" stroke="#7a2a4a" stroke-width="3" stroke-linejoin="round"/>
+   <path class="x x-s" d="M146 70 q8 12 0 18 q-8 -6 0 -18z" fill="#6cc8ff"/>
+  </g>
+ </g>
+ <g class="x x-q"><text x="148" y="40" font-size="34" fill="#ffd266">?</text><text x="30" y="30" font-size="26" fill="#ff9fb8">?</text></g>
+ <g class="x x-e"><text x="154" y="52" font-size="40" fill="#ff6b6b">!</text><text x="22" y="46" font-size="34" fill="#ff6b6b">!</text></g>
+ <g class="x x-sp"><text x="24" y="48" font-size="30" fill="#ffd266">&#10022;</text><text x="152" y="34" font-size="26" fill="#35e0ff">&#10022;</text><text x="162" y="120" font-size="20" fill="#ff9fb8">&#10022;</text></g>
+</svg></div>
+
+<canvas id="conf"></canvas>
+<div class="subs"><div id="cap"></div></div>
+<div class="ctl">
+  <button class="btn" id="prevBtn">&#9198;</button><button class="btn pri" id="playBtn">&#10074;&#10074;</button><button class="btn" id="nextBtn">&#9197;</button>
+  <div class="dots" id="dots"></div>
+  <button class="btn" id="muteV">&#128483; Voice</button><button class="btn" id="muteM">&#127925; Music</button>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let SCRIPT = {};
+
+/* ---- audio: music + sfx ---- */
+let ac = null, master = null, sfxG = null, musicOn = true, voiceOn = true, step = 0;
+function initAudio() {
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  master = ac.createGain(); master.gain.value = .5; master.connect(ac.destination);
+  sfxG = ac.createGain(); sfxG.gain.value = .5; sfxG.connect(ac.destination);
+  const bpm = 108, beat = 60 / bpm, chords = [[48, 55, 64], [43, 50, 59], [45, 52, 60], [41, 48, 57]], arp = [0, 1, 2, 1, 2, 1, 0, 1], hz = m => 440 * 2 ** ((m - 69) / 12);
+  const tone = (m, t, d, ty, v) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = ty; o.frequency.value = hz(m); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g); g.connect(master); o.start(t); o.stop(t + d + .05); };
+  const sched = () => { const t0 = ac.currentTime + .1; for (let i = 0; i < 8; i++) { const ch = chords[Math.floor(step / 8) % 4], t = t0 + i * beat / 2; if (step % 8 === 0) ch.forEach(m => tone(m, t, beat * 4, 'sine', .045)); tone(ch[arp[i]] + 24, t, beat * .5, 'triangle', .05); if (i % 2 === 0) tone(ch[0] - 12, t, beat * .8, 'sine', .08); step++; } };
+  sched(); setInterval(sched, 8 * beat / 2 * 1000 - 40);
+}
+const duck = on => { if (master) master.gain.setTargetAtTime(!musicOn ? 0 : on ? .2 : .5, ac.currentTime, .3); };
+function blip(f1, f2, d, ty = 'sine', v = .25) { if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime; o.type = ty; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + d); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g); g.connect(sfxG); o.start(t); o.stop(t + d); }
+const sfx = {
+  pop: () => blip(500, 1100, .12), ding: () => { blip(880, 880, .25, 'sine', .3); setTimeout(() => blip(1320, 1320, .4, 'sine', .3), 110); },
+  boing: () => blip(200, 520, .3, 'triangle', .3), buzz: () => blip(150, 90, .35, 'sawtooth', .18),
+  whoosh: () => { if (!ac) return; const n = ac.sampleRate * .5, b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n); const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = b; f.type = 'bandpass'; f.frequency.setValueAtTime(400, ac.currentTime); f.frequency.exponentialRampToValueAtTime(3000, ac.currentTime + .4); g.gain.value = .25; s.connect(f); f.connect(g); g.connect(sfxG); s.start(); }
+};
+
+/* ---- confetti ---- */
+const cv = $('conf'), cx = cv.getContext('2d'); let parts = [], raf = 0;
+const fit0 = () => { cv.width = innerWidth; cv.height = innerHeight; }; fit0(); addEventListener('resize', fit0);
+function confetti(x, y, n = 60, spread = 1) {
+  const cols = ['#ff5fa8', '#ffb35c', '#35e0ff', '#a46bff', '#3ee59a', '#ffd266'];
+  for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, s = (3 + Math.random() * 9) * spread; parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 6, w: 6 + Math.random() * 8, h: 4 + Math.random() * 6, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[i % 6], life: 110 + Math.random() * 60 }); }
+  if (!raf) loop();
+}
+function loop() { cx.clearRect(0, 0, cv.width, cv.height); parts = parts.filter(p => p.life-- > 0); parts.forEach(p => { p.vy += .3; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr; cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r); cx.globalAlpha = Math.min(1, p.life / 40); cx.fillStyle = p.c; cx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); cx.restore(); }); raf = parts.length ? requestAnimationFrame(loop) : 0; }
+const confettiEl = (el, n = 40) => { const r = el.getBoundingClientRect(); confetti(r.left + r.width / 2, r.top + r.height / 2, n, .7); };
+const bigConfetti = () => { [.2, .5, .8].forEach((f, i) => setTimeout(() => confetti(innerWidth * f, innerHeight * .4, 90), i * 220)); sfx.ding(); };
+function floaters(list) {
+  const f = $('fall'); f.innerHTML = ''; if (!list) return;
+  for (let i = 0; i < 14; i++) { const s = document.createElement('span'); s.textContent = list[i % list.length]; s.style.left = Math.random() * 100 + 'vw'; s.style.fontSize = 20 + Math.random() * 34 + 'px'; s.style.animationDuration = 9 + Math.random() * 10 + 's'; s.style.animationDelay = -Math.random() * 10 + 's'; f.appendChild(s); }
+}
+
+/* ---- hero ---- */
+const hero = $('hero'), bubble = $('bubble'); let bubT = 0;
+const mood = m => { hero.dataset.mood = m; };
+function say(t, ms = 2200) { bubble.textContent = t; bubble.classList.add('show'); clearTimeout(bubT); bubT = setTimeout(() => bubble.classList.remove('show'), ms); }
+const quips = ["Charger? Got it!", "Socks: ✓", "Pack. Smile. Fly.", "Passport... found it!", "Two kilos under. Winning.", "Don't touch my suitcase!"];
+hero.onclick = () => { sfx.boing(); say(quips[Math.floor(Math.random() * quips.length)]); const r = hero.getBoundingClientRect(); confetti(r.left + r.width / 2, r.top + 30, 30); };
+function placeHero(s) {
+  const hw = Math.min(Math.max(120, innerWidth * .15), 230);
+  if (innerWidth < 860) { hero.style.left = '2vw'; return; }
+  if (s.phone) { const ph = Math.min(innerHeight - 220, 740), pw = ph * 9 / 18.6; hero.style.left = (innerWidth * .93 - pw - hw * .8) + 'px'; }
+  else hero.style.left = (s.hx != null ? s.hx : 3) * innerWidth / 100 + 'px';
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('.ctl,.gate,a,#hero,.phone')) return;
+  const b = e.target.closest('[data-burst]'); if (b) { confettiEl(b, 80); sfx.ding(); return; }
+  const t = e.target.closest('.tile'); if (t) { t.classList.toggle('jk'); sfx.pop(); confettiEl(t, 25); return; }
+  confetti(e.clientX, e.clientY, 18, .6); sfx.pop();
+});
+document.addEventListener('mousemove', e => { const t = e.target.closest && e.target.closest('.tile'); if (!t) return; const r = t.getBoundingClientRect(); t.style.transform = `perspective(600px) rotateY(${((e.clientX - r.left) / r.width - .5) * 16}deg) rotateX(${-((e.clientY - r.top) / r.height - .5) * 16}deg) scale(1.04)`; });
+document.addEventListener('mouseout', e => { const t = e.target.closest && e.target.closest('.tile'); if (t && !t.contains(e.relatedTarget)) t.style.transform = ''; });
+
+/* ---- phone ---- */
+const phone = $('phone');
+function fit() { const sc = $('screenEl'), k = sc.clientWidth / 360, inn = $('inner'); if (!k) return; inn.style.transform = 'scale(' + k + ')'; inn.style.height = (sc.clientHeight / k) + 'px'; }
+addEventListener('resize', fit); setInterval(fit, 500);
+const showPg = id => $$('.pg').forEach(p => p.classList.toggle('on', p.id === id));
+
+const ACTS = ['🥾 Hiking', '🏙️ City tours', '🍜 Great food', '📸 Photography', '🏖️ Beach', '⛷️ Ski', '🎒 Backpacking', '🧖 Spa'];
+$('acts').innerHTML = ACTS.map(a => `<span class="pill">${a}</span>`).join('');
+$('cal').innerHTML = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => `<b>${d}</b>`).join('') + Array.from({ length: 21 }, (_, i) => `<span>${i + 1}</span>`).join('');
+const wizShow = n => { [1, 2, 3, 4].forEach(i => $('w' + i).style.display = i === n ? 'block' : 'none'); $$('.dots3 i').forEach((d, i) => d.classList.toggle('on', i < Math.min(n, 3))); };
+async function typeText(el, txt, d = 130) { el.textContent = ''; for (const ch of txt) { el.textContent += ch; sfx.pop(); await sleep(d); } }
+document.addEventListener('click', e => {
+  const p = e.target.closest('.pill'); if (p) { p.classList.toggle('on'); sfx.pop(); confettiEl(p, 10); }
+  const s = e.target.closest('#sg div'); if (s) { $$('#sg div').forEach(x => x.classList.remove('sel')); s.classList.add('sel'); $('destTxt').textContent = s.dataset.v; sfx.pop(); setTimeout(() => wizShow(2), 500); }
+  if (e.target.closest('#goM')) { wizShow(4); sfx.whoosh(); setTimeout(() => { showPg('pgList'); sfx.ding(); }, 1600); }
+  const sos = e.target.closest('.sos div'); if (sos) { sfx.pop(); confettiEl(sos, 10); }
+});
+const ITEMS = [['Clothes', '🧥', 'Warm jacket', 1.1], ['Clothes', '👖', 'Walking pants', .6], ['Clothes', '🧦', 'Socks (lots)', .4], ['Rain & wind', '🌂', 'Rain jacket', .5], ['Rain & wind', '🥾', 'Waterproof shoes', 1.3],
+  ['Activities', '📷', 'Camera', .7], ['Activities', '🎒', 'Day backpack', .5], ['Electronics', '🔌', 'Charger', .2], ['Electronics', '🔋', 'Power bank', .4], ['Documents', '🛂', 'Passport', .1]];
+let lastCat = ''; $('items').innerHTML = ITEMS.map(([c, e, n, k]) => { const h = c !== lastCat ? `<div class="cat">${c}</div>` : ''; lastCat = c; return `${h}<div class="it" data-k="${k}"><span class="cb">✓</span><span>${e}</span><span class="nm">${n}</span><span class="kg">${k} kg</span></div>`; }).join('');
+function upList() {
+  const all = $$('#items .it'), done = all.filter(i => i.classList.contains('done')), w = 3 + done.reduce((s, i) => s + +i.dataset.k, 0);
+  $('rg').style.setProperty('--p', done.length / all.length * 100); $('rgt').textContent = done.length + '/' + all.length;
+  $('wb').style.width = Math.min(100, w / 20 * 100) + '%'; $('wt').textContent = w.toFixed(1) + ' of 20 kg  ·  ' + (20 - w).toFixed(1) + ' to spare';
+  if (done.length === all.length) { bigConfetti(); mood('happy'); say('Everything packed!', 2600); }
+}
+document.addEventListener('click', e => { const it = e.target.closest('#items .it, [data-t]'); if (!it) return; it.classList.toggle('done'); sfx.pop(); confettiEl(it.querySelector('.cb'), 14); if (it.closest('#items')) upList(); });
+let cd = 29 * 86400 + 5 * 3600 + 9 * 60 + 40;
+setInterval(() => { cd--; const p = n => String(n).padStart(2, '0'); $('fd').textContent = Math.floor(cd / 86400); $('fh').textContent = p(Math.floor(cd % 86400 / 3600)); $('fm').textContent = p(Math.floor(cd % 3600 / 60)); $('fs').textContent = p(cd % 60); }, 1000);
+$('wk').innerHTML = [['Mon', '☀️', '12°'], ['Tue', '⛅', '10°'], ['Wed', '☁️', '9°'], ['Thu', '🌧️', '8°'], ['Fri', '🌦️', '9°'], ['Sat', '☀️', '11°']].map(([d, i, t]) => `<div class="${d === 'Thu' ? 'rain' : ''}">${d}<b>${i}</b>${t}</div>`).join('');
+const toast = id => { const e = $(id); e.classList.add('show'); sfx.pop(); setTimeout(() => e.classList.remove('show'), 3200); };
+const tickN = async (n, gap = 600) => { const its = $$('#items .it'); for (let i = 0; i < n; i++) { if (!its[i].classList.contains('done')) its[i].click(); await sleep(gap); } };
+
+/* ---- voice + karaoke captions ---- */
+const synth = window.speechSynthesis; let cur = null, voice = null;
+if (synth) { const sc = v => (/aria|jenny|ava|emma|michelle|sonia|libby|zira|samantha|serena|female/i.test(v.name) ? 9 : 0) + (/natural|neural|online/i.test(v.name) ? 9 : 0); const lv = () => { voice = synth.getVoices().filter(v => /^en/i.test(v.lang)).sort((a, b) => sc(b) - sc(a))[0] || null; }; lv(); synth.onvoiceschanged = lv; }
+const estimate = t => Math.max(2200, t.split(/\s+/).length * 380 + 700);
+function karaoke(text) {
+  $('cap').innerHTML = text.split(/\s+/).map(w => `<span>${w}</span>`).join(' ');
+  const sp = $$('#cap span'), wts = sp.map(s => s.textContent.length + 2), tot = wts.reduce((a, b) => a + b, 0);
+  return pr => { let acc = 0, k = 0; wts.forEach((w, i) => { acc += w; if (acc / tot <= pr) k = i + 1; }); sp.forEach((s, i) => { s.className = i < k ? 'p' : i === k ? 'a' : ''; }); };
+}
+function playClip(id, text) {
+  return new Promise(resolve => {
+    const prog = karaoke(text); let done = false, t0 = 0, tick = 0; const est = estimate(text);
+    const fin = () => { if (done) return; done = true; cancelAnimationFrame(tick); prog(1.01); cur = null; resolve(); };
+    const run = get => { const f = () => { if (done) return; prog(Math.min(.999, get())); tick = requestAnimationFrame(f); }; f(); };
+    const fallback = () => {
+      if (done) return; t0 = performance.now();
+      if (synth && voiceOn) { const u = new SpeechSynthesisUtterance(text); if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = 'en-US'; u.rate = .95; u.pitch = 1.1; u.onend = fin; u.onerror = fin; cur = { synth: true }; synth.speak(u); setTimeout(fin, est + 9000); }
+      else setTimeout(fin, est);
+      run(() => (performance.now() - t0) / est);
+    };
+    if (!voiceOn) { t0 = performance.now(); setTimeout(fin, est); run(() => (performance.now() - t0) / est); return; }
+    const a = new Audio('audio/' + id + '.mp3'); a.onended = fin; a.onerror = fallback;
+    a.play().then(() => { cur = { audio: a }; run(() => a.duration ? a.currentTime / a.duration : 0); }).catch(fallback);
+  });
+}
+function stopVoice() { try { synth && synth.cancel(); } catch (e) {} if (cur && cur.audio) { cur.audio.onended = null; cur.audio.pause(); } cur = null; }
+function pauseVoice(p) { try { if (cur && cur.audio) p ? cur.audio.pause() : cur.audio.play(); else if (synth) p ? synth.pause() : synth.resume(); } catch (e) {} }
+
+/* ---- the show ---- */
+const S = [
+  { name: 'Intro', hx: 4, floaters: ['🧦', '🔌', '🧳', '✈️', '🩴'], mood: 'confused', beats: [
+    { id: 'b01', mood: 'confused', do: async () => { say('Wait... did I forget something?', 3800); } },
+    { id: 'b02', mood: 'panic', do: async () => { sfx.buzz(); say('THE CHARGER!', 2000); } } ] },
+  { name: 'Problem', hx: 82, floaters: ['⚖️', '💸', '🧳'], beats: [
+    { id: 'b03', mood: 'panic', do: async () => { await sleep(7000); say('Two kilos?!', 2200); sfx.buzz(); } } ] },
+  { name: 'Chaos', hx: 4, floaters: ['🌧️', '☔', '🩴'], beats: [
+    { id: 'b04', mood: 'confused', do: async () => { const c = $('chaos'); c.innerHTML = ''; await sleep(800);
+        for (const [e, x, y] of [['🩴', 6, 20], ['🌧️', 32, 4], ['☂️', 58, 40], ['🧦', 18, 60], ['🔌', 70, 8], ['🕶️', 46, 62]]) { const d = document.createElement('span'); d.className = 'drop'; d.textContent = e; d.style.left = x + '%'; d.style.top = y + '%'; d.onclick = () => { sfx.boing(); confettiEl(d, 15); }; c.appendChild(d); sfx.boing(); await sleep(450); }
+        say('Sandals in the rain...?', 2800); } } ] },
+  { name: 'Solution', hx: 6, beats: [
+    { id: 'b05', mood: 'relieved', do: async () => { bigConfetti(); sfx.whoosh(); say('Finally!', 2500); } } ] },
+  { name: 'Plan', phone: true, beats: [
+    { id: 'b06', mood: 'happy', do: async () => { showPg('pgWiz'); wizShow(1); $('destTxt').textContent = ''; await sleep(800); await typeText($('destTxt'), 'Tokyo', 140); await sleep(300); $('sg').firstElementChild.classList.add('sel'); sfx.ding(); await sleep(900); wizShow(2); } },
+    { id: 'b07', mood: 'happy', do: async () => { const sp = $$('#cal span'); sp.forEach(s => s.className = ''); for (let i = 9; i < 16; i++) { sp[i].className = i === 15 ? 'e' : 'r'; sfx.pop(); await sleep(260); } } },
+    { id: 'b08', mood: 'happy', do: async () => { wizShow(3); $$('#acts .pill').forEach(p => p.classList.remove('on')); await sleep(500); for (const i of [0, 1, 2, 3]) { $$('#acts .pill')[i].click(); await sleep(520); } $('goM').classList.add('pulse'); } },
+    { id: 'b09', mood: 'happy', do: async () => { await sleep(600); $('goM').click(); await sleep(2000); confetti(innerWidth * .8, innerHeight * .4, 60); } } ] },
+  { name: 'List', phone: true, beats: [
+    { id: 'b10', mood: 'relieved', do: async () => { showPg('pgList'); $('pgList').scrollTop = 0; await sleep(1500); } },
+    { id: 'b11', mood: 'relieved', do: async () => { await sleep(1000); toast('toast'); } },
+    { id: 'b12', mood: 'happy', do: async () => { $('pgList').scrollTo({ top: 120, behavior: 'smooth' }); await tickN(9, 520); } },
+    { id: 'b13', mood: 'happy', do: async () => { $('pgList').scrollTo({ top: 0, behavior: 'smooth' }); await sleep(1200); } } ] },
+  { name: 'Features', hx: 3, beats: [
+    { id: 'b14', mood: 'happy', do: async () => { for (const x of $$('#s6 .tile')) { await sleep(900); x.classList.add('jk'); sfx.pop(); confettiEl(x, 14); await sleep(500); x.classList.remove('jk'); } } } ] },
+  { name: 'Before flight', phone: true, beats: [
+    { id: 'b15', mood: 'relieved', do: async () => { showPg('pgFly'); const p = $('plane'); p.style.transition = 'none'; p.style.left = '0'; await sleep(600); p.style.transition = 'left 3.4s ease-in-out'; p.style.left = 'calc(100% - 26px)'; } },
+    { id: 'b16', mood: 'relieved', do: async () => { await sleep(1500); sfx.ding(); } },
+    { id: 'b17', mood: 'happy', do: async () => { $('pgFly').scrollTo({ top: 200, behavior: 'smooth' }); await sleep(900); for (const t of $$('#pgFly [data-t]')) { t.click(); await sleep(650); } } } ] },
+  { name: 'Destination', phone: true, beats: [
+    { id: 'b18', mood: 'happy', do: async () => { showPg('pgDest'); $('pgDest').scrollTop = 0; await sleep(2500); $('pgDest').scrollTo({ top: 150, behavior: 'smooth' }); } },
+    { id: 'b19', mood: 'happy', do: async () => { $('dn').style.setProperty('--a', 40); await sleep(900); $('dn').style.setProperty('--a', 60); $('pgDest').scrollTo({ top: 420, behavior: 'smooth' }); await sleep(1800); $$('.sos div').forEach(d => d.click()); await sleep(1200); $('pgDest').scrollTo({ top: 700, behavior: 'smooth' }); } } ] },
+  { name: 'Share', phone: true, beats: [
+    { id: 'b20', mood: 'happy', do: async () => { showPg('pgTog'); await sleep(2500); $$('#crew .it')[0].click(); } },
+    { id: 'b21', mood: 'happy', do: async () => { await sleep(3500); const c = $$('#crew .it'); c[1].click(); c[1].querySelector('.kg').textContent = '✅ packed!'; toast('toast2'); bigConfetti(); await sleep(800); c[2].click(); } } ] },
+  { name: 'Why it wins', hx: 3, beats: [{ id: 'b22', mood: 'happy', do: async () => { sfx.whoosh(); } }] },
+  { name: 'Finale', hx: 4, floaters: ['🎉', '🧳', '✈️', '🔌', '🧦', '⭐'], beats: [
+    { id: 'b23', mood: 'happy', do: async () => { bigConfetti(); await sleep(900); say('I remembered the charger!', 4000); await sleep(1500); bigConfetti(); } } ] }
+];
+
+/* ---- runner ---- */
+let token = 0, idx = 0, playing = false, started = false;
+const dots = $('dots'); S.forEach((s, i) => { const b = document.createElement('button'); b.title = s.name; b.onclick = () => go(i); dots.appendChild(b); });
+function paint(i) {
+  const s = S[i]; $$('.slide').forEach((el, k) => el.classList.toggle('on', k === i));
+  phone.classList.toggle('in', !!s.phone); placeHero(s); floaters(s.floaters); sfx.whoosh(); setTimeout(fit, 50);
+  $$('.dots button').forEach((d, k) => { d.className = k < i ? 'done' : k === i ? 'cur' : ''; });
+  if (!s.phone) $$('.pg').forEach(p => p.classList.remove('on'));
+}
+async function runFrom(i) {
+  const my = ++token; stopVoice(); idx = i; playing = true; upd();
+  for (; idx < S.length; idx++) {
+    paint(idx); bubble.classList.remove('show'); await sleep(S[idx].phone ? 900 : 500);
+    for (const b of S[idx].beats) {
+      if (my !== token) return;
+      mood(b.mood || 'confused'); duck(true);
+      await Promise.all([playClip(b.id, SCRIPT[b.id] || ''), (async () => { try { await b.do(); } catch (e) { console.warn(e); } })()]);
+      duck(false); if (my !== token) return;
+      while (!playing) { await sleep(200); if (my !== token) return; }
+      await sleep(350);
+    }
+  }
+  if (my === token) { playing = false; upd(true); }
+}
+const go = i => runFrom(Math.max(0, Math.min(S.length - 1, i)));
+const upd = done => { $('playBtn').innerHTML = done ? '&#8635;' : playing ? '&#10074;&#10074;' : '&#9654;'; };
+$('playBtn').onclick = () => { if (!started) return; if ($('playBtn').textContent.trim() === '↻') return runFrom(0); playing = !playing; upd(); pauseVoice(!playing); };
+$('prevBtn').onclick = () => go(idx - 1); $('nextBtn').onclick = () => go(idx + 1);
+$('muteV').onclick = e => { voiceOn = !voiceOn; if (!voiceOn) stopVoice(); e.target.style.opacity = voiceOn ? 1 : .45; };
+$('muteM').onclick = e => { musicOn = !musicOn; if (master) master.gain.setTargetAtTime(musicOn ? .5 : 0, ac.currentTime, .1); e.target.style.opacity = musicOn ? 1 : .45; };
+addEventListener('keydown', e => { if (!started) return; if (e.key === 'ArrowRight') go(idx + 1); else if (e.key === 'ArrowLeft') go(idx - 1); else if (e.key === ' ') { e.preventDefault(); $('playBtn').click(); } });
+$('startBtn').onclick = async () => {
+  try { SCRIPT = await (await fetch('script.json')).json(); } catch (e) {}
+  started = true; $('gate').classList.add('hide'); initAudio(); fit(); runFrom(0);
+};
+paint(0);
+})();
+</script>
+</body>
+</html>
