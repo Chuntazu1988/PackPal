@@ -1304,7 +1304,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
   main > * { grid-column: 2 / -1; min-width: 0; margin-bottom: 22px; }
   main > #accountBar, main > .hero, main > #sharedBar, main > .site-footer { grid-column: 1 / -1; }
   main > .card[data-tab="dest"], main > .card[data-tab="before"] { grid-column: auto; }
-  main > #weather, main > #hotelSection, main > #nearbySection, main > #budgetSection, main > #flightSection, main > #attrSection, main > #passportSection { grid-column: 2 / -1; }
+  main > #weather, main > #hotelSection, main > #nearbySection, main > #airportSection, main > #transSection, main > #budgetSection, main > #flightSection, main > #attrSection, main > #passportSection { grid-column: 2 / -1; }
   main > .tabbar { grid-column: 1; grid-row: 3 / span 40; align-self: start; position: sticky; top: 24px; bottom: auto; margin: 0 0 22px; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 34px; }
   main > .tabbar.hidden { display: none; }
   .tabbar button { flex-direction: column; width: 100%; padding: 14px 4px; min-height: 80px; font-size: .8rem; }
@@ -7104,7 +7104,7 @@ function makeCollapsible(box, key, headCount, defaultCollapsed) {
 (function () {
   const main = document.querySelector('main');
   if (!main) return;
-  const FULL = ['weather', 'hotelSection', 'nearbySection', 'budgetSection', 'passportSection', 'flightSection', 'attrSection', 'listSection', 'tripForm', 'favSection', 'pastSection', 'tplSection', 'sharedBar'];
+  const FULL = ['weather', 'hotelSection', 'nearbySection', 'budgetSection', 'airportSection', 'transSection', 'passportSection', 'flightSection', 'attrSection', 'listSection', 'tripForm', 'favSection', 'pastSection', 'tplSection', 'sharedBar'];
   let queued = false;
   function balance() {
     queued = false;
