@@ -225,7 +225,7 @@ h2{font-family:"Baloo 2",sans-serif;font-size:clamp(30px,4.8vw,78px);line-height
 <section class="slide cen" id="s11"><div class="pop" style="display:flex;flex-direction:column;align-items:center">
   <div class="big" data-burst>&#128268;</div><h1 class="grad">Pack smarter.<br>Travel lighter.</h1>
   <div class="sub fz" style="color:#fff">PackPal &mdash; be the person who remembers the charger.</div>
-  <a class="cta" href="../index.html" target="_blank">Try the real app &#8594;</a></div></section>
+  <a class="cta" href="https://chuntazu1988.github.io/PackPal/" target="_blank">Try the real app &#8594;</a></div></section>
 
 <div class="phone" id="phone"><div class="notch"></div><div class="screen" id="screenEl"><div class="inner" id="inner">
   <div class="pg" id="pgWiz">
@@ -328,10 +328,22 @@ function initAudio() {
   try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
   master = ac.createGain(); master.gain.value = .5; master.connect(ac.destination);
   sfxG = ac.createGain(); sfxG.gain.value = .5; sfxG.connect(ac.destination);
-  const bpm = 108, beat = 60 / bpm, chords = [[48, 55, 64], [43, 50, 59], [45, 52, 60], [41, 48, 57]], arp = [0, 1, 2, 1, 2, 1, 0, 1], hz = m => 440 * 2 ** ((m - 69) / 12);
-  const tone = (m, t, d, ty, v) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = ty; o.frequency.value = hz(m); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g); g.connect(master); o.start(t); o.stop(t + d + .05); };
-  const sched = () => { const t0 = ac.currentTime + .1; for (let i = 0; i < 8; i++) { const ch = chords[Math.floor(step / 8) % 4], t = t0 + i * beat / 2; if (step % 8 === 0) ch.forEach(m => tone(m, t, beat * 4, 'sine', .045)); tone(ch[arp[i]] + 24, t, beat * .5, 'triangle', .05); if (i % 2 === 0) tone(ch[0] - 12, t, beat * .8, 'sine', .08); step++; } };
-  sched(); setInterval(sched, 8 * beat / 2 * 1000 - 40);
+  // upbeat pop/funk groove: kick + clap + hats, bouncy bass, staccato chord stabs, bright pluck hook
+  const bpm = 118, sp = 60 / bpm / 4, hz = m => 440 * 2 ** ((m - 69) / 12);
+  const prog = [{ r: 45, c: [57, 60, 64] }, { r: 41, c: [53, 57, 60] }, { r: 48, c: [60, 64, 67] }, { r: 43, c: [59, 62, 67] }];   // Am F C G
+  const noiseBuf = (() => { const n = ac.sampleRate, b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; return b; })();
+  const tone = (m, t, d, ty, v, lp) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = ty; o.frequency.value = hz(m); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .008); g.gain.exponentialRampToValueAtTime(.0001, t + d); let n = o; if (lp) { const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lp; o.connect(f); n = f; } n.connect(g); g.connect(master); o.start(t); o.stop(t + d + .05); };
+  const kick = t => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + .14); g.gain.setValueAtTime(.55, t); g.gain.exponentialRampToValueAtTime(.0001, t + .22); o.connect(g); g.connect(master); o.start(t); o.stop(t + .25); };
+  const nz = (t, d, hp, bp, v) => { const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = noiseBuf; f.type = bp ? 'bandpass' : 'highpass'; f.frequency.value = hp; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + d + .02); };
+  const hook = [0, 2, 1, 2, 0, 1, 2, 1];
+  const sched = () => { const t0 = ac.currentTime + .1;
+    for (let i = 0; i < 16; i++) { const p = prog[Math.floor(step / 16) % 4], t = t0 + i * sp, b = i % 16;
+      if (b % 4 === 0) kick(t); if (b === 4 || b === 12) { nz(t, .13, 1500, true, .35); } nz(t, .04, 7000, false, b % 2 ? .08 : .14);
+      if ([0, 3, 6, 8, 10, 14].includes(b)) tone(p.r + (b === 6 || b === 14 ? 12 : 0), t, sp * 1.6, 'sawtooth', .12, 500);
+      if ([2, 6, 10, 14].includes(b)) p.c.forEach(m => tone(m, t, sp * .9, 'square', .022, 1800));
+      if (b % 2 === 0) tone(p.c[hook[b / 2 % 8] % 3] + 24, t, sp * 1.4, 'triangle', .06);
+      step++; } };
+  sched(); setInterval(sched, 16 * sp * 1000 - 40);
 }
 const duck = on => { if (master) master.gain.setTargetAtTime(!musicOn ? 0 : on ? .2 : .5, ac.currentTime, .3); };
 function blip(f1, f2, d, ty = 'sine', v = .25) { if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime; o.type = ty; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + d); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g); g.connect(sfxG); o.start(t); o.stop(t + d); }
@@ -432,20 +444,29 @@ function playClip(id, text) {
       run(() => (performance.now() - t0) / est);
     };
     if (!voiceOn) { t0 = performance.now(); setTimeout(fin, est); run(() => (performance.now() - t0) / est); return; }
-    const a = new Audio('audio/' + id + '.mp3'); a.onended = fin; a.onerror = fallback;
+    const a = new Audio('audio/' + id + '.mp3?v=2'); a.onended = fin; a.onerror = fallback;
     a.play().then(() => { cur = { audio: a }; run(() => a.duration ? a.currentTime / a.duration : 0); }).catch(fallback);
   });
 }
 function stopVoice() { try { synth && synth.cancel(); } catch (e) {} if (cur && cur.audio) { cur.audio.onended = null; cur.audio.pause(); } cur = null; }
 function pauseVoice(p) { try { if (cur && cur.audio) p ? cur.audio.pause() : cur.audio.play(); else if (synth) p ? synth.pause() : synth.resume(); } catch (e) {} }
 
+/* highlight one tile while it is being narrated */
+async function spot(sel, i) {
+  const all = $$(sel + ' .tile'), t = all[i]; if (!t) return;
+  all.forEach(x => { x.classList.remove('jk'); x.style.transform = ''; });
+  t.classList.add('jk'); t.style.transform = 'scale(1.08)'; sfx.pop(); confettiEl(t, 20); await sleep(200);
+}
 /* ---- the show ---- */
 const S = [
   { name: 'Intro', hx: 4, floaters: ['🧦', '🔌', '🧳', '✈️', '🩴'], mood: 'confused', beats: [
     { id: 'b01', mood: 'confused', do: async () => { say('Wait... did I forget something?', 3800); } },
     { id: 'b02', mood: 'panic', do: async () => { sfx.buzz(); say('THE CHARGER!', 2000); } } ] },
   { name: 'Problem', hx: 82, floaters: ['⚖️', '💸', '🧳'], beats: [
-    { id: 'b03', mood: 'panic', do: async () => { await sleep(7000); say('Two kilos?!', 2200); sfx.buzz(); } } ] },
+    { id: 'b03', mood: 'panic', do: async () => { await sleep(300); } },
+    { id: 'b03a', mood: 'confused', do: () => spot('#s1', 0) },
+    { id: 'b03b', mood: 'confused', do: () => spot('#s1', 1) },
+    { id: 'b03c', mood: 'panic', do: async () => { sfx.buzz(); say('Two kilos?!', 2200); await spot('#s1', 2); } } ] },
   { name: 'Chaos', hx: 4, floaters: ['🌧️', '☔', '🩴'], beats: [
     { id: 'b04', mood: 'confused', do: async () => { const c = $('chaos'); c.innerHTML = ''; await sleep(800);
         for (const [e, x, y] of [['🩴', 6, 20], ['🌧️', 32, 4], ['☂️', 58, 40], ['🧦', 18, 60], ['🔌', 70, 8], ['🕶️', 46, 62]]) { const d = document.createElement('span'); d.className = 'drop'; d.textContent = e; d.style.left = x + '%'; d.style.top = y + '%'; d.onclick = () => { sfx.boing(); confettiEl(d, 15); }; c.appendChild(d); sfx.boing(); await sleep(450); }
@@ -463,7 +484,8 @@ const S = [
     { id: 'b12', mood: 'happy', do: async () => { $('pgList').scrollTo({ top: 120, behavior: 'smooth' }); await tickN(9, 520); } },
     { id: 'b13', mood: 'happy', do: async () => { $('pgList').scrollTo({ top: 0, behavior: 'smooth' }); await sleep(1200); } } ] },
   { name: 'Features', hx: 3, beats: [
-    { id: 'b14', mood: 'happy', do: async () => { for (const x of $$('#s6 .tile')) { await sleep(900); x.classList.add('jk'); sfx.pop(); confettiEl(x, 14); await sleep(500); x.classList.remove('jk'); } } } ] },
+    { id: 'b14', mood: 'happy', do: async () => { await sleep(300); } },
+    ...[1, 2, 3, 4, 5, 6].map((n, i) => ({ id: 'f' + n, mood: 'happy', do: () => spot('#s6', i) })) ] },
   { name: 'Before flight', phone: true, beats: [
     { id: 'b15', mood: 'relieved', do: async () => { showPg('pgFly'); const p = $('plane'); p.style.transition = 'none'; p.style.left = '0'; await sleep(600); p.style.transition = 'left 3.4s ease-in-out'; p.style.left = 'calc(100% - 26px)'; } },
     { id: 'b16', mood: 'relieved', do: async () => { await sleep(1500); sfx.ding(); } },
@@ -474,7 +496,8 @@ const S = [
   { name: 'Share', phone: true, beats: [
     { id: 'b20', mood: 'happy', do: async () => { showPg('pgTog'); await sleep(2500); $$('#crew .it')[0].click(); } },
     { id: 'b21', mood: 'happy', do: async () => { await sleep(3500); const c = $$('#crew .it'); c[1].click(); c[1].querySelector('.kg').textContent = '✅ packed!'; toast('toast2'); bigConfetti(); await sleep(800); c[2].click(); } } ] },
-  { name: 'Why it wins', hx: 3, beats: [{ id: 'b22', mood: 'happy', do: async () => { sfx.whoosh(); } }] },
+  { name: 'Why it wins', hx: 3, beats: [{ id: 'b22', mood: 'happy', do: async () => { sfx.whoosh(); } },
+    ...[1, 2, 3].map((n, i) => ({ id: 'w' + n, mood: 'happy', do: () => spot('#s10', i) })) ] },
   { name: 'Finale', hx: 4, floaters: ['🎉', '🧳', '✈️', '🔌', '🧦', '⭐'], beats: [
     { id: 'b23', mood: 'happy', do: async () => { bigConfetti(); await sleep(900); say('I remembered the charger!', 4000); await sleep(1500); bigConfetti(); } } ] }
 ];
@@ -511,7 +534,7 @@ $('muteV').onclick = e => { voiceOn = !voiceOn; if (!voiceOn) stopVoice(); e.tar
 $('muteM').onclick = e => { musicOn = !musicOn; if (master) master.gain.setTargetAtTime(musicOn ? .5 : 0, ac.currentTime, .1); e.target.style.opacity = musicOn ? 1 : .45; };
 addEventListener('keydown', e => { if (!started) return; if (e.key === 'ArrowRight') go(idx + 1); else if (e.key === 'ArrowLeft') go(idx - 1); else if (e.key === ' ') { e.preventDefault(); $('playBtn').click(); } });
 $('startBtn').onclick = async () => {
-  try { SCRIPT = await (await fetch('script.json')).json(); } catch (e) {}
+  try { SCRIPT = await (await fetch('script.json?v=2')).json(); } catch (e) {}
   started = true; $('gate').classList.add('hide'); initAudio(); fit(); runFrom(0);
 };
 paint(0);
