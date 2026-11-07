@@ -1076,7 +1076,8 @@ main > .card:hover { border-color: var(--glass-border); box-shadow: 0 24px 54px 
 .hero h1 small { display: block; font-size: 1rem; font-weight: 400; letter-spacing: 0; margin-top: 8px; -webkit-text-fill-color: var(--muted); color: var(--muted); }
 @keyframes novaShine { to { background-position: -220% 0; } }
 .bp-route { display: flex; align-items: center; gap: 14px; margin-top: 18px; direction: ltr; }
-.bp-code { font-family: var(--font-mono); font-weight: 800; font-size: 1.15rem; letter-spacing: .12em; color: var(--text); }
+.bp-code { font-family: var(--font); font-weight: 800; font-size: 1.15rem; letter-spacing: .02em; color: var(--text); max-width: 38%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.landing-route b { font-family: var(--font); letter-spacing: .02em; font-size: 1.1rem; }
 .bp-path { flex: 1; height: 2px; position: relative; background: linear-gradient(90deg, transparent, var(--accent), var(--magenta), transparent); border-radius: 2px; }
 .bp-plane { filter: drop-shadow(0 0 8px var(--accent)); }
 
@@ -1417,7 +1418,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
     <div class="lang-chips" id="langChips" role="group" data-i18n-attr="aria-label:lang.aria" aria-label="בחירת שפה"></div>
     <h1 id="landingTitle"><span class="landing-plane" aria-hidden="true">✈️</span> PackPal</h1>
     <p class="landing-lead" data-i18n="landing.lead">רשימת אריזה חכמה לטיול: לפי מזג האוויר, היעד והפעילויות שלך.</p>
-    <div class="landing-route" aria-hidden="true"><b>TLV</b><span class="landing-line"><i>✈️</i></span><b>YOU</b></div>
+    <div class="landing-route" aria-hidden="true"><b>תל אביב</b><span class="landing-line"><i>✈️</i></span><b>היעד שלי</b></div>
     <ul class="landing-points">
       <li data-i18n="landing.p1">🧳 אומרים לאן ומתי, ומקבלים רשימה מותאמת</li>
       <li data-i18n="landing.p2">✅ אורזים ומסמנים, ורואים כמה נשאר</li>
@@ -1438,9 +1439,9 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
     <div class="bp-top" aria-hidden="true"><span>BOARDING PASS</span><span data-i18n="hero.vacation">PACKPAL · חופשה</span></div>
     <h1>🧳 PackPal <small data-i18n="hero.sub">רשימת אריזה חכמה לפי מזג האוויר והפעילויות שלך</small></h1>
     <div class="bp-route" aria-hidden="true">
-      <span class="bp-code">TLV</span>
+      <span class="bp-code">תל אביב</span>
       <span class="bp-path"><i class="bp-plane">✈️</i></span>
-      <span class="bp-code">YOU</span>
+      <span class="bp-code" id="routeTo">היעד שלי</span>
     </div>
   </header>
 
@@ -7391,25 +7392,40 @@ async function commonsFromWikidata(qid) {
   } catch (e) { return ''; }
 }
 async function hotelSearchOSM(text, place) {
-  const q = (text + ' ' + (place || '')).trim();
-  const res = await fetchWithTimeout('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&extratags=1&accept-language=he&q=' + encodeURIComponent(q), 10000);
-  if (!res.ok) throw new Error('osm ' + res.status);
-  const arr = await res.json();
-  const hotels = arr.filter(x => x.category === 'tourism' || /hotel|hostel|motel|guest_house|apartment|resort/.test(x.type || ''));
-  const use = hotels.length ? hotels : arr;
-  return use.map(x => {
-    const t = x.extratags || {};
-    let photo = t.image && /^https:\/\//.test(t.image) ? t.image : '';
-    if (!photo && t.wikimedia_commons && /^File:/.test(t.wikimedia_commons)) photo = 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(t.wikimedia_commons.slice(5)) + '?width=1200';
-    return {
-      name: (x.namedetails && (x.namedetails['name:he'] || x.namedetails.name)) || x.name || String(x.display_name || '').split(',')[0],
-      address: osmAddress(x.address) || x.display_name,
-      phone: t.phone || t['contact:phone'] || '',
-      website: t.website || t['contact:website'] || '',
-      photo: photo, wikidata: t.wikidata || '',
-      lat: parseFloat(x.lat), lon: parseFloat(x.lon)
-    };
-  });
+  const base = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&extratags=1&namedetails=1&accept-language=he&q=';
+  const map = (arr) => {
+    const hotels = arr.filter(x => x.category === 'tourism' || /hotel|hostel|motel|guest_house|apartment|resort/.test(x.type || ''));
+    return (hotels.length ? hotels : arr).map(x => {
+      const t = x.extratags || {};
+      let photo = t.image && /^https:\/\//.test(t.image) ? t.image : '';
+      if (!photo && t.wikimedia_commons && /^File:/.test(t.wikimedia_commons)) photo = 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(t.wikimedia_commons.slice(5)) + '?width=1200';
+      return {
+        name: (x.namedetails && (x.namedetails['name:he'] || x.namedetails.name)) || x.name || String(x.display_name || '').split(',')[0],
+        address: osmAddress(x.address) || x.display_name,
+        phone: t.phone || t['contact:phone'] || '',
+        website: t.website || t['contact:website'] || '',
+        photo: photo, wikidata: t.wikidata || '',
+        lat: parseFloat(x.lat), lon: parseFloat(x.lon)
+      };
+    });
+  };
+  const run = async (q, extra) => {
+    const res = await fetchWithTimeout(base + encodeURIComponent(q) + (extra || ''), 10000);
+    if (!res.ok) throw new Error('osm ' + res.status);
+    return map(await res.json());
+  };
+  const t = state && state.trip;
+  const q = text.trim();
+  // 1) קודם באזור היעד של הטיול (לפי קואורדינטות, לא לפי טקסט: שם מדינה בטקסט שובר את החיפוש)
+  if (t && t.lat && t.lon) {
+    const d = 0.7;
+    const r1 = await run(q, '&viewbox=' + (t.lon - d) + ',' + (t.lat + d) + ',' + (t.lon + d) + ',' + (t.lat - d) + '&bounded=1');
+    if (r1.length) return r1;
+    const city = String((t.city || t.place || '')).split(',')[0].trim();
+    if (city) { const r2 = await run(q + ' ' + city); if (r2.length) return r2; }
+  }
+  // 2) בכל העולם, לפי השם בלבד
+  return run(q);
 }
 async function hotelSuggest(text, place) {
   if (HOTEL_PROXY) {
@@ -7486,7 +7502,7 @@ function renderHotel() {
     const form = el('form', { className: 'ht-form', autocomplete: 'off' });
     const wrap = el('div', { className: 'ht-name-wrap' });
     const label = el('label', null, th('שם המלון'));
-    const name = el('input', { type: 'text', name: 'name', maxLength: 80, placeholder: th('מקלידים רק את שם המלון, והפרטים מושלמים לבד') });
+    const name = el('input', { type: 'text', name: 'name', maxLength: 80, placeholder: th('שם המלון כפי שמופיע בהזמנה (באנגלית עדיף)') });
     if (h && h.name) name.value = h.name;
     const sug = el('ul', { className: 'ht-suggest hidden', role: 'listbox', 'aria-label': th('הצעות מלונות') });
     name.setAttribute('role', 'combobox'); name.setAttribute('aria-autocomplete', 'list'); name.setAttribute('aria-expanded', 'false');
@@ -7530,11 +7546,11 @@ function renderHotel() {
         const list = await search();
         if (seq !== sugSeq) return;
         sugList = list; sug.replaceChildren(); msg.textContent = '';
-        if (!list.length) { msg.textContent = th('לא מצאתי פרטים למלון הזה. אפשר להוסיף אותו רק בשם.'); hideSug(); return; }
+        if (!list.length) { msg.textContent = /[א-ת]/.test(text) ? th('לא מצאתי. חיפוש בעברית עובד בעיקר למלונות בישראל, כדאי לכתוב את שם המלון באנגלית כפי שמופיע בהזמנה. אפשר גם להוסיף אותו רק בשם.') : th('לא מצאתי פרטים למלון הזה. אפשר להוסיף אותו רק בשם.'); hideSug(); return; }
         list.forEach(d => {
           const li = el('li', { className: 'ht-sug', role: 'option' });
           li.append(el('b', null, d.name), el('small', null, d.address));
-          li.addEventListener('mousedown', (ev) => { ev.preventDefault(); commit(d); });
+          li.addEventListener('pointerdown', (ev) => { ev.preventDefault(); commit(d); });
           sug.appendChild(li);
         });
         sug.classList.remove('hidden'); name.setAttribute('aria-expanded', 'true');
@@ -7542,7 +7558,7 @@ function renderHotel() {
     };
     name.addEventListener('input', () => { clearTimeout(sugTimer); sugTimer = setTimeout(runSuggest, 650); });
     name.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') hideSug(); });
-    name.addEventListener('blur', () => setTimeout(hideSug, 150));
+    name.addEventListener('blur', () => setTimeout(hideSug, 300));
     form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const text = name.value.trim();
@@ -9052,7 +9068,15 @@ function deletePastTrip(idx) {
 }
 
 // ממלא את הטופס ואת התצוגה לפי state
+function updateRouteLabel() {
+  const el_ = document.getElementById('routeTo');
+  if (!el_) return;
+  const t = state && state.trip;
+  el_.textContent = t ? (String(t.city || t.place || '').split(',')[0].trim() || 'היעד שלי') : 'היעד שלי';
+}
+
 function applyStateToPage() {
+  updateRouteLabel();
   clearSearch();
   reorderMode = false;
   $('reorderBtn').textContent = th('↕️ שנה סדר');
@@ -10771,6 +10795,7 @@ async function signOutUser() {
   // התנתקות מוחקת את כל המידע מהמכשיר הזה (הוא נשאר בענן) וחוזרת למסך הנחיתה
   [STORAGE_KEY, HISTORY_KEY, FAV_KEY, SYNC_META_KEY, TPL_KEY, WELCOME_KEY, PASSPORT_KEY].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
   state = null;
+  updateRouteLabel();
   renderWeather();
   renderList();
   renderPast();
