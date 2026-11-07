@@ -3244,6 +3244,12 @@ function hotelMapsUrl(h) {
   return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([h.name, h.address].filter(Boolean).join(' '));
 }
 function safeImgUrl(u) { return /^https:\/\/[^\s"'<>]+$/.test(u || '') ? u : ''; }
+function safeWebUrl(u) {
+  let t = String(u || '').trim();
+  if (!t) return '';
+  if (!/^https?:\/\//i.test(t)) t = 'https://' + t;
+  try { const x = new URL(t); return /^https?:$/.test(x.protocol) && x.hostname.includes('.') ? x.href : ''; } catch (e) { return ''; }
+}
 function cleanPhone(t) { return String(t || '').replace(/[^\d+]/g, ''); }
 
 async function hotelLookup(name, place) {
@@ -3298,6 +3304,8 @@ function renderHotel() {
     const map = el('a', { href: hotelMapsUrl(h), target: '_blank', rel: 'noopener noreferrer', className: 'ht-btn primary-ish' }, '🗺️ פתח בגוגל מפות');
     acts.appendChild(map);
     if (h.phone) acts.appendChild(el('a', { href: 'tel:' + cleanPhone(h.phone), className: 'ht-btn' }, '📞 התקשר'));
+    const site = safeWebUrl(h.website);
+    if (site) acts.appendChild(el('a', { href: site, target: '_blank', rel: 'noopener noreferrer', className: 'ht-btn' }, '🌐 האתר הרשמי'));
     const edit = el('button', { type: 'button', className: 'secondary' }, '✏️ ערוך');
     edit.addEventListener('click', () => { hotelEditing = true; renderHotel(); });
     const del = el('button', { type: 'button', className: 'secondary' }, '🗑️ הסר');
@@ -3316,8 +3324,10 @@ function renderHotel() {
     const [w2, address] = fld('כתובת', 'address', { type: 'text', maxLength: 160 }, h && h.address);
     const [w3, phone] = fld('טלפון', 'phone', { type: 'tel', maxLength: 30, placeholder: '+33 1 23 45 67 89' }, h && h.phone);
     const [w4, photo] = fld('קישור לתמונת חזית (לא חובה)', 'photo', { type: 'url', maxLength: 600, placeholder: 'https://...' }, h && h.photo);
+    const [w5, website] = fld('האתר הרשמי של המלון (לא חובה)', 'website', { type: 'text', inputMode: 'url', maxLength: 300, placeholder: 'www.hotel.com' }, h && h.website);
     const r1 = el('div', { className: 'row' }); r1.append(w1, w2);
     const r2 = el('div', { className: 'row' }); r2.append(w3, w4);
+    const r3 = el('div', { className: 'row' }); r3.append(w5);
     const msg = el('div', { className: 'dup-error', role: 'status' });
     const acts = el('div', { className: 'actions' });
     if (HOTEL_PROXY) {
@@ -3333,6 +3343,7 @@ function renderHotel() {
             if (d.address) address.value = d.address;
             if (d.phone) phone.value = d.phone;
             if (d.photo) photo.value = d.photo;
+            if (d.website) website.value = d.website;
             form.dataset.maps = d.mapsUrl || '';
             msg.textContent = 'נמצא. אפשר לערוך לפני השמירה.';
           }
@@ -3346,12 +3357,17 @@ function renderHotel() {
     cancel.addEventListener('click', () => { hotelEditing = false; renderHotel(); });
     acts.append(saveB);
     if (h) acts.appendChild(cancel);
-    form.append(r1, r2, msg, acts);
+    form.append(r1, r2, r3, msg, acts);
     form.addEventListener('submit', (ev) => {
       ev.preventDefault();
       if (!name.value.trim()) { msg.textContent = 'כתבי את שם המלון.'; name.focus(); return; }
       const obj = { name: name.value.trim(), address: address.value.trim(), phone: phone.value.trim() };
       const ph = safeImgUrl(photo.value.trim()); if (ph) obj.photo = ph;
+      if (website.value.trim()) {
+        const w = safeWebUrl(website.value);
+        if (!w) { msg.textContent = 'כתובת האתר לא נראית תקינה. למשל: www.hotel.com'; website.focus(); return; }
+        obj.website = w;
+      }
       const mu = form.dataset.maps || (h && h.mapsUrl); if (mu) obj.mapsUrl = mu;
       state.hotel = obj; save();
       hotelEditing = false;
