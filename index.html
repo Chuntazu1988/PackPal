@@ -575,6 +575,14 @@
 @keyframes searchHit { 0%, 55% { box-shadow: 0 0 0 4px var(--accent), 0 0 34px 6px var(--glow); background: color-mix(in srgb, var(--accent) 22%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; background: transparent; } }
 @media (max-width: 480px) { .site-tools { flex-wrap: wrap; } #expandAllBtn { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .search-hit { animation: none; outline: 3px solid var(--accent); } }
+input[type=tel], input[type=url] { background: var(--soft); color: var(--text); border: 1px solid var(--border); border-radius: 18px; padding: 12px 16px; width: 100%; font-family: var(--font); }
+input[type=tel]:focus, input[type=url]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); outline: none; }
+.ht-suggest { position: absolute; z-index: 80; inset-inline: 0; top: calc(100% + 6px); list-style: none; margin: 0; padding: 8px; max-height: 320px; overflow-y: auto; border-radius: 22px; background: var(--card); border: 1px solid var(--glass-border); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); box-shadow: 0 24px 50px -16px var(--shadow); }
+:root[data-theme="dark"] .ht-suggest { background: rgba(10, 12, 28, .94); }
+.ht-suggest.hidden { display: none; }
+.ht-sug { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 14px; cursor: pointer; }
+.ht-sug:hover { background: var(--soft); }
+.ht-sug small { color: var(--muted); font-size: .82rem; }
 .ht-body { display: grid; gap: 14px; }
 .ht-card { display: grid; gap: 14px; }
 .ht-media { --rx: 0deg; --ry: 0deg; position: relative; aspect-ratio: 16 / 7; min-height: 190px; border-radius: 28px; overflow: hidden; border: 1px solid var(--glass-border); background: #0a0b14;
@@ -3344,6 +3352,53 @@ async function hotelLookup(name, place) {
   return d && d.found ? d : null;
 }
 
+// השלמה אוטומטית של פרטי מלון לפי השם: קודם השרת של גוגל (אם מוגדר), אחרת OpenStreetMap (Nominatim) בחינם
+function osmAddress(a) {
+  if (!a) return '';
+  const street = [a.road || a.pedestrian || a.footway || '', a.house_number || ''].filter(Boolean).join(' ');
+  const city = a.city || a.town || a.village || a.municipality || a.suburb || '';
+  return [street, [a.postcode, city].filter(Boolean).join(' '), a.country].filter(Boolean).join(', ');
+}
+async function commonsFromWikidata(qid) {
+  try {
+    const res = await fetchWithTimeout('https://www.wikidata.org/w/api.php?action=wbgetclaims&format=json&origin=*&property=P18&entity=' + encodeURIComponent(qid), 8000);
+    if (!res.ok) return '';
+    const d = await res.json();
+    const f = d && d.claims && d.claims.P18 && d.claims.P18[0] && d.claims.P18[0].mainsnak && d.claims.P18[0].mainsnak.datavalue && d.claims.P18[0].mainsnak.datavalue.value;
+    return f ? 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(f) + '?width=1200' : '';
+  } catch (e) { return ''; }
+}
+async function hotelSearchOSM(text, place) {
+  const q = (text + ' ' + (place || '')).trim();
+  const res = await fetchWithTimeout('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&extratags=1&accept-language=he&q=' + encodeURIComponent(q), 10000);
+  if (!res.ok) throw new Error('osm ' + res.status);
+  const arr = await res.json();
+  const hotels = arr.filter(x => x.category === 'tourism' || /hotel|hostel|motel|guest_house|apartment|resort/.test(x.type || ''));
+  const use = hotels.length ? hotels : arr;
+  return use.map(x => {
+    const t = x.extratags || {};
+    let photo = t.image && /^https:\/\//.test(t.image) ? t.image : '';
+    if (!photo && t.wikimedia_commons && /^File:/.test(t.wikimedia_commons)) photo = 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(t.wikimedia_commons.slice(5)) + '?width=1200';
+    return {
+      name: (x.namedetails && (x.namedetails['name:he'] || x.namedetails.name)) || x.name || String(x.display_name || '').split(',')[0],
+      address: osmAddress(x.address) || x.display_name,
+      phone: t.phone || t['contact:phone'] || '',
+      website: t.website || t['contact:website'] || '',
+      photo: photo, wikidata: t.wikidata || '',
+      lat: parseFloat(x.lat), lon: parseFloat(x.lon)
+    };
+  });
+}
+async function hotelSuggest(text, place) {
+  if (HOTEL_PROXY) {
+    try {
+      const d = await hotelLookup(text, place);
+      if (d) return [{ name: d.name || text, address: d.address || '', phone: d.phone || '', website: d.website || '', photo: d.photo || '', mapsUrl: d.mapsUrl || '' }];
+    } catch (e) {}
+  }
+  return hotelSearchOSM(text, place);
+}
+
 function renderHotel() {
   const box = $('hotelSection');
   if (!box) return;
@@ -3405,6 +3460,9 @@ function renderHotel() {
       w.append(el('label', null, label), inp); return [w, inp];
     };
     const [w1, name] = fld('שם המלון', 'name', { type: 'text', maxLength: 80, placeholder: 'למשל: Hotel Lutetia' }, h && h.name);
+    const sug = el('ul', { className: 'ht-suggest hidden', role: 'listbox', 'aria-label': 'הצעות מלונות' });
+    name.setAttribute('role', 'combobox'); name.setAttribute('aria-autocomplete', 'list'); name.setAttribute('aria-expanded', 'false');
+    w1.style.position = 'relative'; w1.appendChild(sug);
     const [w2, address] = fld('כתובת', 'address', { type: 'text', maxLength: 160 }, h && h.address);
     const [w3, phone] = fld('טלפון', 'phone', { type: 'tel', maxLength: 30, placeholder: '+33 1 23 45 67 89' }, h && h.phone);
     const [w4, photo] = fld('קישור לתמונת חזית (לא חובה)', 'photo', { type: 'url', maxLength: 600, placeholder: 'https://...' }, h && h.photo);
@@ -3441,6 +3499,51 @@ function renderHotel() {
     cancel.addEventListener('click', () => { hotelEditing = false; renderHotel(); });
     acts.append(saveB);
     if (h) acts.appendChild(cancel);
+    // השלמה אוטומטית: מקלידים שם, בוחרים הצעה, וכל הפרטים מתמלאים
+    let sugTimer = null, sugList = [], sugSeq = 0;
+    const hideSug = () => { sug.classList.add('hidden'); name.setAttribute('aria-expanded', 'false'); };
+    const applyHotel = async (d) => {
+      hideSug();
+      name.value = d.name || name.value;
+      if (d.address) address.value = d.address;
+      if (d.phone) phone.value = d.phone;
+      if (d.website) website.value = d.website;
+      if (d.photo) photo.value = d.photo;
+      form.dataset.maps = d.mapsUrl || '';
+      form.dataset.lat = d.lat || ''; form.dataset.lon = d.lon || '';
+      msg.textContent = 'הפרטים הושלמו אוטומטית. אפשר לערוך לפני השמירה.';
+      if (!d.photo && d.wikidata) {
+        const ph = await commonsFromWikidata(d.wikidata);
+        if (ph && !photo.value) { photo.value = ph; }
+      }
+    };
+    const runSuggest = async () => {
+      const text = name.value.trim();
+      if (text.length < 3) { hideSug(); return; }
+      const seq = ++sugSeq;
+      msg.textContent = 'מחפשת מלון...';
+      try {
+        const list = await hotelSuggest(text, placeCountry(state.trip.place) || state.trip.place);
+        if (seq !== sugSeq) return;
+        sugList = list;
+        sug.replaceChildren();
+        msg.textContent = '';
+        if (!list.length) { msg.textContent = 'לא מצאתי את המלון. אפשר למלא ידנית.'; hideSug(); return; }
+        list.forEach(d => {
+          const li = el('li', { className: 'ht-sug', role: 'option' });
+          li.append(el('b', null, d.name), el('small', null, d.address));
+          li.addEventListener('mousedown', (ev) => { ev.preventDefault(); applyHotel(d); });
+          sug.appendChild(li);
+        });
+        sug.classList.remove('hidden'); name.setAttribute('aria-expanded', 'true');
+      } catch (e) { if (seq === sugSeq) { msg.textContent = 'החיפוש האוטומטי לא זמין כרגע. אפשר למלא ידנית.'; hideSug(); } }
+    };
+    name.addEventListener('input', () => { clearTimeout(sugTimer); sugTimer = setTimeout(runSuggest, 650); });
+    name.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' && !sug.classList.contains('hidden') && sugList[0]) { ev.preventDefault(); applyHotel(sugList[0]); }
+      else if (ev.key === 'Escape') hideSug();
+    });
+    name.addEventListener('blur', () => setTimeout(hideSug, 150));
     form.append(r1, r2, r3, msg, acts);
     form.addEventListener('submit', (ev) => {
       ev.preventDefault();
@@ -3453,6 +3556,7 @@ function renderHotel() {
         obj.website = w;
       }
       const mu = form.dataset.maps || (h && h.mapsUrl); if (mu) obj.mapsUrl = mu;
+      if (form.dataset.lat && form.dataset.lon) { obj.lat = parseFloat(form.dataset.lat); obj.lon = parseFloat(form.dataset.lon); }
       state.hotel = obj; save();
       hotelEditing = false;
       renderHotel();
