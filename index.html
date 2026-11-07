@@ -535,6 +535,38 @@
 .pp-row.info b::before { content: "ℹ️ "; }
 @media (max-width: 480px) { .pp-row { grid-template-columns: 1fr; gap: 2px; } }
 /* ---------- המלון שלי: כרטיס עתידני עם תמונת חזית ---------- */
+/* ---------- בסביבת המלון ---------- */
+.nb-body { display: grid; gap: 14px; }
+.nb-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.nb-chip, .nb-r { padding: 10px 16px; border-radius: 999px; background: var(--soft); border: 1px solid var(--border); color: var(--text); font-weight: 700; }
+.nb-chip.active, .nb-r.active { background: var(--sunset); color: var(--ink-on-sunset); border-color: transparent; box-shadow: 0 8px 20px -8px rgba(255, 111, 145, .7); }
+.nb-radius { display: flex; gap: 8px; }
+.nb-r { font: 700 .8rem var(--font-mono); letter-spacing: .08em; padding: 7px 14px; min-height: 36px; }
+.nb-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.nb-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 20px; background: var(--soft); border: 1px solid var(--border); color: var(--text); text-decoration: none; transition: transform .2s, border-color .25s, box-shadow .25s; min-height: 64px; }
+.nb-item:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 14px 28px -14px var(--shadow), 0 0 22px -8px var(--glow2); }
+.nb-name { display: flex; flex-direction: column; gap: 2px; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+.nb-name small { font-weight: 400; color: var(--muted); font-size: .8rem; }
+.nb-dist { flex: none; font: 800 .78rem var(--font-mono); letter-spacing: .06em; color: var(--accent); background: var(--card); border: 1px solid var(--glass-border); border-radius: 999px; padding: 5px 12px; direction: rtl; }
+/* ---------- חיפוש חופשי והרחב/כווץ הכל ---------- */
+.site-tools { display: flex; gap: 10px; align-items: center; margin: 14px 0; }
+.site-tools.hidden { display: none; }
+.st-search { position: relative; flex: 1; min-width: 0; }
+.st-search input { width: 100%; border-radius: 999px; padding-inline: 20px; }
+.st-results { position: absolute; z-index: 90; top: calc(100% + 8px); inset-inline: 0; list-style: none; margin: 0; padding: 8px; max-height: min(60vh, 440px); overflow-y: auto; border-radius: 24px;
+  background: var(--card); border: 1px solid var(--glass-border); -webkit-backdrop-filter: blur(24px) saturate(1.4); backdrop-filter: blur(24px) saturate(1.4); box-shadow: 0 24px 50px -16px var(--shadow), 0 0 30px -8px var(--glow2); }
+:root[data-theme="dark"] .st-results { background: rgba(10, 12, 28, .92); }
+.st-results.hidden { display: none; }
+.st-res { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 16px; cursor: pointer; }
+.st-res.active, .st-res:hover { background: var(--soft); outline: 1px solid var(--glass-border); }
+.st-title { font-weight: 700; overflow-wrap: anywhere; }
+.st-res small { color: var(--muted); font-size: .8rem; }
+.st-empty { padding: 14px; color: var(--muted); }
+#expandAllBtn { flex: none; white-space: nowrap; }
+.search-hit { animation: searchHit 3.2s ease-out; border-radius: 14px; }
+@keyframes searchHit { 0%, 55% { box-shadow: 0 0 0 4px var(--accent), 0 0 34px 6px var(--glow); background: color-mix(in srgb, var(--accent) 22%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; background: transparent; } }
+@media (max-width: 480px) { .site-tools { flex-wrap: wrap; } #expandAllBtn { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .search-hit { animation: none; outline: 3px solid var(--accent); } }
 .ht-body { display: grid; gap: 14px; }
 .ht-card { display: grid; gap: 14px; }
 .ht-media { --rx: 0deg; --ry: 0deg; position: relative; aspect-ratio: 16 / 7; min-height: 190px; border-radius: 28px; overflow: hidden; border: 1px solid var(--glass-border); background: #0a0b14;
@@ -1256,7 +1288,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
   main > * { grid-column: 2 / -1; min-width: 0; margin-bottom: 22px; }
   main > #accountBar, main > .hero, main > #sharedBar, main > .site-footer { grid-column: 1 / -1; }
   main > .card[data-tab="dest"], main > .card[data-tab="before"] { grid-column: auto; }
-  main > #weather, main > #hotelSection, main > #budgetSection, main > #flightSection, main > #attrSection, main > #passportSection { grid-column: 2 / -1; }
+  main > #weather, main > #hotelSection, main > #nearbySection, main > #budgetSection, main > #flightSection, main > #attrSection, main > #passportSection { grid-column: 2 / -1; }
   main > .tabbar { grid-column: 1; grid-row: 3 / span 40; align-self: start; position: sticky; top: 24px; bottom: auto; margin: 0 0 22px; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 34px; }
   main > .tabbar.hidden { display: none; }
   .tabbar button { flex-direction: column; width: 100%; padding: 14px 4px; min-height: 80px; font-size: .8rem; }
@@ -1432,6 +1464,13 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
   </form>
 
   <!-- ===== לשוניות: מציגות חלק אחד מהמידע בכל פעם ===== -->
+  <div id="siteTools" class="site-tools hidden">
+    <div class="st-search">
+      <input type="search" id="siteSearch" placeholder="🔍 חיפוש חופשי בכל האתר..." aria-label="חיפוש חופשי בכל האתר" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="siteResults" aria-autocomplete="list">
+      <ul id="siteResults" class="st-results hidden" role="listbox" aria-label="תוצאות חיפוש"></ul>
+    </div>
+    <button type="button" class="secondary" id="expandAllBtn">⤢ הרחב הכל</button>
+  </div>
   <nav id="tabBar" class="tabbar hidden" role="tablist" aria-label="חלקי הטיול">
     <button type="button" role="tab" data-go="list" id="tabBtn-list"><span class="ti">🧳</span><span class="tl">אריזה</span><b class="tb"></b></button>
     <button type="button" role="tab" data-go="before" id="tabBtn-before"><span class="ti">✈️</span><span class="tl">לפני הטיסה</span><b class="tb"></b></button>
@@ -1441,6 +1480,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
 
   <!-- ===== מזג אוויר ===== -->
   <section id="hotelSection" class="card hidden" data-tab="dest"></section>
+  <section id="nearbySection" class="card hidden" data-tab="dest"></section>
   <section id="weather" class="card hidden" data-tab="dest"></section>
 
   <!-- ===== דרישות כניסה ובטיחות (קישורים רשמיים) ===== -->
@@ -3377,6 +3417,7 @@ function renderHotel() {
     body.appendChild(form);
   }
   makeCollapsible(box, 'hotel', 1, false);
+  renderNearby();
 }
 
 // הטיית תלת מימד קלה לתמונת המלון (רק כשלא ביקשו פחות תנועה)
@@ -3388,6 +3429,164 @@ document.addEventListener('pointermove', function (e) {
   m.style.setProperty('--rx', (((e.clientY - r.top) / r.height) - .5) * -6 + 'deg');
   m.style.setProperty('--ry', (((e.clientX - r.left) / r.width) - .5) * 8 + 'deg');
 }, { passive: true });
+
+/* =========================================================
+   בסביבת המלון: מקומות לפי קטגוריות (OpenStreetMap: Nominatim לכתובת, Overpass למקומות)
+   ========================================================= */
+
+const NEARBY_CATS = [
+  { id: 'culture', icon: '🏛️', name: 'תרבות והיסטוריה', q: [['tourism', 'museum|gallery|attraction|viewpoint|zoo|aquarium|theme_park'], ['historic', 'monument|castle|ruins|archaeological_site|fort'], ['amenity', 'theatre|arts_centre|cinema']] },
+  { id: 'nature', icon: '🌳', name: 'טבע ופארקים', q: [['leisure', 'park|garden|nature_reserve'], ['natural', 'beach|peak']] },
+  { id: 'food', icon: '🍽️', name: 'מסעדות', q: [['amenity', 'restaurant|fast_food|food_court']] },
+  { id: 'cafe', icon: '☕', name: 'בתי קפה', q: [['amenity', 'cafe|ice_cream'], ['shop', 'bakery|pastry']] },
+  { id: 'shop', icon: '🛍️', name: 'קניות', q: [['shop', 'mall|department_store|supermarket'], ['amenity', 'marketplace']] },
+  { id: 'night', icon: '🌙', name: 'חיי לילה', q: [['amenity', 'bar|pub|nightclub|biergarten']] }
+];
+const NEARBY_TYPES = {
+  museum: 'מוזיאון', gallery: 'גלריה', attraction: 'אטרקציה', viewpoint: 'נקודת תצפית', zoo: 'גן חיות', aquarium: 'אקווריום', theme_park: 'פארק שעשועים',
+  monument: 'אנדרטה', castle: 'טירה', memorial: 'אתר הנצחה', ruins: 'חורבות', archaeological_site: 'אתר ארכיאולוגי', fort: 'מבצר',
+  theatre: 'תיאטרון', arts_centre: 'מרכז אמנויות', cinema: 'קולנוע', park: 'פארק', garden: 'גן', nature_reserve: 'שמורת טבע', beach: 'חוף', peak: 'פסגה',
+  restaurant: 'מסעדה', fast_food: 'אוכל מהיר', food_court: 'רחבת אוכל', cafe: 'בית קפה', ice_cream: 'גלידה', bakery: 'מאפייה', pastry: 'קונדיטוריה',
+  mall: 'קניון', department_store: 'חנות כלבו', supermarket: 'סופרמרקט', marketplace: 'שוק', bar: 'בר', pub: 'פאב', nightclub: 'מועדון', biergarten: 'גן בירה'
+};
+const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter'];
+const NEARBY_CACHE_KEY = 'packpal-nearby-v2';
+let nearbyCat = 'culture';
+let nearbyRadius = 1000;
+let nearbyToken = 0;
+
+function distMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000, rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+function fmtDist(m) { return m < 1000 ? Math.round(m / 10) * 10 + ' מ׳' : (m / 1000).toFixed(1) + ' ק״מ'; }
+
+// מיקום המלון: מהשמור, אחרת מחיפוש הכתובת (Nominatim), ואחרת מרכז העיר של הטיול
+async function hotelCoords(h) {
+  if (h.lat && h.lon) return { lat: h.lat, lon: h.lon, exact: true };
+  const q = [h.name, h.address].filter(Boolean).join(', ');
+  try {
+    const res = await fetchWithTimeout('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=he&q=' + encodeURIComponent(q), 9000);
+    if (res.ok) {
+      const a = await res.json();
+      if (a && a[0]) return { lat: parseFloat(a[0].lat), lon: parseFloat(a[0].lon), exact: true, save: true };
+    }
+  } catch (e) {}
+  if (h.address) {
+    try {
+      const res = await fetchWithTimeout('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=he&q=' + encodeURIComponent(h.address), 9000);
+      if (res.ok) { const a = await res.json(); if (a && a[0]) return { lat: parseFloat(a[0].lat), lon: parseFloat(a[0].lon), exact: true, save: true }; }
+    } catch (e) {}
+  }
+  const t = state.trip;
+  if (t && t.lat && t.lon) return { lat: t.lat, lon: t.lon, exact: false };
+  return null;
+}
+
+async function overpass(query) {
+  let lastErr;
+  for (const u of OVERPASS_URLS) {
+    try {
+      const res = await fetchWithTimeout(u + '?data=' + encodeURIComponent(query), 50000);
+      if (res.ok) return await res.json();
+      lastErr = new Error('overpass ' + res.status);
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr;
+}
+
+async function loadNearby(lat, lon, radius, catId) {
+  const key = lat.toFixed(3) + ',' + lon.toFixed(3) + ',' + radius + ',' + catId;
+  let cache = {};
+  try { cache = JSON.parse(localStorage.getItem(NEARBY_CACHE_KEY)) || {}; } catch (e) {}
+  if (cache[key] && Date.now() - cache[key].at < 7 * 86400000) return cache[key].data;
+
+  const cat = NEARBY_CATS.find(c => c.id === catId);
+  const parts = cat.q.map(([k, v]) => 'nwr(around:' + radius + ',' + lat + ',' + lon + ')["' + k + '"~"^(' + v + ')$"]["name"];');
+  const data = await overpass('[out:json][timeout:40];(' + parts.join('') + ');out center tags 200;');
+  const list = [];
+  const seen = new Set();
+  (data.elements || []).forEach(e => {
+    const tags = e.tags || {};
+    const plat = e.lat != null ? e.lat : e.center && e.center.lat, plon = e.lon != null ? e.lon : e.center && e.center.lon;
+    if (plat == null || plon == null) return;
+    const hit = cat.q.find(([k, v]) => tags[k] && new RegExp('^(' + v + ')$').test(tags[k]));
+    if (!hit) return;
+    const name = tags['name:he'] || tags.name;
+    if (seen.has(name)) return;
+    seen.add(name);
+    list.push({ name: name, type: NEARBY_TYPES[tags[hit[0]]] || '', lat: plat, lon: plon, d: distMeters(lat, lon, plat, plon) });
+  });
+  list.sort((x, y) => x.d - y.d);
+  const out = list.slice(0, 12);
+  cache[key] = { at: Date.now(), data: out };
+  try { localStorage.setItem(NEARBY_CACHE_KEY, JSON.stringify(cache)); } catch (e) {}
+  return out;
+}
+
+function renderNearby() {
+  const box = $('nearbySection');
+  if (!box) return;
+  box.replaceChildren();
+  const token = ++nearbyToken;
+  if (!state || sharedMode || !state.hotel || !state.hotel.name) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  const h = state.hotel;
+
+  box.appendChild(el('strong', null, '📍 בסביבת המלון'));
+  const body = el('div', { className: 'nb-body' });
+  box.appendChild(body);
+
+  const chips = el('div', { className: 'nb-chips', role: 'tablist', 'aria-label': 'קטגוריות' });
+  NEARBY_CATS.forEach(c => {
+    const b = el('button', { type: 'button', className: 'nb-chip' + (c.id === nearbyCat ? ' active' : ''), role: 'tab', 'aria-selected': String(c.id === nearbyCat) }, c.icon + ' ' + c.name);
+    b.addEventListener('click', () => { nearbyCat = c.id; renderNearby(); });
+    chips.appendChild(b);
+  });
+  body.appendChild(chips);
+
+  const radii = el('div', { className: 'nb-radius', role: 'radiogroup', 'aria-label': 'טווח' });
+  [[500, '500 מ׳'], [1000, 'ק״מ'], [2000, '2 ק״מ']].forEach(([r, l]) => {
+    const b = el('button', { type: 'button', className: 'nb-r' + (r === nearbyRadius ? ' active' : ''), role: 'radio', 'aria-checked': String(r === nearbyRadius) }, l);
+    b.addEventListener('click', () => { nearbyRadius = r; renderNearby(); });
+    radii.appendChild(b);
+  });
+  body.appendChild(radii);
+
+  const out = el('div', { className: 'nb-out' }, '');
+  out.appendChild(el('div', { className: 'note' }, 'מחפשת מקומות ליד המלון... זה יכול לקחת עד חצי דקה בפעם הראשונה, ואחר כך זה נשמר.'));
+  body.appendChild(out);
+  body.appendChild(el('div', { className: 'attr-src' }, 'נתונים: © תורמי OpenStreetMap. הרשימה לא מלאה ואין בה דירוגים, ולכן כדאי לוודא שעות פתיחה בגוגל מפות.'));
+
+  (async () => {
+    try {
+      const c = await hotelCoords(h);
+      if (token !== nearbyToken) return;
+      if (!c) { out.replaceChildren(el('div', { className: 'note' }, 'לא הצלחתי לאתר את המלון על המפה. בדקי שהכתובת מלאה.')); return; }
+      if (c.save) { h.lat = c.lat; h.lon = c.lon; save(); }
+      const list = await loadNearby(c.lat, c.lon, nearbyRadius, nearbyCat);
+      if (token !== nearbyToken) return;
+      out.replaceChildren();
+      if (!c.exact) out.appendChild(el('div', { className: 'note' }, 'לא מצאתי את כתובת המלון המדויקת, ולכן המרחקים מחושבים ממרכז העיר.'));
+      if (!list.length) { out.appendChild(el('div', { className: 'note' }, 'לא נמצאו מקומות בקטגוריה הזו בטווח. אפשר להגדיל את הטווח.')); return; }
+      const grid = el('div', { className: 'nb-list' });
+      list.forEach(p => {
+        const a = el('a', { className: 'nb-item', href: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.name + ' ' + p.lat + ',' + p.lon), target: '_blank', rel: 'noopener noreferrer' });
+        const txt = el('span', { className: 'nb-name' }, p.name);
+        if (p.type) txt.appendChild(el('small', null, p.type));
+        a.append(txt, el('span', { className: 'nb-dist' }, fmtDist(p.d)));
+        grid.appendChild(a);
+      });
+      out.appendChild(grid);
+    } catch (e) {
+      if (token !== nearbyToken) return;
+      out.replaceChildren(el('div', { className: 'note' }, 'שירות המפות לא זמין כרגע. נסי שוב עוד רגע.'));
+    }
+  })();
+  makeCollapsible(box, 'nearby', 1, false);
+}
 
 /* =========================================================
    תזכורות ביומן: קובץ iCalendar (.ics) שנפתח באפליקציית היומן של הטלפון
@@ -4042,6 +4241,7 @@ function renderList() {
   const matchesOf = cat => filtered ? groups[cat].filter(it => (!query || it.text.toLowerCase().includes(query)) && (!onlyLeft || !it.checked)) : groups[cat];
   let found = 0;
 
+  if (!catsInit && !packMode) { catsInit = true; state.collapsed = [...new Set(state.items.map(i => i.cat))]; }
   const collapsed = state.collapsed || [];
   Object.keys(groups).forEach(cat => {
     const shown = matchesOf(cat);
@@ -4126,6 +4326,7 @@ function renderList() {
 
 // הערה לפריט (למשל "בתיק היד"): שדה קטן מתחת לפריט
 let noteEditId = null;
+let catsInit = false;
 function noteEditor(it) {
   const form = el('form', { className: 'note-edit', autocomplete: 'off' });
   const input = el('input', { type: 'text', maxLength: 120, value: it.note || '' });
@@ -6678,12 +6879,12 @@ function closeSheet() { setOpen(document.getElementById('sheetOverlay'), documen
 })();
 
 // --- כרטיסים שנסגרים ונפתחים בהחלקה: הכותרת תמיד גלויה, השאר מתקפל ---
-function cardState() { try { return JSON.parse(localStorage.getItem('packpal-cards')) || {}; } catch (e) { return {}; } }
+function cardState() { try { return JSON.parse(sessionStorage.getItem('packpal-cards')) || {}; } catch (e) { return {}; } }
 
 function makeCollapsible(box, key, headCount, defaultCollapsed) {
   if (!box || box.classList.contains('hidden') || !box.firstElementChild) return;
   const saved = cardState();
-  const collapsed = key in saved ? !!saved[key] : !!defaultCollapsed;
+  const collapsed = key in saved ? !!saved[key] : true;   // ברירת מחדל: הכל מכווץ
 
   const head = el('div', { className: 'card-head', role: 'button', tabIndex: 0 });
   for (let i = 0; i < (headCount || 1) && box.firstChild; i++) head.appendChild(box.firstChild);
@@ -6701,7 +6902,7 @@ function makeCollapsible(box, key, headCount, defaultCollapsed) {
     const now = !box.classList.contains('collapsed');
     apply(now);
     const st = cardState(); st[key] = now;
-    try { localStorage.setItem('packpal-cards', JSON.stringify(st)); } catch (e) {}
+    try { sessionStorage.setItem('packpal-cards', JSON.stringify(st)); } catch (e) {}
   };
   head.addEventListener('click', (ev) => { if (!ev.target.closest('a, button, input')) toggle(); });
   head.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggle(); } });
@@ -6753,7 +6954,7 @@ function makeCollapsible(box, key, headCount, defaultCollapsed) {
 (function () {
   const main = document.querySelector('main');
   if (!main) return;
-  const FULL = ['weather', 'hotelSection', 'budgetSection', 'passportSection', 'flightSection', 'attrSection', 'listSection', 'tripForm', 'favSection', 'pastSection', 'tplSection', 'sharedBar'];
+  const FULL = ['weather', 'hotelSection', 'nearbySection', 'budgetSection', 'passportSection', 'flightSection', 'attrSection', 'listSection', 'tripForm', 'favSection', 'pastSection', 'tplSection', 'sharedBar'];
   let queued = false;
   function balance() {
     queued = false;
@@ -6797,6 +6998,125 @@ function makeCollapsible(box, key, headCount, defaultCollapsed) {
   function scan() { box.querySelectorAll('.cd-num, .cd-cell b').forEach(convert); }
   new MutationObserver(scan).observe(box, { childList: true, subtree: true, characterData: true });
   scan();
+})();
+
+/* =========================================================
+   כלי האתר: חיפוש חופשי בכל האתר + הרחב/כווץ הכל
+   ========================================================= */
+(function () {
+  const input = $('siteSearch'), resBox = $('siteResults'), tools = $('siteTools'), tabBar = $('tabBar'), allBtn = $('expandAllBtn');
+  if (!input || !resBox || !tools || !tabBar || !allBtn) return;
+  const TAB_NAMES = { list: 'אריזה', before: 'לפני הטיסה', dest: 'היעד', more: 'הטיולים שלי' };
+  const CAND = '.task, .fact, .pp-row, .entry-links a, .nb-item, .ht-row, .vnote, .note, .attr-item, .quick-tile, .lf-grid strong, .past-row, .tpl-row, .visa-box, .budget-line, p, li, h3, small';
+
+  const syncTools = () => tools.classList.toggle('hidden', tabBar.classList.contains('hidden'));
+  new MutationObserver(syncTools).observe(tabBar, { attributes: true, attributeFilter: ['class'] });
+  syncTools();
+
+  /* ---------- הרחב / כווץ הכל ---------- */
+  const cards = () => [...document.querySelectorAll('main > .card')].filter(c => c.querySelector(':scope > .card-head'));
+  const catsCollapsed = () => !!(state && state.collapsed && state.collapsed.length);
+  function anyCollapsed() { return cards().some(c => c.classList.contains('collapsed')) || catsCollapsed(); }
+  function updateLabel() { allBtn.textContent = anyCollapsed() ? '⤢ הרחב הכל' : '⤡ כווץ הכל'; }
+  allBtn.addEventListener('click', () => {
+    const expand = anyCollapsed();
+    cards().forEach(c => { if (expand === c.classList.contains('collapsed')) c.querySelector(':scope > .card-head').click(); });
+    if (state && state.items && state.items.length) {
+      state.collapsed = expand ? [] : [...new Set(state.items.map(i => i.cat))];
+      save(); renderList();
+    }
+    updateLabel();
+  });
+  let q1 = false;
+  new MutationObserver(() => { if (!q1) { q1 = true; requestAnimationFrame(() => { q1 = false; updateLabel(); }); } })
+    .observe(document.querySelector('main'), { subtree: true, attributes: true, attributeFilter: ['class'], childList: true });
+  updateLabel();
+
+  /* ---------- חיפוש חופשי ---------- */
+  const clean = t => String(t || '').replace(/\s+/g, ' ').trim();
+  function snippet(text, ql) {
+    const t = clean(text), i = t.toLowerCase().indexOf(ql);
+    if (t.length <= 90) return t;
+    const from = Math.max(0, i - 25);
+    return (from > 0 ? '…' : '') + t.slice(from, from + 90) + (from + 90 < t.length ? '…' : '');
+  }
+  function sectionTitle(sec) { const h = sec.querySelector(':scope > .card-head strong') || sec.querySelector('strong'); return h ? clean(h.textContent).replace(/[▾]/g, '').trim() : ''; }
+  function search(q) {
+    const ql = q.toLowerCase(), res = [];
+    if (state && state.items) {
+      state.items.forEach(it => {
+        if (((it.text || '') + ' ' + (it.note || '')).toLowerCase().includes(ql)) res.push({ kind: 'item', it: it, title: '🧳 ' + it.text, sub: 'רשימת האריזה · ' + it.cat });
+      });
+    }
+    document.querySelectorAll('main > .card[data-tab]').forEach(sec => {
+      if (sec.id === 'listSection') return;
+      const els = [...sec.querySelectorAll(CAND)];
+      const hits = els.filter(e => e.textContent.toLowerCase().includes(ql) && !els.some(o => o !== e && e.contains(o) && o.textContent.toLowerCase().includes(ql)));
+      hits.slice(0, 3).forEach(e => res.push({ kind: 'dom', el: e, sec: sec, tab: sec.dataset.tab, title: snippet(e.textContent, ql), sub: (TAB_NAMES[sec.dataset.tab] || '') + ' · ' + sectionTitle(sec) }));
+    });
+    return res.slice(0, 14);
+  }
+  function flash(e) {
+    if (!e) return;
+    e.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    e.classList.add('search-hit');
+    setTimeout(() => e.classList.remove('search-hit'), 3200);
+  }
+  const clickTab = t => { const b = $('tabBtn-' + t); if (b) b.click(); };
+  function goTo(r) {
+    hide();
+    if (r.kind === 'item') {
+      clickTab('list');
+      if ((state.collapsed || []).includes(r.it.cat)) toggleCategory(r.it.cat);
+      setTimeout(() => flash(document.querySelector('.item[data-id="' + r.it.id + '"]')), 250);
+      return;
+    }
+    clickTab(r.tab);
+    let wait = 150;
+    if (r.sec.classList.contains('collapsed')) { r.sec.querySelector(':scope > .card-head').click(); wait = 450; }
+    setTimeout(() => flash(r.el), wait);
+  }
+
+  let results = [], active = -1;
+  function hide() { resBox.classList.add('hidden'); input.setAttribute('aria-expanded', 'false'); active = -1; }
+  function setActive(i) {
+    active = i;
+    [...resBox.children].forEach((li, k) => { li.classList.toggle('active', k === i); li.setAttribute('aria-selected', String(k === i)); });
+    if (resBox.children[i]) resBox.children[i].scrollIntoView({ block: 'nearest' });
+  }
+  function show(q) {
+    results = search(q);
+    resBox.replaceChildren();
+    if (!results.length) {
+      resBox.appendChild(el('li', { className: 'st-empty', role: 'option' }, 'לא נמצא "' + q + '". נסי מילה אחרת.'));
+    } else {
+      results.forEach((r, i) => {
+        const li = el('li', { className: 'st-res', role: 'option', 'aria-selected': 'false' });
+        li.append(el('span', { className: 'st-title' }, r.title), el('small', null, r.sub));
+        li.addEventListener('mousedown', (ev) => { ev.preventDefault(); goTo(r); });
+        resBox.appendChild(li);
+      });
+    }
+    resBox.classList.remove('hidden');
+    input.setAttribute('aria-expanded', 'true');
+    active = -1;
+  }
+  let timer = null;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) { hide(); return; }
+    timer = setTimeout(() => show(q), 150);
+  });
+  input.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') { hide(); input.blur(); return; }
+    if (resBox.classList.contains('hidden')) { if (ev.key === 'ArrowDown' && input.value.trim().length >= 2) show(input.value.trim()); return; }
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); setActive(Math.min(results.length - 1, active + 1)); }
+    else if (ev.key === 'ArrowUp') { ev.preventDefault(); setActive(Math.max(0, active - 1)); }
+    else if (ev.key === 'Enter') { ev.preventDefault(); const r = results[active >= 0 ? active : 0]; if (r) goTo(r); }
+  });
+  input.addEventListener('blur', () => setTimeout(hide, 120));
+  input.addEventListener('focus', () => { if (input.value.trim().length >= 2) show(input.value.trim()); });
 })();
 </script>
 </body>
