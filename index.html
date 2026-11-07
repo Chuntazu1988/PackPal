@@ -513,6 +513,14 @@
 .ft-leg-title { font: 800 .8rem var(--font-mono); letter-spacing: .18em; color: var(--accent); margin-bottom: 12px; }
 .ft-add { width: 100%; border-style: dashed; }
 /* ---------- הדרכונים שלי ---------- */
+.pp-warn { position: relative; display: grid; gap: 6px; margin: 14px 0; padding: 14px 44px 14px 16px; border-radius: 22px; border: 1px solid color-mix(in srgb, var(--sun) 65%, transparent); background: color-mix(in srgb, var(--sun) 16%, var(--card)); box-shadow: 0 0 28px -8px var(--sun); }
+.pp-warn.hidden { display: none; }
+.pw-line { font-weight: 700; line-height: 1.5; }
+.pw-line.bad { color: var(--danger); }
+.pw-close { position: absolute; top: 8px; inset-inline-end: 8px; width: 34px; height: 34px; min-height: 34px; padding: 0; border-radius: 50%; background: var(--soft); border: 1px solid var(--border); color: var(--text); }
+.pp-chip-warn { border-color: var(--sun); }
+.pp-badge { position: absolute; top: -8px; inset-inline-end: -4px; font-size: 1.1rem; }
+.pp-chip { position: relative; }
 .pp-body { display: grid; gap: 14px; }
 .pp-chips { display: flex; flex-wrap: wrap; gap: 10px; }
 .pp-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 18px; border-radius: 22px; background: var(--soft); border: 1px solid var(--border); color: var(--text); font-weight: 800; text-align: start; }
@@ -1464,6 +1472,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
   </form>
 
   <!-- ===== לשוניות: מציגות חלק אחד מהמידע בכל פעם ===== -->
+  <div id="passportWarn" class="pp-warn hidden" role="alert"></div>
   <div id="siteTools" class="site-tools hidden">
     <div class="st-search">
       <input type="search" id="siteSearch" placeholder="🔍 חיפוש חופשי בכל האתר..." aria-label="חיפוש חופשי בכל האתר" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="siteResults" aria-autocomplete="list">
@@ -3138,7 +3147,40 @@ function checkPassport(p, rule, trip) {
 }
 function isoOf(d) { const z = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); }
 
+// התראה על דרכון שנשאר בו פחות מחצי שנה (או שפג)
+function passportWarnings() {
+  const today = isoOf(new Date());
+  const limit = addMonthsISO(today, 6);
+  const out = [];
+  loadPassports().forEach(p => {
+    if (!p.expiry) return;
+    const exp = parseISO(p.expiry);
+    const name = p.label || regionName(p.cc);
+    if (exp < parseISO(today)) out.push({ p, level: 'bad', text: 'הדרכון "' + name + '" פג תוקף ב-' + fmtDate(p.expiry) + '. צריך לחדש אותו לפני נסיעה.' });
+    else if (exp < limit) {
+      const days = Math.ceil((exp - parseISO(today)) / 86400000);
+      const left = days < 60 ? days + ' ימים' : Math.round(days / 30) + ' חודשים';
+      out.push({ p, level: 'warn', text: 'בדרכון "' + name + '" נשאר תוקף של ' + left + ' בלבד (עד ' + fmtDate(p.expiry) + '), פחות מחצי שנה. רוב המדינות דורשות 6 חודשי תוקף.' });
+    }
+  });
+  return out;
+}
+let passportWarnDismissed = false;
+function renderPassportWarn() {
+  const box = $('passportWarn');
+  if (!box) return;
+  const w = passportWarnings();
+  box.replaceChildren();
+  if (!w.length || passportWarnDismissed) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  w.forEach(x => box.appendChild(el('div', { className: 'pw-line ' + x.level }, (x.level === 'bad' ? '⛔ ' : '⚠️ ') + x.text)));
+  const close = el('button', { type: 'button', className: 'pw-close', 'aria-label': 'סגור התראה' }, '✕');
+  close.addEventListener('click', () => { passportWarnDismissed = true; renderPassportWarn(); });
+  box.appendChild(close);
+}
+
 function renderPassports() {
+  renderPassportWarn();
   const box = $('passportSection');
   if (!box) return;
   box.replaceChildren();
@@ -3164,6 +3206,7 @@ function renderPassports() {
       const b = el('button', { type: 'button', className: 'pp-chip' + (active && p.id === active.id ? ' active' : ''), role: 'radio', 'aria-checked': String(!!active && p.id === active.id) },
         '🛂 ' + (p.label || regionName(p.cc)));
       b.appendChild(el('small', null, regionName(p.cc)));
+      if (passportWarnings().some(x => x.p.id === p.id)) { b.classList.add('pp-chip-warn'); b.appendChild(el('span', { className: 'pp-badge', 'aria-hidden': 'true' }, '⚠️')); }
       b.addEventListener('click', () => { state.passportId = p.id; save(); renderPassports(); });
       chips.appendChild(b);
     });
@@ -6536,6 +6579,7 @@ function normalizeCloud(c) {
     history: arr(c.history).map(normalizeTrip).filter(Boolean),
     favorites: arr(c.favorites).filter(f => f && typeof f.text === 'string'),
     templates: arr(c.templates).map(cleanTemplate).filter(Boolean),
+    passports: arr(c.passports).filter(x => x && x.id && x.cc),
     updatedAt: c.updatedAt || 0
   };
 }
@@ -6569,7 +6613,7 @@ function applyCloudToDevice(c) {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(c.history));
     localStorage.setItem(FAV_KEY, JSON.stringify(c.favorites));
     localStorage.setItem(TPL_KEY, JSON.stringify(c.templates || []));
-    localStorage.setItem(PASSPORT_KEY, JSON.stringify(c.passports || []));
+    if (c.passports && c.passports.length) localStorage.setItem(PASSPORT_KEY, JSON.stringify(c.passports));   // לא מוחקים דרכונים שבמכשיר אם בענן עוד אין
     localStorage.setItem(SYNC_META_KEY, JSON.stringify({ uid: cloudUser.uid, at: c.updatedAt }));
   } catch (e) {}
   state = c.current;
@@ -6577,6 +6621,7 @@ function applyCloudToDevice(c) {
   else { renderWeather(); renderList(); renderPast(); }
   renderFavs();
   renderTemplates();
+  renderPassports();
   cloudApplying = false;
 }
 
@@ -6609,6 +6654,7 @@ function mergeCloudIntoDevice(c) {
   else { renderWeather(); renderList(); renderPast(); }
   renderFavs();
   renderTemplates();
+  renderPassports();
 }
 
 // אחרי כניסה: מחליטים מה לעשות מול מה שכבר שמור בענן
@@ -7118,6 +7164,8 @@ function makeCollapsible(box, key, headCount, defaultCollapsed) {
   input.addEventListener('blur', () => setTimeout(hide, 120));
   input.addEventListener('focus', () => { if (input.value.trim().length >= 2) show(input.value.trim()); });
 })();
+
+try { renderPassportWarn(); } catch (e) {}
 </script>
 </body>
 </html>
