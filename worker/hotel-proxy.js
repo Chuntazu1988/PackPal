@@ -63,7 +63,7 @@ export default {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': env.GOOGLE_PLACES_KEY,
-          'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.googleMapsUri,places.photos'
+          'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.googleMapsUri,places.websiteUri,places.photos'
         },
         body: JSON.stringify({ textQuery: q, includedType: 'lodging', languageCode: 'he', maxResultCount: 1 })
       });
@@ -78,6 +78,7 @@ export default {
     if (p.formattedAddress) out.address = p.formattedAddress;
     if (p.internationalPhoneNumber) out.phone = p.internationalPhoneNumber;
     if (p.googleMapsUri) out.mapsUrl = p.googleMapsUri;
+    if (p.websiteUri) out.website = p.websiteUri;
     if (p.photos && p.photos[0] && p.photos[0].name) out.photo = url.origin + '/photo?name=' + p.photos[0].name;
     const body = JSON.stringify(out);
     ctx.waitUntil(cache.put(cacheKey, new Response(body, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=' + SEARCH_CACHE_SECONDS } })));
