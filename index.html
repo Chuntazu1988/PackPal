@@ -1321,7 +1321,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
   body { padding: 0 28px; }
   main { max-width: 1280px; margin: 28px auto 48px; padding: 0 0 48px; display: grid; grid-template-columns: 116px minmax(0, 1fr) minmax(0, 1fr); column-gap: 22px; row-gap: 0; align-items: start; }
   main > * { grid-column: 2 / -1; min-width: 0; margin-bottom: 22px; }
-  main > #accountBar, main > .hero, main > #sharedBar, main > .site-footer { grid-column: 1 / -1; }
+  main > #accountBar, main > #passportWarn, main > .hero, main > #sharedBar, main > .site-footer { grid-column: 1 / -1; }
   main > .card[data-tab="dest"], main > .card[data-tab="before"] { grid-column: auto; }
   main > #weather, main > #hotelSection, main > #nearbySection, main > #airportSection, main > #transSection, main > #budgetSection, main > #flightSection, main > #attrSection, main > #passportSection { grid-column: 2 / -1; }
   main > .tabbar { grid-column: 1; grid-row: 3 / span 40; align-self: start; position: sticky; top: 24px; bottom: auto; margin: 0 0 22px; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 34px; }
@@ -1402,6 +1402,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
 </section>
 <a class="skip-link" href="#mainContent">דלג לתוכן הראשי</a>
 <main id="mainContent" tabindex="-1">
+  <div id="passportWarn" class="pp-warn hidden" role="alert"></div>
   <div id="accountBar" class="account-bar hidden"></div>
 
   <header class="hero">
@@ -1499,7 +1500,6 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
   </form>
 
   <!-- ===== לשוניות: מציגות חלק אחד מהמידע בכל פעם ===== -->
-  <div id="passportWarn" class="pp-warn hidden" role="alert"></div>
   <div id="siteTools" class="site-tools hidden">
     <div class="st-search">
       <input type="search" id="siteSearch" placeholder="🔍 חיפוש חופשי בכל האתר..." aria-label="חיפוש חופשי בכל האתר" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="siteResults" aria-autocomplete="list">
