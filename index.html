@@ -513,6 +513,14 @@
 .ft-leg-title { font: 800 .8rem var(--font-mono); letter-spacing: .18em; color: var(--accent); margin-bottom: 12px; }
 .ft-add { width: 100%; border-style: dashed; }
 /* ---------- הדרכונים שלי ---------- */
+.pp-warn { position: relative; display: grid; gap: 6px; margin: 14px 0; padding: 14px 44px 14px 16px; border-radius: 22px; border: 1px solid color-mix(in srgb, var(--sun) 65%, transparent); background: color-mix(in srgb, var(--sun) 16%, var(--card)); box-shadow: 0 0 28px -8px var(--sun); }
+.pp-warn.hidden { display: none; }
+.pw-line { font-weight: 700; line-height: 1.5; }
+.pw-line.bad { color: var(--danger); }
+.pw-close { position: absolute; top: 8px; inset-inline-end: 8px; width: 34px; height: 34px; min-height: 34px; padding: 0; border-radius: 50%; background: var(--soft); border: 1px solid var(--border); color: var(--text); }
+.pp-chip-warn { border-color: var(--sun); }
+.pp-badge { position: absolute; top: -8px; inset-inline-end: -4px; font-size: 1.1rem; }
+.pp-chip { position: relative; }
 .pp-body { display: grid; gap: 14px; }
 .pp-chips { display: flex; flex-wrap: wrap; gap: 10px; }
 .pp-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 18px; border-radius: 22px; background: var(--soft); border: 1px solid var(--border); color: var(--text); font-weight: 800; text-align: start; }
@@ -567,6 +575,14 @@
 @keyframes searchHit { 0%, 55% { box-shadow: 0 0 0 4px var(--accent), 0 0 34px 6px var(--glow); background: color-mix(in srgb, var(--accent) 22%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; background: transparent; } }
 @media (max-width: 480px) { .site-tools { flex-wrap: wrap; } #expandAllBtn { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .search-hit { animation: none; outline: 3px solid var(--accent); } }
+input[type=tel], input[type=url] { background: var(--soft); color: var(--text); border: 1px solid var(--border); border-radius: 18px; padding: 12px 16px; width: 100%; font-family: var(--font); }
+input[type=tel]:focus, input[type=url]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); outline: none; }
+.ht-suggest { position: absolute; z-index: 80; inset-inline: 0; top: calc(100% + 6px); list-style: none; margin: 0; padding: 8px; max-height: 320px; overflow-y: auto; border-radius: 22px; background: var(--card); border: 1px solid var(--glass-border); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); box-shadow: 0 24px 50px -16px var(--shadow); }
+:root[data-theme="dark"] .ht-suggest { background: rgba(10, 12, 28, .94); }
+.ht-suggest.hidden { display: none; }
+.ht-sug { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 14px; cursor: pointer; }
+.ht-sug:hover { background: var(--soft); }
+.ht-sug small { color: var(--muted); font-size: .82rem; }
 .ht-body { display: grid; gap: 14px; }
 .ht-card { display: grid; gap: 14px; }
 .ht-media { --rx: 0deg; --ry: 0deg; position: relative; aspect-ratio: 16 / 7; min-height: 190px; border-radius: 28px; overflow: hidden; border: 1px solid var(--glass-border); background: #0a0b14;
@@ -595,6 +611,15 @@
 .ht-row-phone .ht-phone { justify-self: center; text-align: center; font-size: 1.3rem; }
 .ht-row-phone .ht-addr { justify-self: center; text-align: center; font-size: 1.05rem; line-height: 1.5; padding-inline: 70px; }
 @media (max-width: 480px) { .ht-row-phone b { position: static; transform: none; } .ht-row-phone .ht-addr { padding-inline: 0; } }
+.ht-map { position: relative; height: 240px; border-radius: 24px; overflow: hidden; border: 1px solid var(--glass-border); background: var(--soft); box-shadow: 0 18px 40px -18px var(--shadow); }
+.ht-map iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; filter: saturate(.9) contrast(1.02); }
+:root[data-theme="dark"] .ht-map iframe { filter: invert(.92) hue-rotate(180deg) saturate(.85) brightness(.95); }
+.ht-map-link { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 14px; text-decoration: none; transition: background .25s; }
+.ht-map-link:hover { background: rgba(0, 229, 255, .08); }
+.ht-map-hint { font-weight: 800; font-size: .85rem; color: var(--text); background: var(--card); border: 1px solid var(--glass-border); border-radius: 999px; padding: 7px 16px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; }
+.ht-map-link:hover .ht-map-hint, .ht-map-link:focus-visible .ht-map-hint { opacity: 1; transform: none; }
+@media (hover: none) { .ht-map-hint { opacity: 1; transform: none; } }
+@media (max-width: 480px) { .ht-map { height: 200px; } }
 .ht-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .ht-actions > * { flex: 1 1 150px; text-align: center; }
 .ht-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 18px; border-radius: 999px; background: var(--soft); border: 1px solid var(--border); color: var(--text); font-weight: 700; text-decoration: none; min-height: 44px; transition: transform .2s, border-color .25s, box-shadow .25s; }
@@ -1288,7 +1313,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
   main > * { grid-column: 2 / -1; min-width: 0; margin-bottom: 22px; }
   main > #accountBar, main > .hero, main > #sharedBar, main > .site-footer { grid-column: 1 / -1; }
   main > .card[data-tab="dest"], main > .card[data-tab="before"] { grid-column: auto; }
-  main > #weather, main > #hotelSection, main > #nearbySection, main > #budgetSection, main > #flightSection, main > #attrSection, main > #passportSection { grid-column: 2 / -1; }
+  main > #weather, main > #hotelSection, main > #nearbySection, main > #airportSection, main > #transSection, main > #budgetSection, main > #flightSection, main > #attrSection, main > #passportSection { grid-column: 2 / -1; }
   main > .tabbar { grid-column: 1; grid-row: 3 / span 40; align-self: start; position: sticky; top: 24px; bottom: auto; margin: 0 0 22px; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 34px; }
   main > .tabbar.hidden { display: none; }
   .tabbar button { flex-direction: column; width: 100%; padding: 14px 4px; min-height: 80px; font-size: .8rem; }
@@ -1464,6 +1489,7 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
   </form>
 
   <!-- ===== לשוניות: מציגות חלק אחד מהמידע בכל פעם ===== -->
+  <div id="passportWarn" class="pp-warn hidden" role="alert"></div>
   <div id="siteTools" class="site-tools hidden">
     <div class="st-search">
       <input type="search" id="siteSearch" placeholder="🔍 חיפוש חופשי בכל האתר..." aria-label="חיפוש חופשי בכל האתר" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="siteResults" aria-autocomplete="list">
@@ -3138,7 +3164,40 @@ function checkPassport(p, rule, trip) {
 }
 function isoOf(d) { const z = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); }
 
+// התראה על דרכון שנשאר בו פחות מחצי שנה (או שפג)
+function passportWarnings() {
+  const today = isoOf(new Date());
+  const limit = addMonthsISO(today, 6);
+  const out = [];
+  loadPassports().forEach(p => {
+    if (!p.expiry) return;
+    const exp = parseISO(p.expiry);
+    const name = p.label || regionName(p.cc);
+    if (exp < parseISO(today)) out.push({ p, level: 'bad', text: 'הדרכון "' + name + '" פג תוקף ב-' + fmtDate(p.expiry) + '. צריך לחדש אותו לפני נסיעה.' });
+    else if (exp < limit) {
+      const days = Math.ceil((exp - parseISO(today)) / 86400000);
+      const left = days < 60 ? days + ' ימים' : Math.round(days / 30) + ' חודשים';
+      out.push({ p, level: 'warn', text: 'בדרכון "' + name + '" נשאר תוקף של ' + left + ' בלבד (עד ' + fmtDate(p.expiry) + '), פחות מחצי שנה. רוב המדינות דורשות 6 חודשי תוקף.' });
+    }
+  });
+  return out;
+}
+let passportWarnDismissed = false;
+function renderPassportWarn() {
+  const box = $('passportWarn');
+  if (!box) return;
+  const w = passportWarnings();
+  box.replaceChildren();
+  if (!w.length || passportWarnDismissed) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  w.forEach(x => box.appendChild(el('div', { className: 'pw-line ' + x.level }, (x.level === 'bad' ? '⛔ ' : '⚠️ ') + x.text)));
+  const close = el('button', { type: 'button', className: 'pw-close', 'aria-label': 'סגור התראה' }, '✕');
+  close.addEventListener('click', () => { passportWarnDismissed = true; renderPassportWarn(); });
+  box.appendChild(close);
+}
+
 function renderPassports() {
+  renderPassportWarn();
   const box = $('passportSection');
   if (!box) return;
   box.replaceChildren();
@@ -3164,6 +3223,7 @@ function renderPassports() {
       const b = el('button', { type: 'button', className: 'pp-chip' + (active && p.id === active.id ? ' active' : ''), role: 'radio', 'aria-checked': String(!!active && p.id === active.id) },
         '🛂 ' + (p.label || regionName(p.cc)));
       b.appendChild(el('small', null, regionName(p.cc)));
+      if (passportWarnings().some(x => x.p.id === p.id)) { b.classList.add('pp-chip-warn'); b.appendChild(el('span', { className: 'pp-badge', 'aria-hidden': 'true' }, '⚠️')); }
       b.addEventListener('click', () => { state.passportId = p.id; save(); renderPassports(); });
       chips.appendChild(b);
     });
@@ -3301,6 +3361,53 @@ async function hotelLookup(name, place) {
   return d && d.found ? d : null;
 }
 
+// השלמה אוטומטית של פרטי מלון לפי השם: קודם השרת של גוגל (אם מוגדר), אחרת OpenStreetMap (Nominatim) בחינם
+function osmAddress(a) {
+  if (!a) return '';
+  const street = [a.road || a.pedestrian || a.footway || '', a.house_number || ''].filter(Boolean).join(' ');
+  const city = a.city || a.town || a.village || a.municipality || a.suburb || '';
+  return [street, [a.postcode, city].filter(Boolean).join(' '), a.country].filter(Boolean).join(', ');
+}
+async function commonsFromWikidata(qid) {
+  try {
+    const res = await fetchWithTimeout('https://www.wikidata.org/w/api.php?action=wbgetclaims&format=json&origin=*&property=P18&entity=' + encodeURIComponent(qid), 8000);
+    if (!res.ok) return '';
+    const d = await res.json();
+    const f = d && d.claims && d.claims.P18 && d.claims.P18[0] && d.claims.P18[0].mainsnak && d.claims.P18[0].mainsnak.datavalue && d.claims.P18[0].mainsnak.datavalue.value;
+    return f ? 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(f) + '?width=1200' : '';
+  } catch (e) { return ''; }
+}
+async function hotelSearchOSM(text, place) {
+  const q = (text + ' ' + (place || '')).trim();
+  const res = await fetchWithTimeout('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&extratags=1&accept-language=he&q=' + encodeURIComponent(q), 10000);
+  if (!res.ok) throw new Error('osm ' + res.status);
+  const arr = await res.json();
+  const hotels = arr.filter(x => x.category === 'tourism' || /hotel|hostel|motel|guest_house|apartment|resort/.test(x.type || ''));
+  const use = hotels.length ? hotels : arr;
+  return use.map(x => {
+    const t = x.extratags || {};
+    let photo = t.image && /^https:\/\//.test(t.image) ? t.image : '';
+    if (!photo && t.wikimedia_commons && /^File:/.test(t.wikimedia_commons)) photo = 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(t.wikimedia_commons.slice(5)) + '?width=1200';
+    return {
+      name: (x.namedetails && (x.namedetails['name:he'] || x.namedetails.name)) || x.name || String(x.display_name || '').split(',')[0],
+      address: osmAddress(x.address) || x.display_name,
+      phone: t.phone || t['contact:phone'] || '',
+      website: t.website || t['contact:website'] || '',
+      photo: photo, wikidata: t.wikidata || '',
+      lat: parseFloat(x.lat), lon: parseFloat(x.lon)
+    };
+  });
+}
+async function hotelSuggest(text, place) {
+  if (HOTEL_PROXY) {
+    try {
+      const d = await hotelLookup(text, place);
+      if (d) return [{ name: d.name || text, address: d.address || '', phone: d.phone || '', website: d.website || '', photo: d.photo || '', mapsUrl: d.mapsUrl || '' }];
+    } catch (e) {}
+  }
+  return hotelSearchOSM(text, place);
+}
+
 function renderHotel() {
   const box = $('hotelSection');
   if (!box) return;
@@ -3341,13 +3448,20 @@ function renderHotel() {
     }
     card.appendChild(info);
 
+    // מפה קטנה של גוגל מפות. לחיצה על המפה פותחת את גוגל מפות
+    const q = [h.name, h.address].filter(Boolean).join(' ');
+    const mapBox = el('div', { className: 'ht-map' });
+    const frame = el('iframe', { title: 'מפת ' + h.name, loading: 'lazy', referrerPolicy: 'no-referrer', tabIndex: -1, src: 'https://www.google.com/maps?q=' + encodeURIComponent(q) + '&z=15&output=embed&hl=iw' });
+    const cover = el('a', { className: 'ht-map-link', href: hotelMapsUrl(h), target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'פתח את ' + h.name + ' בגוגל מפות' });
+    cover.appendChild(el('span', { className: 'ht-map-hint' }, '🗺️ פתח בגוגל מפות'));
+    mapBox.append(frame, cover);
+    card.appendChild(mapBox);
+
     const acts = el('div', { className: 'ht-actions' });
-    const map = el('a', { href: hotelMapsUrl(h), target: '_blank', rel: 'noopener noreferrer', className: 'ht-btn primary-ish' }, '🗺️ פתח בגוגל מפות');
-    acts.appendChild(map);
     if (h.phone) acts.appendChild(el('a', { href: 'tel:' + cleanPhone(h.phone), className: 'ht-btn' }, '📞 התקשר'));
     const site = safeWebUrl(h.website);
     if (site) acts.appendChild(el('a', { href: site, target: '_blank', rel: 'noopener noreferrer', className: 'ht-btn' }, '🌐 האתר הרשמי'));
-    const edit = el('button', { type: 'button', className: 'secondary' }, '✏️ ערוך');
+    const edit = el('button', { type: 'button', className: 'secondary' }, '🔄 החלף מלון');
     edit.addEventListener('click', () => { hotelEditing = true; renderHotel(); });
     const del = el('button', { type: 'button', className: 'secondary' }, '🗑️ הסר');
     del.addEventListener('click', () => { delete state.hotel; save(); renderHotel(); });
@@ -3355,64 +3469,75 @@ function renderHotel() {
     card.appendChild(acts);
     body.appendChild(card);
   } else {
-    if (!h) body.appendChild(el('p', { className: 'note' }, 'הוסיפי את פרטי המלון, ותראי כאן את חזית המלון, כתובת, טלפון וקישור לגוגל מפות.'));
+    if (!h) body.appendChild(el('p', { className: 'note' }, 'כתבי רק את שם המלון: כתובת, טלפון, אתר רשמי, תמונת חזית וקישור לגוגל מפות יופיעו כאן לבד.'));
     const form = el('form', { className: 'ht-form', autocomplete: 'off' });
-    const fld = (label, name, attrs, val) => {
-      const w = el('div'); const inp = el('input', Object.assign({ name: name }, attrs)); if (val) inp.value = val;
-      w.append(el('label', null, label), inp); return [w, inp];
-    };
-    const [w1, name] = fld('שם המלון', 'name', { type: 'text', maxLength: 80, placeholder: 'למשל: Hotel Lutetia' }, h && h.name);
-    const [w2, address] = fld('כתובת', 'address', { type: 'text', maxLength: 160 }, h && h.address);
-    const [w3, phone] = fld('טלפון', 'phone', { type: 'tel', maxLength: 30, placeholder: '+33 1 23 45 67 89' }, h && h.phone);
-    const [w4, photo] = fld('קישור לתמונת חזית (לא חובה)', 'photo', { type: 'url', maxLength: 600, placeholder: 'https://...' }, h && h.photo);
-    const [w5, website] = fld('האתר הרשמי של המלון (לא חובה)', 'website', { type: 'text', inputMode: 'url', maxLength: 300, placeholder: 'www.hotel.com' }, h && h.website);
-    const r1 = el('div', { className: 'row' }); r1.append(w1, w2);
-    const r2 = el('div', { className: 'row' }); r2.append(w3, w4);
-    const r3 = el('div', { className: 'row' }); r3.append(w5);
+    const wrap = el('div', { className: 'ht-name-wrap' });
+    const label = el('label', null, 'שם המלון');
+    const name = el('input', { type: 'text', name: 'name', maxLength: 80, placeholder: 'מקלידים רק את שם המלון, והפרטים מושלמים לבד' });
+    if (h && h.name) name.value = h.name;
+    const sug = el('ul', { className: 'ht-suggest hidden', role: 'listbox', 'aria-label': 'הצעות מלונות' });
+    name.setAttribute('role', 'combobox'); name.setAttribute('aria-autocomplete', 'list'); name.setAttribute('aria-expanded', 'false');
+    wrap.style.position = 'relative';
+    wrap.append(label, name, sug);
     const msg = el('div', { className: 'dup-error', role: 'status' });
     const acts = el('div', { className: 'actions' });
-    if (HOTEL_PROXY) {
-      const find = el('button', { type: 'button', className: 'secondary' }, '🔎 מצא כתובת, טלפון וחזית');
-      find.addEventListener('click', async () => {
-        if (!name.value.trim()) { msg.textContent = 'כתבי קודם את שם המלון.'; name.focus(); return; }
-        msg.textContent = 'מחפשת...'; find.disabled = true;
-        try {
-          const d = await hotelLookup(name.value.trim(), placeCountry(state.trip.place) || state.trip.place);
-          if (!d) { msg.textContent = 'לא מצאתי את המלון. אפשר למלא ידנית.'; }
-          else {
-            if (d.name) name.value = d.name;
-            if (d.address) address.value = d.address;
-            if (d.phone) phone.value = d.phone;
-            if (d.photo) photo.value = d.photo;
-            if (d.website) website.value = d.website;
-            form.dataset.maps = d.mapsUrl || '';
-            msg.textContent = 'נמצא. אפשר לערוך לפני השמירה.';
-          }
-        } catch (e) { msg.textContent = 'החיפוש לא זמין כרגע. אפשר למלא ידנית.'; }
-        find.disabled = false;
-      });
-      acts.appendChild(find);
-    }
-    const saveB = el('button', { type: 'submit', className: 'primary' }, 'שמור מלון');
+    const saveB = el('button', { type: 'submit', className: 'primary' }, 'הוסף מלון');
     const cancel = el('button', { type: 'button', className: 'secondary' }, 'ביטול');
     cancel.addEventListener('click', () => { hotelEditing = false; renderHotel(); });
     acts.append(saveB);
     if (h) acts.appendChild(cancel);
-    form.append(r1, r2, r3, msg, acts);
-    form.addEventListener('submit', (ev) => {
-      ev.preventDefault();
-      if (!name.value.trim()) { msg.textContent = 'כתבי את שם המלון.'; name.focus(); return; }
-      const obj = { name: name.value.trim(), address: address.value.trim(), phone: phone.value.trim() };
-      const ph = safeImgUrl(photo.value.trim()); if (ph) obj.photo = ph;
-      if (website.value.trim()) {
-        const w = safeWebUrl(website.value);
-        if (!w) { msg.textContent = 'כתובת האתר לא נראית תקינה. למשל: www.hotel.com'; website.focus(); return; }
-        obj.website = w;
-      }
-      const mu = form.dataset.maps || (h && h.mapsUrl); if (mu) obj.mapsUrl = mu;
+    form.append(wrap, msg, acts);
+
+    let sugTimer = null, sugList = [], sugSeq = 0, busy = false;
+    const hideSug = () => { sug.classList.add('hidden'); name.setAttribute('aria-expanded', 'false'); };
+    // בחירת מלון: שומרים את כל הפרטים שנמצאו, בלי הזנה ידנית
+    const commit = async (d) => {
+      if (busy) return;
+      busy = true; hideSug();
+      msg.textContent = 'משלימה את פרטי המלון...';
+      const obj = { name: d.name || name.value.trim() };
+      ['address', 'phone', 'website', 'photo', 'mapsUrl'].forEach(k => { if (d[k]) obj[k] = d[k]; });
+      if (d.lat && d.lon) { obj.lat = d.lat; obj.lon = d.lon; }
+      if (!obj.photo && d.wikidata) { const ph = await commonsFromWikidata(d.wikidata); if (ph) obj.photo = ph; }
       state.hotel = obj; save();
       hotelEditing = false;
       renderHotel();
+    };
+    const search = async () => {
+      const text = name.value.trim();
+      if (text.length < 3) return [];
+      return hotelSuggest(text, placeCountry(state.trip.place) || state.trip.place);
+    };
+    const runSuggest = async () => {
+      const text = name.value.trim();
+      if (text.length < 3) { hideSug(); return; }
+      const seq = ++sugSeq;
+      msg.textContent = 'מחפשת מלון...';
+      try {
+        const list = await search();
+        if (seq !== sugSeq) return;
+        sugList = list; sug.replaceChildren(); msg.textContent = '';
+        if (!list.length) { msg.textContent = 'לא מצאתי פרטים למלון הזה. אפשר להוסיף אותו רק בשם.'; hideSug(); return; }
+        list.forEach(d => {
+          const li = el('li', { className: 'ht-sug', role: 'option' });
+          li.append(el('b', null, d.name), el('small', null, d.address));
+          li.addEventListener('mousedown', (ev) => { ev.preventDefault(); commit(d); });
+          sug.appendChild(li);
+        });
+        sug.classList.remove('hidden'); name.setAttribute('aria-expanded', 'true');
+      } catch (e) { if (seq === sugSeq) { msg.textContent = 'החיפוש האוטומטי לא זמין כרגע. אפשר להוסיף את המלון בשם בלבד.'; hideSug(); } }
+    };
+    name.addEventListener('input', () => { clearTimeout(sugTimer); sugTimer = setTimeout(runSuggest, 650); });
+    name.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') hideSug(); });
+    name.addEventListener('blur', () => setTimeout(hideSug, 150));
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const text = name.value.trim();
+      if (!text) { msg.textContent = 'כתבי את שם המלון.'; name.focus(); return; }
+      msg.textContent = 'משלימה את פרטי המלון...';
+      let list = sugList;
+      try { if (!list.length) list = await search(); } catch (e) { list = []; }
+      if (list[0]) commit(list[0]); else commit({ name: text });
     });
     body.appendChild(form);
   }
@@ -6536,6 +6661,7 @@ function normalizeCloud(c) {
     history: arr(c.history).map(normalizeTrip).filter(Boolean),
     favorites: arr(c.favorites).filter(f => f && typeof f.text === 'string'),
     templates: arr(c.templates).map(cleanTemplate).filter(Boolean),
+    passports: arr(c.passports).filter(x => x && x.id && x.cc),
     updatedAt: c.updatedAt || 0
   };
 }
@@ -6569,7 +6695,7 @@ function applyCloudToDevice(c) {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(c.history));
     localStorage.setItem(FAV_KEY, JSON.stringify(c.favorites));
     localStorage.setItem(TPL_KEY, JSON.stringify(c.templates || []));
-    localStorage.setItem(PASSPORT_KEY, JSON.stringify(c.passports || []));
+    if (c.passports && c.passports.length) localStorage.setItem(PASSPORT_KEY, JSON.stringify(c.passports));   // לא מוחקים דרכונים שבמכשיר אם בענן עוד אין
     localStorage.setItem(SYNC_META_KEY, JSON.stringify({ uid: cloudUser.uid, at: c.updatedAt }));
   } catch (e) {}
   state = c.current;
@@ -6577,6 +6703,7 @@ function applyCloudToDevice(c) {
   else { renderWeather(); renderList(); renderPast(); }
   renderFavs();
   renderTemplates();
+  renderPassports();
   cloudApplying = false;
 }
 
@@ -6609,6 +6736,7 @@ function mergeCloudIntoDevice(c) {
   else { renderWeather(); renderList(); renderPast(); }
   renderFavs();
   renderTemplates();
+  renderPassports();
 }
 
 // אחרי כניסה: מחליטים מה לעשות מול מה שכבר שמור בענן
@@ -6954,7 +7082,7 @@ function makeCollapsible(box, key, headCount, defaultCollapsed) {
 (function () {
   const main = document.querySelector('main');
   if (!main) return;
-  const FULL = ['weather', 'hotelSection', 'nearbySection', 'budgetSection', 'passportSection', 'flightSection', 'attrSection', 'listSection', 'tripForm', 'favSection', 'pastSection', 'tplSection', 'sharedBar'];
+  const FULL = ['weather', 'hotelSection', 'nearbySection', 'budgetSection', 'airportSection', 'transSection', 'passportSection', 'flightSection', 'attrSection', 'listSection', 'tripForm', 'favSection', 'pastSection', 'tplSection', 'sharedBar'];
   let queued = false;
   function balance() {
     queued = false;
@@ -7118,6 +7246,8 @@ function makeCollapsible(box, key, headCount, defaultCollapsed) {
   input.addEventListener('blur', () => setTimeout(hide, 120));
   input.addEventListener('focus', () => { if (input.value.trim().length >= 2) show(input.value.trim()); });
 })();
+
+try { renderPassportWarn(); } catch (e) {}
 </script>
 </body>
 </html>
