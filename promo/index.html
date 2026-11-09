@@ -513,7 +513,7 @@ function playClip(id, text) {
       run(() => (performance.now() - t0) / est);
     };
     if (!voiceOn) { t0 = performance.now(); setTimeout(fin, est); run(() => (performance.now() - t0) / est); return; }
-    const a = new Audio(URLS[id] || ('audio/' + id + '.mp3?v=5')); a.preload = 'auto'; a.onended = fin; a.onerror = fallback; cur = { audio: a };
+    const a = new Audio(URLS[id] || ('audio/' + id + '.mp3?v=6')); a.preload = 'auto'; a.onended = fin; a.onerror = fallback; cur = { audio: a };
     let began = false, tries = 0;
     const kick = () => { tries++; a.play().then(() => { if (began) return; began = true; run(() => a.duration ? a.currentTime / a.duration : 0); })
       .catch(() => { if (tries < 2) setTimeout(kick, 300); else { const unlock = () => { document.removeEventListener('click', unlock); if (!done) kick(); }; document.addEventListener('click', unlock); $('cap').dataset.hint = 'tap anywhere for sound'; } }); };
@@ -525,7 +525,7 @@ function playClip(id, text) {
 const URLS = {};
 async function preload(ids, onp) {
   let n = 0;
-  await Promise.all(ids.map(async id => { for (let t = 0; t < 3; t++) { try { const r = await fetch('audio/' + id + '.mp3?v=5'); if (!r.ok) throw 0; URLS[id] = URL.createObjectURL(await r.blob()); break; } catch (e) { await sleep(400); } } onp(++n); }));
+  await Promise.all(ids.map(async id => { for (let t = 0; t < 3; t++) { try { const r = await fetch('audio/' + id + '.mp3?v=6'); if (!r.ok) throw 0; URLS[id] = URL.createObjectURL(await r.blob()); break; } catch (e) { await sleep(400); } } onp(++n); }));
 }
 function stopVoice() { try { synth && synth.cancel(); } catch (e) {} if (cur && cur.audio) { cur.audio.onended = null; cur.audio.pause(); } cur = null; }
 function pauseVoice(p) { try { if (cur && cur.audio) p ? cur.audio.pause() : cur.audio.play(); else if (synth) p ? synth.pause() : synth.resume(); } catch (e) {} }
@@ -614,7 +614,7 @@ $('muteM').onclick = e => { musicOn = !musicOn; if (master) master.gain.setTarge
 addEventListener('keydown', e => { if (!started) return; if (e.key === 'ArrowRight') go(idx + 1); else if (e.key === 'ArrowLeft') go(idx - 1); else if (e.key === ' ') { e.preventDefault(); $('playBtn').click(); } });
 $('startBtn').onclick = async () => {
   const sb = $('startBtn'); sb.disabled = true;
-  try { SCRIPT = await (await fetch('script.json?v=5')).json(); } catch (e) {}
+  try { SCRIPT = await (await fetch('script.json?v=6')).json(); } catch (e) {}
   const ids = Object.keys(SCRIPT); sb.textContent = 'Loading the voice... 0/' + ids.length;
   await Promise.race([preload(ids, n => { sb.textContent = 'Loading the voice... ' + n + '/' + ids.length; }), sleep(20000)]);
   started = true; $('gate').classList.add('hide'); initAudio(); fit(); runFrom(0);
