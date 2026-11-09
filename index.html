@@ -1377,7 +1377,9 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
 .lang-select { font: inherit; font-weight: 700; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; max-width: 100%; }
 .lang-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; font-weight: 700; }
 .landing-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.lang-top { padding: 5px 10px; font-size: .85rem; }
+.lang-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 4px; }
+.lang-chip { font: inherit; font-weight: 700; font-size: .9rem; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; }
+.lang-chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -1411,8 +1413,8 @@ button, .chip span, select, input[type=date], input[type=text], input[type=searc
   <div class="landing-card">
     <div class="landing-top">
       <span class="landing-badge">NEXT-GEN PACKPAL</span>
-      <select class="lang-select lang-top" data-i18n-attr="aria-label:lang.aria" aria-label="בחירת שפה"></select>
     </div>
+    <div class="lang-chips" id="langChips" role="group" data-i18n-attr="aria-label:lang.aria" aria-label="בחירת שפה"></div>
     <h1 id="landingTitle"><span class="landing-plane" aria-hidden="true">✈️</span> PackPal</h1>
     <p class="landing-lead" data-i18n="landing.lead">רשימת אריזה חכמה לטיול: לפי מזג האוויר, היעד והפעילויות שלך.</p>
     <div class="landing-route" aria-hidden="true"><b>TLV</b><span class="landing-line"><i>✈️</i></span><b>YOU</b></div>
@@ -5626,6 +5628,14 @@ function setLang(code) {
 document.documentElement.lang = LANG;
 document.documentElement.dir = LANGS[LANG].dir;
 applyI18n();
+const _chips = document.getElementById('langChips');
+if (_chips) Object.keys(LANGS).forEach(code => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'lang-chip'; b.textContent = LANGS[code].name; b.lang = code;
+  b.setAttribute('aria-pressed', String(code === LANG));
+  b.addEventListener('click', () => setLang(code));
+  _chips.appendChild(b);
+});
 document.querySelectorAll('.lang-select').forEach(sel => {
   Object.keys(LANGS).forEach(code => {
     const o = document.createElement('option');
