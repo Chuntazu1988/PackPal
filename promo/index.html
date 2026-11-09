@@ -444,9 +444,19 @@ function playClip(id, text) {
       run(() => (performance.now() - t0) / est);
     };
     if (!voiceOn) { t0 = performance.now(); setTimeout(fin, est); run(() => (performance.now() - t0) / est); return; }
-    const a = new Audio('audio/' + id + '.mp3?v=2'); a.onended = fin; a.onerror = fallback;
-    a.play().then(() => { cur = { audio: a }; run(() => a.duration ? a.currentTime / a.duration : 0); }).catch(fallback);
+    const a = new Audio(URLS[id] || ('audio/' + id + '.mp3?v=3')); a.preload = 'auto'; a.onended = fin; a.onerror = fallback; cur = { audio: a };
+    let began = false, tries = 0;
+    const kick = () => { tries++; a.play().then(() => { if (began) return; began = true; run(() => a.duration ? a.currentTime / a.duration : 0); })
+      .catch(() => { if (tries < 2) setTimeout(kick, 300); else { const unlock = () => { document.removeEventListener('click', unlock); if (!done) kick(); }; document.addEventListener('click', unlock); $('cap').dataset.hint = 'tap anywhere for sound'; } }); };
+    kick();
+    setTimeout(() => { if (!began && !done && tries < 3) { a.load(); kick(); } }, 2500);
+    setTimeout(() => { if (!began && !done) fallback(); }, 6000);
   });
+}
+const URLS = {};
+async function preload(ids, onp) {
+  let n = 0;
+  await Promise.all(ids.map(async id => { for (let t = 0; t < 3; t++) { try { const r = await fetch('audio/' + id + '.mp3?v=3'); if (!r.ok) throw 0; URLS[id] = URL.createObjectURL(await r.blob()); break; } catch (e) { await sleep(400); } } onp(++n); }));
 }
 function stopVoice() { try { synth && synth.cancel(); } catch (e) {} if (cur && cur.audio) { cur.audio.onended = null; cur.audio.pause(); } cur = null; }
 function pauseVoice(p) { try { if (cur && cur.audio) p ? cur.audio.pause() : cur.audio.play(); else if (synth) p ? synth.pause() : synth.resume(); } catch (e) {} }
@@ -474,28 +484,28 @@ const S = [
   { name: 'Solution', hx: 6, beats: [
     { id: 'b05', mood: 'relieved', do: async () => { bigConfetti(); sfx.whoosh(); say('Finally!', 2500); } } ] },
   { name: 'Plan', phone: true, beats: [
-    { id: 'b06', mood: 'happy', do: async () => { showPg('pgWiz'); wizShow(1); $('destTxt').textContent = ''; await sleep(800); await typeText($('destTxt'), 'Tokyo', 140); await sleep(300); $('sg').firstElementChild.classList.add('sel'); sfx.ding(); await sleep(900); wizShow(2); } },
-    { id: 'b07', mood: 'happy', do: async () => { const sp = $$('#cal span'); sp.forEach(s => s.className = ''); for (let i = 9; i < 16; i++) { sp[i].className = i === 15 ? 'e' : 'r'; sfx.pop(); await sleep(260); } } },
-    { id: 'b08', mood: 'happy', do: async () => { wizShow(3); $$('#acts .pill').forEach(p => p.classList.remove('on')); await sleep(500); for (const i of [0, 1, 2, 3]) { $$('#acts .pill')[i].click(); await sleep(520); } $('goM').classList.add('pulse'); } },
-    { id: 'b09', mood: 'happy', do: async () => { await sleep(600); $('goM').click(); await sleep(2000); confetti(innerWidth * .8, innerHeight * .4, 60); } } ] },
+    { id: 'b06', mood: 'happy', do: async () => { showPg('pgWiz'); wizShow(1); $('destTxt').textContent = ''; await sleep(800); await typeText($('destTxt'), 'Tokyo', 90); await sleep(150); $('sg').firstElementChild.classList.add('sel'); sfx.ding(); await sleep(500); wizShow(2); } },
+    { id: 'b07', mood: 'happy', do: async () => { const sp = $$('#cal span'); sp.forEach(s => s.className = ''); for (let i = 9; i < 16; i++) { sp[i].className = i === 15 ? 'e' : 'r'; sfx.pop(); await sleep(130); } } },
+    { id: 'b08', mood: 'happy', do: async () => { wizShow(3); $$('#acts .pill').forEach(p => p.classList.remove('on')); await sleep(500); for (const i of [0, 1, 2, 3]) { $$('#acts .pill')[i].click(); await sleep(260); } $('goM').classList.add('pulse'); } },
+    { id: 'b09', mood: 'happy', do: async () => { await sleep(300); $('goM').click(); await sleep(1500); confetti(innerWidth * .8, innerHeight * .4, 60); } } ] },
   { name: 'List', phone: true, beats: [
-    { id: 'b10', mood: 'relieved', do: async () => { showPg('pgList'); $('pgList').scrollTop = 0; await sleep(1500); } },
-    { id: 'b11', mood: 'relieved', do: async () => { await sleep(1000); toast('toast'); } },
-    { id: 'b12', mood: 'happy', do: async () => { $('pgList').scrollTo({ top: 120, behavior: 'smooth' }); await tickN(9, 520); } },
-    { id: 'b13', mood: 'happy', do: async () => { $('pgList').scrollTo({ top: 0, behavior: 'smooth' }); await sleep(1200); } } ] },
+    { id: 'b10', mood: 'relieved', do: async () => { showPg('pgList'); $('pgList').scrollTop = 0; await sleep(500); } },
+    { id: 'b11', mood: 'relieved', do: async () => { await sleep(400); toast('toast'); } },
+    { id: 'b12', mood: 'happy', do: async () => { $('pgList').scrollTo({ top: 120, behavior: 'smooth' }); await tickN(9, 300); } },
+    { id: 'b13', mood: 'happy', do: async () => { $('pgList').scrollTo({ top: 0, behavior: 'smooth' }); await sleep(300); } } ] },
   { name: 'Features', hx: 3, beats: [
     { id: 'b14', mood: 'happy', do: async () => { await sleep(300); } },
     ...[1, 2, 3, 4, 5, 6].map((n, i) => ({ id: 'f' + n, mood: 'happy', do: () => spot('#s6', i) })) ] },
   { name: 'Before flight', phone: true, beats: [
-    { id: 'b15', mood: 'relieved', do: async () => { showPg('pgFly'); const p = $('plane'); p.style.transition = 'none'; p.style.left = '0'; await sleep(600); p.style.transition = 'left 3.4s ease-in-out'; p.style.left = 'calc(100% - 26px)'; } },
-    { id: 'b16', mood: 'relieved', do: async () => { await sleep(1500); sfx.ding(); } },
-    { id: 'b17', mood: 'happy', do: async () => { $('pgFly').scrollTo({ top: 200, behavior: 'smooth' }); await sleep(900); for (const t of $$('#pgFly [data-t]')) { t.click(); await sleep(650); } } } ] },
+    { id: 'b15', mood: 'relieved', do: async () => { showPg('pgFly'); const p = $('plane'); p.style.transition = 'none'; p.style.left = '0'; await sleep(300); p.style.transition = 'left 2.4s ease-in-out'; p.style.left = 'calc(100% - 26px)'; } },
+    { id: 'b16', mood: 'relieved', do: async () => { await sleep(600); sfx.ding(); } },
+    { id: 'b17', mood: 'happy', do: async () => { $('pgFly').scrollTo({ top: 200, behavior: 'smooth' }); await sleep(900); for (const t of $$('#pgFly [data-t]')) { t.click(); await sleep(350); } } } ] },
   { name: 'Destination', phone: true, beats: [
-    { id: 'b18', mood: 'happy', do: async () => { showPg('pgDest'); $('pgDest').scrollTop = 0; await sleep(2500); $('pgDest').scrollTo({ top: 150, behavior: 'smooth' }); } },
-    { id: 'b19', mood: 'happy', do: async () => { $('dn').style.setProperty('--a', 40); await sleep(900); $('dn').style.setProperty('--a', 60); $('pgDest').scrollTo({ top: 420, behavior: 'smooth' }); await sleep(1800); $$('.sos div').forEach(d => d.click()); await sleep(1200); $('pgDest').scrollTo({ top: 700, behavior: 'smooth' }); } } ] },
+    { id: 'b18', mood: 'happy', do: async () => { showPg('pgDest'); $('pgDest').scrollTop = 0; await sleep(1200); $('pgDest').scrollTo({ top: 150, behavior: 'smooth' }); } },
+    { id: 'b19', mood: 'happy', do: async () => { $('dn').style.setProperty('--a', 40); await sleep(500); $('dn').style.setProperty('--a', 60); $('pgDest').scrollTo({ top: 420, behavior: 'smooth' }); await sleep(900); $$('.sos div').forEach(d => d.click()); await sleep(500); $('pgDest').scrollTo({ top: 700, behavior: 'smooth' }); } } ] },
   { name: 'Share', phone: true, beats: [
-    { id: 'b20', mood: 'happy', do: async () => { showPg('pgTog'); await sleep(2500); $$('#crew .it')[0].click(); } },
-    { id: 'b21', mood: 'happy', do: async () => { await sleep(3500); const c = $$('#crew .it'); c[1].click(); c[1].querySelector('.kg').textContent = '✅ packed!'; toast('toast2'); bigConfetti(); await sleep(800); c[2].click(); } } ] },
+    { id: 'b20', mood: 'happy', do: async () => { showPg('pgTog'); await sleep(1200); $$('#crew .it')[0].click(); } },
+    { id: 'b21', mood: 'happy', do: async () => { await sleep(1200); const c = $$('#crew .it'); c[1].click(); c[1].querySelector('.kg').textContent = '✅ packed!'; toast('toast2'); bigConfetti(); await sleep(800); c[2].click(); } } ] },
   { name: 'Why it wins', hx: 3, beats: [{ id: 'b22', mood: 'happy', do: async () => { sfx.whoosh(); } },
     ...[1, 2, 3].map((n, i) => ({ id: 'w' + n, mood: 'happy', do: () => spot('#s10', i) })) ] },
   { name: 'Finale', hx: 4, floaters: ['🎉', '🧳', '✈️', '🔌', '🧦', '⭐'], beats: [
@@ -514,14 +524,14 @@ function paint(i) {
 async function runFrom(i) {
   const my = ++token; stopVoice(); idx = i; playing = true; upd();
   for (; idx < S.length; idx++) {
-    paint(idx); bubble.classList.remove('show'); await sleep(S[idx].phone ? 900 : 500);
+    paint(idx); bubble.classList.remove('show'); await sleep(S[idx].phone ? 600 : 250);
     for (const b of S[idx].beats) {
       if (my !== token) return;
       mood(b.mood || 'confused'); duck(true);
       await Promise.all([playClip(b.id, SCRIPT[b.id] || ''), (async () => { try { await b.do(); } catch (e) { console.warn(e); } })()]);
       duck(false); if (my !== token) return;
       while (!playing) { await sleep(200); if (my !== token) return; }
-      await sleep(350);
+      await sleep(120);
     }
   }
   if (my === token) { playing = false; upd(true); }
@@ -534,7 +544,10 @@ $('muteV').onclick = e => { voiceOn = !voiceOn; if (!voiceOn) stopVoice(); e.tar
 $('muteM').onclick = e => { musicOn = !musicOn; if (master) master.gain.setTargetAtTime(musicOn ? .5 : 0, ac.currentTime, .1); e.target.style.opacity = musicOn ? 1 : .45; };
 addEventListener('keydown', e => { if (!started) return; if (e.key === 'ArrowRight') go(idx + 1); else if (e.key === 'ArrowLeft') go(idx - 1); else if (e.key === ' ') { e.preventDefault(); $('playBtn').click(); } });
 $('startBtn').onclick = async () => {
-  try { SCRIPT = await (await fetch('script.json?v=2')).json(); } catch (e) {}
+  const sb = $('startBtn'); sb.disabled = true;
+  try { SCRIPT = await (await fetch('script.json?v=3')).json(); } catch (e) {}
+  const ids = Object.keys(SCRIPT); sb.textContent = 'Loading the voice... 0/' + ids.length;
+  await Promise.race([preload(ids, n => { sb.textContent = 'Loading the voice... ' + n + '/' + ids.length; }), sleep(20000)]);
   started = true; $('gate').classList.add('hide'); initAudio(); fit(); runFrom(0);
 };
 paint(0);
