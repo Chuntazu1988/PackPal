@@ -328,22 +328,24 @@ function initAudio() {
   try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
   master = ac.createGain(); master.gain.value = .5; master.connect(ac.destination);
   sfxG = ac.createGain(); sfxG.gain.value = .5; sfxG.connect(ac.destination);
-  // upbeat pop/funk groove: kick + clap + hats, bouncy bass, staccato chord stabs, bright pluck hook
-  const bpm = 118, sp = 60 / bpm / 4, hz = m => 440 * 2 ** ((m - 69) / 12);
-  const prog = [{ r: 45, c: [57, 60, 64] }, { r: 41, c: [53, 57, 60] }, { r: 48, c: [60, 64, 67] }, { r: 43, c: [59, 62, 67] }];   // Am F C G
+  // playful ukulele-pop: swung strums, bell hook, bouncy bass, shaker + hand-claps (a "funny ad" vibe)
+  const bpm = 112, beat = 60 / bpm, hz = m => 440 * 2 ** ((m - 69) / 12);
+  const prog = [{ r: 48, c: [60, 64, 67] }, { r: 45, c: [57, 60, 64] }, { r: 41, c: [57, 60, 65] }, { r: 43, c: [55, 59, 62] }];   // C Am F G
   const noiseBuf = (() => { const n = ac.sampleRate, b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; return b; })();
-  const tone = (m, t, d, ty, v, lp) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = ty; o.frequency.value = hz(m); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .008); g.gain.exponentialRampToValueAtTime(.0001, t + d); let n = o; if (lp) { const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lp; o.connect(f); n = f; } n.connect(g); g.connect(master); o.start(t); o.stop(t + d + .05); };
-  const kick = t => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + .14); g.gain.setValueAtTime(.55, t); g.gain.exponentialRampToValueAtTime(.0001, t + .22); o.connect(g); g.connect(master); o.start(t); o.stop(t + .25); };
-  const nz = (t, d, hp, bp, v) => { const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = noiseBuf; f.type = bp ? 'bandpass' : 'highpass'; f.frequency.value = hp; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + d + .02); };
-  const hook = [0, 2, 1, 2, 0, 1, 2, 1];
-  const sched = () => { const t0 = ac.currentTime + .1;
-    for (let i = 0; i < 16; i++) { const p = prog[Math.floor(step / 16) % 4], t = t0 + i * sp, b = i % 16;
-      if (b % 4 === 0) kick(t); if (b === 4 || b === 12) { nz(t, .13, 1500, true, .35); } nz(t, .04, 7000, false, b % 2 ? .08 : .14);
-      if ([0, 3, 6, 8, 10, 14].includes(b)) tone(p.r + (b === 6 || b === 14 ? 12 : 0), t, sp * 1.6, 'sawtooth', .12, 500);
-      if ([2, 6, 10, 14].includes(b)) p.c.forEach(m => tone(m, t, sp * .9, 'square', .022, 1800));
-      if (b % 2 === 0) tone(p.c[hook[b / 2 % 8] % 3] + 24, t, sp * 1.4, 'triangle', .06);
-      step++; } };
-  sched(); setInterval(sched, 16 * sp * 1000 - 40);
+  const pluck = (m, t, d, v, lp = 2600, ty = 'triangle') => { const o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain(); o.type = ty; o.frequency.value = hz(m); f.type = 'lowpass'; f.frequency.value = lp; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .004); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(f); f.connect(g); g.connect(master); o.start(t); o.stop(t + d + .05); };
+  const bell = (m, t, v) => { pluck(m, t, .5, v, 6000, 'sine'); pluck(m + 19.02, t, .25, v * .35, 9000, 'sine'); };
+  const thump = (t, v) => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(48, t + .1); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + .16); o.connect(g); g.connect(master); o.start(t); o.stop(t + .2); };
+  const nz = (t, d, fq, bp, v) => { const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = noiseBuf; f.type = bp ? 'bandpass' : 'highpass'; f.frequency.value = fq; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + d + .02); };
+  const hookRhythm = { 0: 2, 3: 1, 4: 2, 7: 0 };            // eighth index -> chord degree for the bell hook
+  const sched = () => { if (ac.state !== 'running') return; const t0 = ac.currentTime + .1, p = prog[step % 4];
+    for (let i = 0; i < 8; i++) { const t = t0 + (i >> 1) * beat + (i % 2 ? beat * .62 : 0);                      // swing
+      if (i % 2) p.c.forEach((m, k) => pluck(m, t + k * .013, .24, .05));                                    // off-beat strum
+      if (i === 0 || i === 4) { pluck(p.r - 12, t, .4, .13, 700, 'sine'); thump(t, .32); }                    // bass + soft thump
+      if (i === 2 || i === 6) { pluck(p.r - 12 + 7, t, .25, .08, 700, 'sine'); nz(t, .11, 1300, true, .22); } // fifth + hand-clap
+      if (i in hookRhythm) bell(p.c[hookRhythm[i]] + 12, t, .06);
+      nz(t, .045, 6500, false, i % 2 ? .08 : .045); }
+    step++; };
+  sched(); setInterval(sched, 4 * beat * 1000 - 40);
 }
 const duck = on => { if (master) master.gain.setTargetAtTime(!musicOn ? 0 : on ? .2 : .5, ac.currentTime, .3); };
 function blip(f1, f2, d, ty = 'sine', v = .25) { if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime; o.type = ty; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + d); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g); g.connect(sfxG); o.start(t); o.stop(t + d); }
@@ -444,7 +446,7 @@ function playClip(id, text) {
       run(() => (performance.now() - t0) / est);
     };
     if (!voiceOn) { t0 = performance.now(); setTimeout(fin, est); run(() => (performance.now() - t0) / est); return; }
-    const a = new Audio(URLS[id] || ('audio/' + id + '.mp3?v=3')); a.preload = 'auto'; a.onended = fin; a.onerror = fallback; cur = { audio: a };
+    const a = new Audio(URLS[id] || ('audio/' + id + '.mp3?v=4')); a.preload = 'auto'; a.onended = fin; a.onerror = fallback; cur = { audio: a };
     let began = false, tries = 0;
     const kick = () => { tries++; a.play().then(() => { if (began) return; began = true; run(() => a.duration ? a.currentTime / a.duration : 0); })
       .catch(() => { if (tries < 2) setTimeout(kick, 300); else { const unlock = () => { document.removeEventListener('click', unlock); if (!done) kick(); }; document.addEventListener('click', unlock); $('cap').dataset.hint = 'tap anywhere for sound'; } }); };
@@ -456,7 +458,7 @@ function playClip(id, text) {
 const URLS = {};
 async function preload(ids, onp) {
   let n = 0;
-  await Promise.all(ids.map(async id => { for (let t = 0; t < 3; t++) { try { const r = await fetch('audio/' + id + '.mp3?v=3'); if (!r.ok) throw 0; URLS[id] = URL.createObjectURL(await r.blob()); break; } catch (e) { await sleep(400); } } onp(++n); }));
+  await Promise.all(ids.map(async id => { for (let t = 0; t < 3; t++) { try { const r = await fetch('audio/' + id + '.mp3?v=4'); if (!r.ok) throw 0; URLS[id] = URL.createObjectURL(await r.blob()); break; } catch (e) { await sleep(400); } } onp(++n); }));
 }
 function stopVoice() { try { synth && synth.cancel(); } catch (e) {} if (cur && cur.audio) { cur.audio.onended = null; cur.audio.pause(); } cur = null; }
 function pauseVoice(p) { try { if (cur && cur.audio) p ? cur.audio.pause() : cur.audio.play(); else if (synth) p ? synth.pause() : synth.resume(); } catch (e) {} }
@@ -538,14 +540,14 @@ async function runFrom(i) {
 }
 const go = i => runFrom(Math.max(0, Math.min(S.length - 1, i)));
 const upd = done => { $('playBtn').innerHTML = done ? '&#8635;' : playing ? '&#10074;&#10074;' : '&#9654;'; };
-$('playBtn').onclick = () => { if (!started) return; if ($('playBtn').textContent.trim() === '↻') return runFrom(0); playing = !playing; upd(); pauseVoice(!playing); };
+$('playBtn').onclick = () => { if (!started) return; if ($('playBtn').textContent.trim() === '↻') return runFrom(0); playing = !playing; upd(); pauseVoice(!playing); try { if (ac) playing ? ac.resume() : ac.suspend(); } catch (e) {} };
 $('prevBtn').onclick = () => go(idx - 1); $('nextBtn').onclick = () => go(idx + 1);
 $('muteV').onclick = e => { voiceOn = !voiceOn; if (!voiceOn) stopVoice(); e.target.style.opacity = voiceOn ? 1 : .45; };
 $('muteM').onclick = e => { musicOn = !musicOn; if (master) master.gain.setTargetAtTime(musicOn ? .5 : 0, ac.currentTime, .1); e.target.style.opacity = musicOn ? 1 : .45; };
 addEventListener('keydown', e => { if (!started) return; if (e.key === 'ArrowRight') go(idx + 1); else if (e.key === 'ArrowLeft') go(idx - 1); else if (e.key === ' ') { e.preventDefault(); $('playBtn').click(); } });
 $('startBtn').onclick = async () => {
   const sb = $('startBtn'); sb.disabled = true;
-  try { SCRIPT = await (await fetch('script.json?v=3')).json(); } catch (e) {}
+  try { SCRIPT = await (await fetch('script.json?v=4')).json(); } catch (e) {}
   const ids = Object.keys(SCRIPT); sb.textContent = 'Loading the voice... 0/' + ids.length;
   await Promise.race([preload(ids, n => { sb.textContent = 'Loading the voice... ' + n + '/' + ids.length; }), sleep(20000)]);
   started = true; $('gate').classList.add('hide'); initAudio(); fit(); runFrom(0);
